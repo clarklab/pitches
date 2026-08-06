@@ -9,12 +9,14 @@
 :root{
   --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff;
   --accent-2:#9a3412;
+  --rail:rgba(23,22,26,.055);
 }
 @media (prefers-color-scheme: dark){
-  :root{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e; }
+  :root{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e;
+         --rail:rgba(255,255,255,.05); }
 }
-:root[data-theme="dark"]{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e; }
-:root[data-theme="light"]{ --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff; --accent-2:#9a3412; }
+:root[data-theme="dark"]{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e; --rail:rgba(255,255,255,.05); }
+:root[data-theme="light"]{ --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff; --accent-2:#9a3412; --rail:rgba(23,22,26,.055); }
 
 body{ overscroll-behavior:none; }
 .app{ touch-action:manipulation; }
@@ -23,8 +25,9 @@ body{ overscroll-behavior:none; }
 .bar h1{
   font-weight:800; letter-spacing:.20em; font-size:19px;
   text-indent:.20em;                       /* optically re-centre the tracking */
-  font-variation-settings:"wdth" 100;
+  line-height:1.1;
 }
+.bar .puzz-no{ display:block; margin-top:1px; font-weight:500; }
 .sheet h2, .verdict{ font-weight:800; letter-spacing:-.028em; }
 .prompt .k{ font-weight:800; letter-spacing:.14em; }
 .prompt .v{ font-size:14px; line-height:1.5; }
@@ -219,7 +222,10 @@ body{ overscroll-behavior:none; }
     <button class="iconbtn" id="theme" aria-label="Toggle theme" title="Theme">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
     </button>
-    <h1>Shunt</h1>
+    <div style="flex:1;min-width:0;text-align:center">
+      <h1>Shunt</h1>
+      <span class="puzz-no" id="pno"></span>
+    </div>
     <button class="iconbtn" id="help" aria-label="How to play" title="How to play">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.8-.9 1.4v.4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
     </button>

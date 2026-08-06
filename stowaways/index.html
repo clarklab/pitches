@@ -601,9 +601,14 @@
     try { passEl.releasePointerCapture(e.pointerId); } catch (err) { /* noop */ }
 
     if (p.moved) { commit(anchor, p.at); return; }         // a drag
-    if (!p.wasArmed) { preview(anchor, anchor); return; }  // first tap — stay armed
+    // first tap — stay armed, and say so rather than echoing one letter back
+    if (!p.wasArmed) { preview(anchor, anchor); armedHint(); return; }
     if (p.i === anchor) { anchor = -1; clearSel(); setReadout(-1); return; }  // tap same = cancel
     commit(anchor, p.i);                                    // second tap
+  }
+  function armedHint() {
+    readEl.className = 'readout idle';
+    readEl.textContent = 'Start set — now pick the last letter of the word.';
   }
   passEl.addEventListener('pointerup', endPress);
   passEl.addEventListener('pointercancel', function () { press = null; });
@@ -639,7 +644,7 @@
     else if (k === 'End') { cursor = letters.length - 1; }
     else if (k === 'Enter' || k === ' ') {
       e.preventDefault();
-      if (anchor < 0) { anchor = cursor; preview(anchor, cursor); }
+      if (anchor < 0) { anchor = cursor; preview(anchor, cursor); armedHint(); }
       else { commit(anchor, cursor); }
       showCursor(); return;
     } else if (k === 'Escape') {
