@@ -3,85 +3,155 @@
 <title>SEED — Superfun Daily</title>
 <link rel="stylesheet" href="../shared/kit.css">
 <style>
-  :root { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; }
+  :root { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; --rung:#e8c9d6; }
   @media (prefers-color-scheme: dark) {
-    :root { --accent:#e4638a; --accent-soft:#3a1424; --accent-ink:#200c14; }
+    :root { --accent:#f0789c; --accent-soft:#3d1626; --accent-ink:#1c080f; --rung:#5a2b3c; }
   }
-  :root[data-theme="dark"]  { --accent:#e4638a; --accent-soft:#3a1424; --accent-ink:#200c14; }
-  :root[data-theme="light"] { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; }
+  :root[data-theme="dark"]  { --accent:#f0789c; --accent-soft:#3d1626; --accent-ink:#1c080f; --rung:#5a2b3c; }
+  :root[data-theme="light"] { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; --rung:#e8c9d6; }
+
+  /* ---------- type: Google Sans Flex is a geometric sans, so the old
+       serif-era settings read limp. Heavier weights, tighter tracking on
+       everything that is a heading; wide tracking only on the logotype. ---- */
+  .bar h1 {
+    font-size: 15px; font-weight: 800; letter-spacing: .30em; text-indent: .30em;
+  }
+  .verdict { font-weight: 800; letter-spacing: -.035em; font-size: 33px; line-height: 1.05; }
+  .sheet h2 { font-weight: 800; letter-spacing: -.025em; }
+  .stat .n { font-weight: 800; letter-spacing: -.03em; }
+  .prompt .k { font-weight: 800; letter-spacing: .14em; }
 
   .stage { justify-content: flex-start; gap: 12px; }
 
-  /* ---------- growth staircase ---------- */
+  /* ==========================================================================
+     THE STAIRCASE — the screenshot.
+     Every word you played, hanging off an elbow from the one before it and
+     stepping right as it grows. The number column stays flush right so the
+     3·4·5·6·7… ladder reads as a single rising line.
+     ======================================================================== */
   .stair {
-    flex: 1 1 0; min-height: 76px; overflow-y: auto;
+    flex: 1 1 0; min-height: 92px; overflow-y: auto;
     display: flex; flex-direction: column; justify-content: flex-end;
-    gap: 2px; padding: 4px 2px 2px; scrollbar-width: thin;
+    gap: 1px; padding: 10px 4px 2px;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 22px);
+            mask-image: linear-gradient(180deg, transparent, #000 22px);
   }
+  .stair::-webkit-scrollbar { width: 0; height: 0; }
+
   .step {
-    display: flex; align-items: baseline; gap: 8px;
-    font-family: var(--font-tile); font-weight: 700; letter-spacing: .09em;
-    text-transform: uppercase; font-size: 15px; color: var(--ink-2);
-    animation: step-in .3s cubic-bezier(.2,.9,.3,1);
-    white-space: nowrap;
+    display: grid; grid-template-columns: 1fr auto; align-items: center;
+    gap: 10px; padding: 2px 8px 2px 2px; border-radius: var(--r-pill);
+    animation: step-in .34s cubic-bezier(.2,.9,.3,1);
   }
-  @keyframes step-in { from { opacity: 0; transform: translate(-8px, 8px) } }
-  .step .rail { color: var(--line-2); font-weight: 400; letter-spacing: 0; }
+  @keyframes step-in { from { opacity: 0; transform: translate(-10px, 10px) } }
+
+  .step .w {
+    display: inline-flex; align-items: center; min-width: 0;
+    margin-left: calc(var(--i) * 10px);
+    font-family: var(--font-tile); font-weight: 700; font-size: 15px;
+    letter-spacing: .17em; text-transform: uppercase;
+    color: var(--ink-2); white-space: nowrap;
+    transition: color .25s, font-size .25s;
+  }
+  /* the elbow that ties this rung to the one above it */
+  .step .w::before {
+    content: ''; flex: 0 0 10px; width: 10px; height: 15px;
+    margin: -14px 7px 0 0;
+    border-left: 1.5px solid var(--rung);
+    border-bottom: 1.5px solid var(--rung);
+    border-bottom-left-radius: 6px;
+  }
+  .step.seed .w::before {
+    border: 0; height: 0; margin: 0 7px 0 1px;
+    flex-basis: 6px; width: 6px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    align-self: center;
+  }
   .step .len {
-    font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
-    color: var(--ink-3); letter-spacing: 0;
-  }
-  .step.cur { color: var(--accent); font-size: 17px; }
-  .step.cur .len { color: var(--accent); }
-  .step.ghost { color: var(--ink-3); opacity: .35; animation: none; }
-  .step.ghost.now { opacity: .85; color: var(--accent); }
-  .step .dots { letter-spacing: .34em; font-size: 15px; line-height: 1; }
-  .step.ghost.now .dots {
-    border-bottom: 1.5px dashed currentColor; padding-bottom: 2px;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--ink-3); letter-spacing: 0; min-width: 2ch; text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* ---------- the public queue (a conveyor you can read ahead on) ---------- */
+  .step.cur { background: linear-gradient(90deg, var(--accent-soft), transparent 78%); }
+  .step.cur .w   { color: var(--accent); font-size: 17.5px; letter-spacing: .2em; }
+  .step.cur .len { color: var(--accent); font-weight: 700; font-size: 12px; }
+  .step.cur .w::before { border-color: var(--accent); opacity: .55; }
+
+  /* ghost rungs: the shape of the run still on the table. No numbers, so
+     nothing about the true maximum leaks. */
+  .step.ghost { animation: none; }
+  .step.ghost .w { color: var(--ink-3); opacity: .34; letter-spacing: .34em; font-size: 13px; }
+  .step.ghost .w::before { border-style: dashed; border-color: var(--line-2); }
+  .step.ghost.now .w { opacity: .8; color: var(--accent); }
+  .step.ghost.now .w::before { border-color: var(--accent); border-style: dashed; }
+
+  /* ==========================================================================
+     THE CONVEYOR — public, ordered, same for everyone. Readable three letters
+     ahead, which is the entire skill of the game.
+     ======================================================================== */
   .qwrap {
     background: var(--white); border: 1px solid var(--line);
-    border-radius: var(--r); padding: 9px 10px 10px; box-shadow: var(--shadow-1);
+    border-radius: var(--r); padding: 10px 12px 11px; box-shadow: var(--shadow-1);
   }
   .qhead {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
-    text-transform: uppercase; color: var(--accent); margin-bottom: 7px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
     white-space: nowrap;
   }
-  .qhead .rem { color: var(--ink-3); letter-spacing: .06em; font-weight: 600; }
-  .queue { position: relative; padding-top: 11px; }
-  .qrow { display: flex; gap: 5px; justify-content: space-between; }
+  .qhead .rem {
+    color: var(--ink-3); letter-spacing: .08em; font-weight: 700;
+    font-family: var(--font-mono); font-size: 9.5px;
+  }
+  .queue { position: relative; padding-top: 12px; }
+  .qrow { display: flex; gap: 5px; }
   .qt {
-    flex: 1 1 0; min-width: 0; height: 34px;
+    flex: 1 1 0; min-width: 0; height: 36px;
     display: grid; place-items: center;
-    border: 1.5px solid var(--line-2); border-radius: 7px;
-    font-family: var(--font-tile); font-weight: 700; font-size: 15px;
+    border: 1.5px solid var(--line-2); border-radius: 8px;
+    font-family: var(--font-tile); font-weight: 700; font-size: 15.5px;
     background: var(--paper); color: var(--ink); position: relative;
     transition: background .25s, color .25s, border-color .25s, opacity .25s, transform .25s;
   }
   .qt.next {
     background: var(--accent); color: var(--accent-ink); border-color: transparent;
-    transform: translateY(1px) scale(1.06); box-shadow: var(--shadow-1);
+    transform: scale(1.1); box-shadow: var(--shadow-2); z-index: 2;
   }
   /* taken — absorbed into your word */
   .qt.done {
     background: var(--accent-soft); color: var(--accent);
-    border-color: transparent; opacity: .8;
+    border-color: transparent; transform: scale(.94);
   }
-  /* skipped — thrown away */
+  /* skipped — thrown away, and it shows */
   .qt.skipped {
-    opacity: .45; background: transparent; border-style: dashed;
-    color: var(--ink-3); border-color: var(--line-2);
+    opacity: .55; background: transparent; border-style: dashed;
+    color: var(--ink-3); border-color: var(--line-2); transform: scale(.9);
   }
   .qt.skipped::after {
-    content: ''; position: absolute; left: 18%; right: 18%; top: 50%;
-    height: 1.5px; background: var(--ink-3); transform: rotate(-12deg);
+    content: ''; position: absolute; left: 16%; right: 16%; top: 50%;
+    height: 1.5px; border-radius: 1px; background: var(--ink-3); transform: rotate(-14deg);
   }
+  /* the letter that ended the run */
+  .qt.killer {
+    background: var(--bad); color: #fff; border-color: transparent;
+    transform: scale(1.12); animation: killpulse .55s ease-out 3;
+  }
+  @keyframes killpulse { 50% { transform: scale(1.24); } }
+
+  /* progress rail — how much conveyor is left */
+  .qtrack {
+    position: relative; height: 3px; margin-top: 9px;
+    border-radius: 2px; background: var(--paper-2); overflow: hidden;
+  }
+  .qfill {
+    position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px;
+    background: var(--accent); transition: width .32s cubic-bezier(.2,.9,.3,1);
+  }
+
   .caret {
-    position: absolute; top: 0; left: 0; width: 10px; height: 9px;
+    position: absolute; top: 0; left: 0; width: 10px; height: 10px;
     transition: transform .32s cubic-bezier(.2,.9,.3,1);
     will-change: transform;
   }
@@ -89,100 +159,139 @@
     content: ''; display: block; width: 0; height: 0; margin: 0 auto;
     border-left: 5px solid transparent; border-right: 5px solid transparent;
     border-top: 7px solid var(--accent);
-    animation: nudge 1.4s ease-in-out infinite;
+    animation: nudge 1.5s ease-in-out infinite;
   }
   @keyframes nudge { 0%,100% { transform: translateY(-2px) } 50% { transform: translateY(1px) } }
 
-  /* ---------- word slot ---------- */
-  .slotwrap { display: flex; align-items: center; gap: 8px; min-height: 52px; }
+  /* ---------- word tray ---------- */
+  .slotwrap { display: flex; align-items: stretch; gap: 8px; }
   .slot {
-    flex: 1; display: flex; flex-wrap: wrap; gap: 5px; align-content: center;
-    min-height: 52px; padding: 4px 6px;
+    flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-content: center;
+    min-height: 54px; padding: 5px 7px;
     border: 1.5px dashed var(--line-2); border-radius: var(--r);
     background: var(--paper-2);
+    transition: border-color .2s, background .2s;
   }
   .slot.full { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
-  .slot .ph { color: var(--ink-3); font-size: 13px; padding: 8px 4px; }
+  .slot .ph { color: var(--ink-3); font-size: 12.5px; padding: 9px 4px; line-height: 1.3; }
+  .del {
+    flex: 0 0 46px; width: 46px; border-radius: var(--r);
+    background: var(--white); border: 1px solid var(--line-2); color: var(--ink-2);
+    display: grid; place-items: center; cursor: pointer; font-size: 17px;
+    box-shadow: var(--shadow-1); transition: transform .1s, opacity .15s;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .del:active { transform: scale(.93); }
+  .del[hidden] { display: none; }
 
   /* ---------- tiles ---------- */
-  .rack { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; min-height: 50px; }
+  .rack { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; min-height: 52px; }
   .lt {
-    width: 42px; height: 46px; padding: 0; cursor: pointer;
+    width: 44px; height: 48px; padding: 0; cursor: pointer;
     background: var(--white); border: 1.5px solid var(--line-2);
-    border-radius: var(--r-sm); font-family: var(--font-tile);
-    font-weight: 700; font-size: 21px; text-transform: uppercase;
+    border-radius: 10px; font-family: var(--font-tile);
+    font-weight: 700; font-size: 21px; letter-spacing: .02em; text-transform: uppercase;
     color: var(--ink); box-shadow: var(--shadow-1);
     touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-    transition: transform .1s, box-shadow .12s, background .2s, border-color .2s;
+    transition: transform .1s, background .2s, border-color .2s, color .2s, opacity .2s;
     display: grid; place-items: center; user-select: none;
   }
-  .lt:active { transform: translateY(1.5px); box-shadow: none; }
+  .lt:active { transform: translateY(2px) scale(.96); }
+  .rack.big .lt { width: 39px; height: 45px; font-size: 19px; }
   .lt.fresh {
     border-color: var(--accent); color: var(--accent);
-    animation: drop .38s cubic-bezier(.2,.9,.3,1);
+    animation: drop .4s cubic-bezier(.2,.9,.3,1);
   }
   @keyframes drop {
-    0%   { transform: translateY(-34px) scale(.6); opacity: 0 }
-    60%  { transform: translateY(3px) scale(1.06); opacity: 1 }
+    0%   { transform: translateY(-38px) scale(.55); opacity: 0 }
+    62%  { transform: translateY(3px) scale(1.07); opacity: 1 }
     100% { transform: none }
   }
-  .slot .lt { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: none; }
-  .slot .lt.fresh { color: var(--accent-ink); }
-  .lt.ghost { opacity: .22; pointer-events: none; box-shadow: none; }
+  .slot .lt {
+    background: var(--accent); color: var(--accent-ink); border-color: transparent;
+    box-shadow: none; width: 38px; height: 44px; font-size: 19px;
+  }
+  .slot .lt.fresh { color: var(--accent-ink); border-color: transparent; }
+  .lt.ghost { opacity: .2; pointer-events: none; box-shadow: none; }
 
   /* ---------- controls ---------- */
   .controls { display: flex; gap: 7px; }
-  .controls .btn { flex: 1; padding: 13px 6px; font-size: 14px; min-height: 46px; }
-  .controls .btn.enter { flex: 1.5; }
+  .controls .btn { flex: 1; padding: 13px 6px; font-size: 14px; min-height: 48px; font-weight: 700; }
+  .controls .btn.enter { flex: 1.6; }
+  #shuffle { flex: .7; font-size: 18px; }
   .skipdots {
-    display: inline-grid; place-items: center; min-width: 20px; height: 20px;
+    display: inline-grid; place-items: center; min-width: 21px; height: 21px;
     border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent);
-    font-size: 12px; font-weight: 800; margin-left: 3px; vertical-align: -3px;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    margin-left: 4px; vertical-align: -4px;
   }
   #skip[disabled] .skipdots { background: var(--paper-2); color: var(--ink-3); }
+  #skip.hot { border-color: var(--accent); color: var(--accent); }
+  #skip.hot .skipdots { animation: beat 1.1s ease-in-out infinite; }
+  @keyframes beat { 50% { transform: scale(1.22) } }
+
   .bottom { margin-top: auto; display: flex; flex-direction: column; gap: 9px; padding-top: 6px; }
-  .stuckrow { text-align: center; }
+  .stuckrow { text-align: center; min-height: 34px; }
   .stuck {
     background: none; border: 0; color: var(--ink-3); font-size: 12.5px;
     text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
-    padding: 6px 12px; min-height: 32px;
+    padding: 6px 14px; min-height: 34px;
   }
-  .stuck.hot { color: var(--bad); font-weight: 700; text-decoration: none; }
+
+  /* the run is over and it was not your choice */
+  .deadbanner {
+    background: var(--bad-soft); color: var(--bad);
+    border: 1px solid color-mix(in srgb, var(--bad) 35%, transparent);
+    border-radius: var(--r); padding: 11px 14px; font-size: 13.5px;
+    text-align: center; animation: step-in .3s cubic-bezier(.2,.9,.3,1);
+  }
+  .deadbanner b { font-weight: 800; letter-spacing: -.01em; }
 
   /* ---------- result ---------- */
   .finalword {
-    font-family: var(--font-tile); font-weight: 700; font-size: 24px;
-    letter-spacing: .12em; text-align: center; text-transform: uppercase;
-    color: var(--accent); margin: 2px 0 0; word-break: break-all;
+    font-family: var(--font-tile); font-weight: 800; font-size: 25px;
+    letter-spacing: .16em; text-align: center; text-transform: uppercase;
+    color: var(--accent); margin: 6px 0 0; word-break: break-word; line-height: 1.2;
   }
   .recap {
     background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
-    padding: 10px 12px; margin: 12px 0 0; max-height: 30dvh; overflow-y: auto;
+    padding: 12px 10px; margin: 12px 0 0; max-height: 32dvh; overflow-y: auto;
   }
+  .recap .step { animation: none; }
   .reveal {
-    margin-top: 10px; border: 1px dashed var(--line-2); border-radius: var(--r);
+    margin-top: 10px; border: 1px solid var(--line); border-radius: var(--r);
     padding: 10px 12px; background: var(--paper-2);
   }
   .reveal summary {
     cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--accent);
-    list-style: none; text-align: center;
+    list-style: none; text-align: center; padding: 3px 0;
   }
   .reveal summary::-webkit-details-marker { display: none; }
-  .reveal .par {
-    margin-top: 9px; font-family: var(--font-tile); font-weight: 700;
-    font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
-    color: var(--ink-2); line-height: 1.9; text-align: center;
+  .parline {
+    margin-top: 11px; display: flex; flex-wrap: wrap; gap: 5px;
+    align-items: center; justify-content: center;
   }
-  .reveal .par i { color: var(--accent); font-style: normal; }
-  .countdown { text-align: center; font-size: 12.5px; color: var(--ink-3); margin-top: 12px; }
-  .countdown b { font-family: var(--font-mono); color: var(--ink-2); }
+  .pw {
+    font-family: var(--font-tile); font-weight: 700; font-size: 11.5px;
+    letter-spacing: .1em; text-transform: uppercase;
+    background: var(--white); border: 1px solid var(--line);
+    color: var(--ink-2); border-radius: var(--r-pill); padding: 4px 9px;
+  }
+  .pw.sk {
+    background: transparent; border-style: dashed; color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+  .pw.fin { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+  .countdown { text-align: center; font-size: 12.5px; color: var(--ink-3); margin-top: 14px; }
+  .countdown b { font-family: var(--font-mono); color: var(--ink-2); font-weight: 600; }
   kbd {
     font-family: var(--font-mono); font-size: 11px; background: var(--paper-2);
     border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
   }
   @media (max-height: 700px) {
-    .stair { max-height: 22dvh; min-height: 54px; }
-    .lt { height: 42px; }
+    .stair { max-height: 21dvh; min-height: 60px; }
+    .lt { height: 44px; }
+    .rack.big .lt { height: 41px; }
   }
 </style>
 
@@ -209,12 +318,16 @@
         <div class="caret" id="caret"></div>
         <div class="qrow" id="qrow"></div>
       </div>
+      <div class="qtrack"><div class="qfill" id="qfill"></div></div>
     </div>
 
     <div class="stair" id="stair" aria-label="Your growth so far" aria-live="polite"></div>
 
-    <div class="bottom">
-      <div class="slotwrap"><div class="slot" id="slot"></div></div>
+    <div class="bottom" id="bottom">
+      <div class="slotwrap">
+        <div class="slot" id="slot"></div>
+        <button class="del" id="del" hidden aria-label="Take back the last letter">⌫</button>
+      </div>
       <div class="rack" id="rack"></div>
       <div class="controls">
         <button class="btn ghost" id="shuffle" aria-label="Shuffle rack">⇄</button>
@@ -238,6 +351,7 @@
   var SEED  = PUZ.seed;
   var MAXSK = 2;
   var STORE = Kit.store('seed');
+  var SAVE_V = 3;
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -247,58 +361,57 @@
   // slot      : indices into rack, in the order the player tapped them
   // hist      : words played, starting with the seed
   // timeline  : 'take' | 'skip' per resolved queue letter
+  // ending    : 'survived' | 'stuck' | 'dead'
   var S;
 
   function fresh() {
     return {
       day: DAY, qi: 0, rack: SEED.split('').concat([Q[0]]), slot: [],
-      hist: [SEED], timeline: [], skips: 0, over: false, ending: null, seen: false
+      hist: [SEED], timeline: [], skips: 0, over: false, ending: null,
+      killer: null, seen: false
     };
   }
-
   function load() {
     var saved = STORE.get();
-    if (saved && saved.day === DAY && saved.v === 2) return saved;
+    if (saved && saved.day === DAY && saved.v === SAVE_V) return saved;
     return fresh();
   }
-  function save() { S.v = 2; STORE.set(S); }
+  function save() { S.v = SAVE_V; STORE.set(S); }
 
   /* ---- lookup --------------------------------------------------------- */
   function key(arr) { return arr.slice().sort().join(''); }
   function wordsFor(arr) { return PUZ.words[key(arr)] || null; }
   function rackHasWord() { return !!wordsFor(S.rack); }
+  function doomed() { return !S.over && !rackHasWord() && S.skips >= MAXSK; }
 
   /* ---- rendering ------------------------------------------------------ */
+  function rung(cls, indent, inner, len) {
+    return '<div class="step' + (cls ? ' ' + cls : '') + '">' +
+      '<span class="w" style="--i:' + indent + '">' + inner + '</span>' +
+      '<span class="len">' + (len === null ? '' : len) + '</span></div>';
+  }
+
   function renderStair() {
     var el = $('stair');
-    el.innerHTML = '';
-    S.hist.forEach(function (w, i) {
-      var d = document.createElement('div');
-      d.className = 'step' + (i === S.hist.length - 1 ? ' cur' : '');
-      d.innerHTML = '<span class="rail" style="padding-left:' + (i * 9) + 'px">' +
-        (i === 0 ? '●' : '↳') + '</span>' +
-        '<span>' + Kit.esc(w) + '</span>' +
-        '<span class="len">' + w.length + '</span>';
-      el.appendChild(d);
-    });
+    var html = S.hist.map(function (w, i) {
+      var cls = (i === 0 ? 'seed' : '') + (i === S.hist.length - 1 ? ' cur' : '');
+      return rung(cls, i, Kit.esc(w), w.length);
+    }).join('');
 
-    // Ghost rungs: one per queue letter still to come. They show the staircase
-    // that is still on the table — the shape of the run you could still have.
-    // No numbers, so nothing about the maximum leaks.
-    var now = null;
+    // Ghost rungs: one per queue letter still to come — the shape of the run
+    // that is still on the table. No numbers, so the maximum never leaks.
+    var hasNow = false;
     if (!S.over && S.qi < Q.length) {
       var left = Q.length - S.qi;
       for (var k = 0; k < left; k++) {
-        var len = S.rack.length + k;
-        var g = document.createElement('div');
-        g.className = 'step ghost' + (k === 0 ? ' now' : '');
-        g.innerHTML = '<span class="rail" style="padding-left:' + ((S.hist.length + k) * 9) + 'px">↳</span>' +
-          '<span class="dots">' + '·'.repeat(len) + '</span>';
-        el.appendChild(g);
-        if (k === 0) now = g;
+        html += rung('ghost' + (k === 0 ? ' now' : ''), S.hist.length + k,
+                     '·'.repeat(S.rack.length + k), null);
+        if (k === 0) hasNow = true;
       }
     }
-    if (now) el.scrollTop = Math.max(0, now.offsetTop - el.clientHeight * 0.6);
+    el.innerHTML = html;
+    var now = el.querySelector('.step.ghost.now');
+    if (hasNow && now) el.scrollTop = Math.max(0, now.offsetTop - el.clientHeight * 0.55);
     else el.scrollTop = el.scrollHeight;
   }
 
@@ -309,25 +422,27 @@
       var t = document.createElement('div');
       t.className = 'qt';
       t.textContent = ch;
-      if (i < S.qi) t.className += (S.timeline[i] === 'skip' ? ' skipped' : ' done');
+      if (S.killer !== null && i === S.killer) t.className += ' killer';
+      else if (i < S.qi) t.className += (S.timeline[i] === 'skip' ? ' skipped' : ' done');
       else if (i === S.qi && !S.over) t.className += ' next';
+      t.setAttribute('aria-label', ch + (i < S.qi ? ' (' + (S.timeline[i] || 'taken') + ')' : ''));
       row.appendChild(t);
     });
-    // slide the caret onto the letter that is landing right now
+
+    $('qfill').style.width = (100 * Math.min(S.qi, Q.length) / Q.length) + '%';
+    $('qrem').textContent = S.over ? 'run over' : (Q.length - S.qi) + ' to come';
+
     var caret = $('caret');
     if (S.qi >= Q.length || S.over) { caret.style.opacity = '0'; return; }
     caret.style.opacity = '1';
     var tile = row.children[S.qi];
-    var x = tile.offsetLeft + tile.offsetWidth / 2 - 5;
-    caret.style.transform = 'translateX(' + x + 'px)';
-
-    var left = Q.length - S.qi;
-    $('qrem').textContent = left + ' to come';
+    caret.style.transform = 'translateX(' + (tile.offsetLeft + tile.offsetWidth / 2 - 5) + 'px)';
   }
 
   function renderTiles(justDropped) {
     var rackEl = $('rack'), slotEl = $('slot');
     rackEl.innerHTML = ''; slotEl.innerHTML = '';
+    rackEl.className = 'rack' + (S.rack.length >= 8 ? ' big' : '');
     var inSlot = {};
     S.slot.forEach(function (idx) { inSlot[idx] = true; });
 
@@ -344,7 +459,7 @@
 
     if (!S.slot.length) {
       slotEl.className = 'slot';
-      slotEl.innerHTML = '<span class="ph">Tap letters — the word must use all ' + S.rack.length + '</span>';
+      slotEl.innerHTML = '<span class="ph">Tap letters — one word, using all ' + S.rack.length + '</span>';
     } else {
       slotEl.className = 'slot' + (S.slot.length === S.rack.length ? ' full' : '');
       S.slot.forEach(function (idx, pos) {
@@ -357,20 +472,21 @@
         slotEl.appendChild(b);
       });
     }
+    $('del').hidden = !S.slot.length || S.over;
   }
 
   function renderControls() {
     var sk = $('skip');
     var left = MAXSK - S.skips;
+    var stranded = !S.over && !rackHasWord() && left > 0;
     sk.innerHTML = 'Skip <span class="skipdots">' + left + '</span>';
     sk.setAttribute('aria-label', 'Skip this letter, ' + left + ' skips left');
     sk.disabled = left === 0 || S.over || S.qi >= Q.length;
+    sk.className = 'btn' + (stranded ? ' hot' : '');
     $('enter').disabled = S.over;
     $('shuffle').disabled = S.over;
-    var st = $('stuck');
-    st.disabled = S.over;
-    st.textContent = rackHasWord() ? "I'm stuck…" : "Nothing fits…";
-    st.className = 'stuck' + (rackHasWord() ? '' : ' hot');
+    $('stuck').disabled = S.over;
+    $('stuck').textContent = stranded ? 'Nothing fits — spend a skip' : "I'm stuck…";
   }
 
   function render(justDropped) {
@@ -405,6 +521,7 @@
     // shuffle only the letters not currently committed to the slot
     var free = [], freeIdx = [];
     S.rack.forEach(function (ch, i) { if (S.slot.indexOf(i) === -1) { free.push(ch); freeIdx.push(i); } });
+    if (free.length < 2) return;
     for (var i = free.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1)), t = free[i]; free[i] = free[j]; free[j] = t;
     }
@@ -413,13 +530,14 @@
     renderTiles(); save();
   }
 
-  function advance() {
+  function nextLetter() {
     S.slot = [];
     S.qi++;
     if (S.qi >= Q.length) { finish('survived'); return; }
     S.rack.push(Q[S.qi]);
     save();
     render(true);
+    if (doomed()) setTimeout(doom, 560);
   }
 
   function submit() {
@@ -440,40 +558,51 @@
     S.hist.push(word);
     S.timeline.push('take');
     Kit.haptic(14);
-    advance();
+    nextLetter();
   }
 
   function doSkip() {
     if (S.over || S.skips >= MAXSK || S.qi >= Q.length) return;
     var ch = Q[S.qi];
-    var at = S.rack.lastIndexOf(ch);
+    var at = S.rack.lastIndexOf(ch);   // multiset removal — any copy will do
     if (at !== -1) S.rack.splice(at, 1);
-    S.slot = [];
     S.skips++;
     S.timeline.push('skip');
     Kit.haptic(10);
-    Kit.toast('Skipped ' + ch);
-    S.qi++;
-    if (S.qi >= Q.length) { finish('survived'); return; }
-    S.rack.push(Q[S.qi]);
-    save();
-    render(true);
+    Kit.toast('Skipped ' + ch + ' · ' + (MAXSK - S.skips) + ' left');
+    nextLetter();
   }
 
-  /* ---- stuck / end ---------------------------------------------------- */
+  /* ---- endings -------------------------------------------------------- */
+  // Auto dead-end. The rack cannot be played and there is no skip left, so the
+  // run is over whether the player accepts it or not — but it gets a beat, a
+  // red letter and a banner before the sheet, so it lands as an event.
+  function doom() {
+    if (S.over) return;
+    S.over = true; S.ending = 'dead'; S.killer = S.qi; S.slot = [];
+    save();
+    render();
+    Kit.flash($('rack'), 'shake');
+    Kit.haptic(70);
+    var b = document.createElement('div');
+    b.className = 'deadbanner';
+    b.innerHTML = '<b>Dead end.</b> Nothing in English uses all ' + S.rack.length +
+      ' of those letters — and you are out of skips.';
+    $('bottom').appendChild(b);
+    setTimeout(showResult, 1300);
+  }
+
   function confirmStuck() {
     if (S.over) return;
     var alive = rackHasWord();
     var reached = S.hist[S.hist.length - 1].length;
     var html = alive
       ? '<h2>Sure?</h2><p class="sub">There <b>is</b> a word hiding in these ' +
-        S.rack.length + ' letters. Shuffle. Say them out loud. ' +
-        (S.skips < MAXSK ? 'You still have a skip.' : 'You are out of skips.') + '</p>'
+        S.rack.length + ' letters. Shuffle them. Say them out loud. ' +
+        (S.skips < MAXSK ? 'And you still have a skip.' : 'You are out of skips.') + '</p>'
       : '<h2>Nothing fits.</h2><p class="sub">No word uses all ' + S.rack.length +
-        ' of these letters. ' + (S.skips < MAXSK
-          ? 'Spend a skip and this letter goes away.'
-          : 'And you are out of skips. This is where the run ends.') + '</p>';
-    html += '<div style="display:flex;gap:8px;margin-top:16px">' +
+        ' of these letters. Spend a skip and this letter goes away.</p>';
+    html += '<div style="display:flex;gap:8px;margin-top:18px">' +
       '<button class="btn ghost" style="flex:1" data-close>Keep going</button>' +
       '<button class="btn primary" style="flex:1" id="reallyend">End at ' + reached + '</button></div>';
     var sh = Kit.sheet(html);
@@ -488,20 +617,24 @@
     S.slot = [];
     save();
     render();
-    setTimeout(showResult, 320);
+    setTimeout(showResult, 340);
   }
 
   /* ---- share ---------------------------------------------------------- */
+  // One square per queue letter, all from the same emoji family so the row
+  // never breaks alignment:  🟪 absorbed  🟨 skipped  🟥 the letter that
+  // killed you  ⬜ never reached.
   function shareText() {
     var bar = '';
     for (var i = 0; i < Q.length; i++) {
-      if (i >= S.timeline.length) bar += '⬜';
-      else bar += (S.timeline[i] === 'skip' ? '⏭️' : '🟪');
+      if (S.killer !== null && i === S.killer) bar += '🟥';
+      else if (i >= S.timeline.length) bar += '⬜';
+      else bar += (S.timeline[i] === 'skip' ? '🟨' : '🟪');
     }
     var reached = S.hist[S.hist.length - 1].length;
     var tail = reached >= PUZ.max
-      ? reached + ' letters · MAXED IT 🏆'
-      : reached + ' letters · best possible ' + PUZ.max;
+      ? SEED.length + '→' + reached + ' · MAXED IT 🏆'
+      : SEED.length + '→' + reached + ' · there was ' + an(PUZ.max) + ' in there';
     return 'SEED #' + DAY + ' · ' + SEED + '\n' + bar + '\n' + tail + '\nsfun.games/seed';
   }
 
@@ -515,25 +648,28 @@
     var maxed = gap <= 0;
     var verdict, sub;
     if (maxed)                     { verdict = 'Maxed it.';   sub = 'Nobody grew a longer word today. Nobody could.'; }
-    else if (gap === 1)            { verdict = 'One short.';  sub = 'There was ' + an(PUZ.max) + ' in there. One letter more.'; }
-    else if (gap === 2)            { verdict = 'So close.';   sub = 'There was ' + an(PUZ.max) + ' in there.'; }
+    else if (gap === 1)            { verdict = 'One short.';   sub = 'There was ' + an(PUZ.max) + ' in there. One letter more.'; }
+    else if (gap === 2)            { verdict = 'So close.';    sub = 'There was ' + an(PUZ.max) + ' in there.'; }
+    else if (S.ending === 'dead')  { verdict = 'Dead end at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
     else if (S.ending === 'stuck') { verdict = 'Stuck at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
     else                           { verdict = reached + ' letters.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
 
     var steps = S.hist.map(function (w, i) {
-      return '<div class="step"><span class="rail" style="padding-left:' + (i * 9) + 'px">' +
-        (i === 0 ? '●' : '↳') + '</span><span>' + Kit.esc(w) + '</span>' +
-        '<span class="len">' + w.length + '</span></div>';
+      return rung(i === 0 ? 'seed' : (i === S.hist.length - 1 ? 'cur' : ''), i, Kit.esc(w), w.length);
     }).join('');
 
-    var par = PUZ.par.map(function (w, i) {
-      return (i ? ' <span style="opacity:.4">↳</span> ' : '') +
-        (i === PUZ.par.length - 1 ? '<i>' + Kit.esc(w) + '</i>' : Kit.esc(w));
+    // The optimal line, replayed as decisions: words you would have played and
+    // letters you would have thrown away, in queue order.
+    var pathHtml = (PUZ.path || []).map(function (s, i) {
+      var skip = s[0] === 'S', body = s.slice(1);
+      return '<span class="pw' + (skip ? ' sk' : '') +
+        (!skip && i === PUZ.path.length - 1 ? ' fin' : '') + '">' +
+        (skip ? '✕&nbsp;' : '') + Kit.esc(body) + '</span>';
     }).join('');
 
     var html =
       '<h2 class="verdict" style="margin-bottom:6px">' + verdict + '</h2>' +
-      '<p class="sub">' + sub + '</p>' +
+      '<p class="sub" style="margin-bottom:0">' + sub + '</p>' +
       '<div class="finalword">' + Kit.esc(S.hist[S.hist.length - 1]) + '</div>' +
       '<div class="statrow">' +
         '<div class="stat"><span class="n">' + reached + '</span><span class="l">Letters</span></div>' +
@@ -545,9 +681,9 @@
       '<div class="recap">' + steps + '</div>' +
       (maxed ? '' :
         '<details class="reveal"><summary>Show me the ' + PUZ.max + ' ▾</summary>' +
-        '<div class="par">' + par + '</div>' +
-        '<div class="hint" style="margin-top:8px">' +
-        (PUZ.maxSkips ? 'Skipping ' + PUZ.maxSkips + ' letter' + (PUZ.maxSkips > 1 ? 's' : '') + ' along the way.'
+        '<div class="parline">' + pathHtml + '</div>' +
+        '<div class="hint" style="margin-top:10px">' +
+        (PUZ.maxSkips ? '✕ = a letter you had to throw away. ' + PUZ.maxSkips + ' of them.'
                       : 'Taking every single letter.') + '</div></details>') +
       '<div class="countdown">Next seed in <b id="cd">--:--:--</b></div>' +
       '<button class="btn ghost wide" style="margin-top:12px" data-close>Look at the board</button>';
@@ -570,7 +706,7 @@
     '<li>Play a word that uses <b>every letter in your rack</b>, in any order. Then the next letter drops. Your word grows 3 → 4 → 5 →…</li>' +
     '<li><b>The queue is public and in order.</b> Everyone in the world gets the same nine letters, in the same sequence. You can see what is coming — so plan for it.</li>' +
     '<li>You get <b>2 skips</b>. A skip throws the incoming letter away and your rack does not grow. Spend them on the letters you cannot absorb.</li>' +
-    '<li>Your score is the <b>longest word you reach</b>. You survive until you cannot make a word.</li>' +
+    '<li>Your score is the <b>longest word you reach</b>. You survive until nothing fits.</li>' +
     '<li>On a keyboard: type letters, <kbd>⌫</kbd> to take one back, <kbd>space</kbd> to shuffle, <kbd>enter</kbd> to play.</li>' +
     '</ul>' +
     '<p style="font-size:13.5px;color:var(--ink-3);margin:12px 0 0">A greedy player grabs every letter and finds any word. ' +
@@ -595,18 +731,20 @@
   S = load();
   $('pno').textContent = '#' + DAY;
   $('objective').textContent =
-    'One queue letter joins your rack each turn. Spend the whole rack on one word. ' +
+    'Every turn one queue letter joins your rack. Spend the whole rack on one word. ' +
     'Two skips. Longest word wins.';
   $('shuffle').addEventListener('click', shuffleRack);
   $('skip').addEventListener('click', doSkip);
   $('enter').addEventListener('click', submit);
+  $('del').addEventListener('click', backspace);
   $('stuck').addEventListener('click', confirmStuck);
   window.addEventListener('resize', renderQueue);
 
   render();
   requestAnimationFrame(renderQueue); // caret needs a laid-out row
 
-  if (S.over) setTimeout(showResult, 260);
-  else if (!S.seen) { S.seen = true; save(); setTimeout(openHelp, 380); }
+  if (S.over) setTimeout(showResult, 280);
+  else if (doomed()) setTimeout(doom, 400);   // reloaded into a dead position
+  else if (!S.seen) { S.seen = true; save(); setTimeout(openHelp, 420); }
 })();
 </script>

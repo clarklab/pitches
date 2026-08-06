@@ -573,7 +573,7 @@
     Kit.sheet(
       '<h2>Call it?</h2>' +
       '<p class="sub">You think you know the rule.</p>' +
-      '<div class="rules">You will be shown <b>8 fresh words</b>. Tap the <b>exactly 3</b> that follow the rule.</div>' +
+      '<div class="rules">You will be shown <b>8 fresh words</b>. Tap the <b>three</b> that follow the rule — exactly three, no more, no fewer.</div>' +
       '<div class="warn-box"><b>You get one call.</b> No second try, no hints. Miss a single word and you are busted for the day.</div>' +
       '<div class="rules" style="margin-top:12px;text-align:center">Your score locks in at <b>' + used +
       ' probe' + (used === 1 ? '' : 's') + '</b>.</div>' +
@@ -598,23 +598,23 @@
     var yes = [], no = [];
     P.pass.forEach(function (w) { yes.push(w); });
     P.fail.forEach(function (w) { no.push(w); });
-    S.probes.slice().reverse().forEach(function (p) {
+    S.probes.forEach(function (p) {
       if (p.ok === null) return;
       (p.ok ? yes : no).push(p.w + ' *');
     });
-    function colHTML(list, cls, head) {
-      return '<div class="col ' + cls + '"><h3>' + head + '</h3>' +
+    function colHTML(list, cls, glyph, head) {
+      return '<div class="col ' + cls + '"><h3><span class="gl">' + glyph + '</span>' + head + '</h3>' +
         list.map(function (w) { return '<div class="w">' + Kit.esc(w) + '</div>'; }).join('') + '</div>';
     }
     return '<h2>Case file</h2><p class="sub">Everything you know. * = your probe.</p>' +
-      '<div class="board">' + colHTML(yes, '', '✅ Follows the rule') + colHTML(no, 'no', '❌ Breaks it') + '</div>' +
+      '<div class="board">' + colHTML(yes, '', '✅', 'Follows the rule') + colHTML(no, 'no', '❌', 'Breaks it') + '</div>' +
       '<button class="btn primary wide" data-close type="button" style="margin-top:16px">Back to the call</button>';
   }
 
   function renderCall() {
     document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · the call';
     document.getElementById('objective').textContent =
-      'Tap the exactly 3 that follow the rule. One shot, no second try.';
+      'Tap the three that follow the rule. One shot, no second try.';
 
     var head = el('div', 'callhead');
     head.appendChild(el('p', 't', 'Name the three.'));
@@ -642,13 +642,15 @@
     });
     stage.appendChild(list);
 
+    // the commit bar stays under your thumb no matter how far you scroll
+    var bar = el('div', 'callbar');
     var counter = el('div', 'counter');
-    stage.appendChild(counter);
-
+    bar.appendChild(counter);
     var lock = el('button', 'btn primary wide', 'Lock it in');
     lock.type = 'button';
     lock.addEventListener('click', lockIn);
-    stage.appendChild(lock);
+    bar.appendChild(lock);
+    stage.appendChild(bar);
 
     function paint() {
       list.querySelectorAll('.cand').forEach(function (b) {
