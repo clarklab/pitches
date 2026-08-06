@@ -12,82 +12,145 @@
   --accent-soft:#e2ddf7;
   --accent-ink:#fff;
 }
-@media (prefers-color-scheme: dark){ :root{ --accent:#9585ec; --accent-soft:#282146; } }
-:root[data-theme="dark"]{ --accent:#9585ec; --accent-soft:#282146; }
-:root[data-theme="light"]{ --accent:#5b46c9; --accent-soft:#e2ddf7; }
+/* Dark needs a lighter accent AND a dark ink on top of it, or every filled
+   pill turns into white-on-lavender mush. Same for the good/bad semantics —
+   the kit's light-mode green and rust go muddy on a near-black paper. */
+@media (prefers-color-scheme: dark){
+  :root{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c;
+         --good:#4cb782; --bad:#e2664e; }
+}
+:root[data-theme="dark"]{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c;
+                          --good:#4cb782; --bad:#e2664e; }
+:root[data-theme="light"]{ --accent:#5b46c9; --accent-soft:#e2ddf7; --accent-ink:#fff;
+                           --good:#2e7d4f; --bad:#b3402f; }
 
 /* ---------- layout tweaks ---------- */
 .app{ padding-bottom: calc(8px + var(--safe-b)); }
-.stage{ justify-content:flex-start; gap:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+/* On a phone the shell is exactly one screen and the board scrolls inside it,
+   so the keyboard and CALL IT are never pushed below the fold. */
+@media (max-width:619px){ .app{ height:100dvh; } }
+/* min-height:0 is load-bearing: without it the flex item refuses to shrink
+   below its content and the on-screen keyboard gets shoved off the phone. */
+.stage{ justify-content:flex-start; gap:12px; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .prompt{ padding:9px 13px; }
 .prompt .v{ font-size:13.5px; }
 .bar{ margin-bottom:10px; }
+.bar h1{ font-weight:800; letter-spacing:.14em; }
+
+/* micro-label: the one caps style used everywhere */
+.mic{ font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
 
 /* ---------- evidence board ---------- */
 .board{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 .col{
   background:var(--white); border:1px solid var(--line); border-radius:var(--r);
-  padding:9px 10px 10px; box-shadow:var(--shadow-1);
+  padding:9px 11px 10px; box-shadow:var(--shadow-1);
   border-top:3px solid var(--good);
 }
 .col.no{ border-top-color:var(--bad); }
 .col h3{
-  margin:0 0 6px; font-size:9.5px; font-weight:800; letter-spacing:.11em;
+  margin:0 0 7px; font-size:9.5px; font-weight:800; letter-spacing:.13em;
   text-transform:uppercase; color:var(--good); display:flex; gap:5px; align-items:center;
 }
 .col.no h3{ color:var(--bad); }
+.col h3 .gl{ font-size:11px; line-height:1; }
 .col .w{
-  font-family:var(--font-mono); font-size:13.5px; letter-spacing:.05em;
+  font-family:var(--font-mono); font-size:13.5px; font-weight:500; letter-spacing:.04em;
   padding:2.5px 0; color:var(--ink); white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis;
 }
 
 /* ---------- lab notebook ---------- */
 .nb-head{
-  display:flex; align-items:center; gap:8px; margin-top:2px;
-  font-size:9.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3);
+  display:flex; align-items:center; gap:9px; margin-top:2px;
+  font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3);
 }
-.nb-head::after{ content:''; flex:1; height:1px; background:var(--line); }
-.note{ display:flex; flex-direction:column; gap:6px; }
+.nb-head .rule-line{ flex:1; height:1px; background:var(--line); }
+.nb-head .left{ font-family:var(--font-mono); font-weight:700; color:var(--ink-2); letter-spacing:.08em; }
+.note{ display:flex; flex-direction:column; gap:5px; }
 .entry{
-  display:flex; align-items:center; gap:10px;
-  background:var(--white); border:1px solid var(--line); border-left:3px solid var(--line-2);
-  border-radius:10px; padding:8px 12px;
-  font-family:var(--font-mono); font-size:15px; letter-spacing:.07em;
+  display:flex; align-items:center; gap:11px;
+  background:var(--white); border:1px solid var(--line);
+  border-left:3px solid var(--line-2);
+  border-radius:10px; padding:7px 11px 7px 10px; min-height:38px;
+  font-family:var(--font-mono); font-size:15px; font-weight:600; letter-spacing:.07em;
   animation:drop .22s cubic-bezier(.2,.9,.3,1);
+  transition:border-color .25s, background .25s;
 }
 @keyframes drop{ from{ opacity:0; transform:translateY(-8px) } }
-.entry .n{ font-size:10px; color:var(--ink-3); letter-spacing:.04em; font-weight:700; min-width:14px; }
-.entry .res{ margin-left:auto; font-size:15px; font-family:var(--font-ui); }
+.entry .n{
+  font-family:var(--font-mono); font-size:10px; color:var(--ink-3);
+  letter-spacing:.02em; font-weight:700; min-width:15px;
+}
+.entry .w{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* the verdict chip — the ✅/❌ rhythm that runs down the log */
+.entry .res{
+  margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:8px;
+  display:grid; place-items:center; font-family:var(--font-ui); font-size:14px;
+  line-height:1; background:var(--paper-2); color:var(--ink-3);
+}
 .entry.yes{ border-left-color:var(--good); }
 .entry.no{ border-left-color:var(--bad); }
-.entry.yes .res, .entry.no .res{ animation:pop .28s ease-out; }
-.entry.pending .res{ color:var(--ink-3); letter-spacing:.1em; animation:think .9s steps(4,end) infinite; }
-@keyframes think{ 0%{opacity:.3} 50%{opacity:1} 100%{opacity:.3} }
-.nb-empty{ font-size:13px; color:var(--ink-3); text-align:center; padding:6px 0 2px; line-height:1.5; }
-.nb-empty b{ color:var(--ink-2); font-family:var(--font-mono); letter-spacing:.05em; }
+.entry.yes .res{ background:var(--good-soft); animation:land .3s cubic-bezier(.2,1.6,.4,1); }
+.entry.no  .res{ background:var(--bad-soft);  animation:land .3s cubic-bezier(.2,1.6,.4,1); }
+@keyframes land{ 0%{ transform:scale(.4); opacity:0 } 60%{ transform:scale(1.18) } 100%{ transform:scale(1) } }
+/* the beat of suspense */
+.entry.pending{ border-left-color:var(--accent); background:var(--paper-2); }
+.entry.pending .w{ color:var(--ink-2); }
+.entry.pending .res{ background:transparent; display:flex; align-items:center; justify-content:center; }
+.entry.pending .res span{
+  display:inline-block; width:4px; height:4px; border-radius:50%; margin:0 1px;
+  background:var(--accent); animation:think 1s infinite;
+}
+.entry.pending .res span:nth-child(2){ animation-delay:.16s }
+.entry.pending .res span:nth-child(3){ animation-delay:.32s }
+@keyframes think{ 0%,60%,100%{ opacity:.22; transform:translateY(0) } 30%{ opacity:1; transform:translateY(-2px) } }
+/* unwritten lines of the log */
+.entry.ghost{
+  background:transparent; border-style:dashed; border-color:var(--line);
+  border-left-width:3px; min-height:28px; padding-top:3px; padding-bottom:3px;
+  animation:none; color:var(--ink-3);
+}
+.entry.ghost .dots{ flex:1; border-bottom:1px dotted var(--line-2); height:0; opacity:.7; }
+.entry.ghost .eg{
+  font-family:var(--font-mono); font-size:11.5px; font-weight:500;
+  letter-spacing:.04em; color:var(--ink-3); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap;
+}
 
 /* ---------- tray ---------- */
-.tray{ display:flex; flex-direction:column; gap:9px; padding-top:10px; }
+.tray{
+  display:flex; flex-direction:column; gap:9px; padding-top:10px;
+  position:sticky; bottom:0; background:var(--paper); z-index:2;
+}
+.tray::before{
+  content:''; position:absolute; left:0; right:0; top:-20px; height:20px;
+  background:linear-gradient(to top, var(--paper), transparent); pointer-events:none;
+}
+@media (max-width:619px){ .tray{ margin-top:auto; } }
 .slot{
   height:50px; border:2px dashed var(--line-2); border-radius:12px;
-  display:grid; place-items:center; background:transparent;
+  display:flex; align-items:center; justify-content:center; background:transparent;
   font-family:var(--font-mono); font-size:20px; letter-spacing:.16em; font-weight:700;
   transition:border-color .15s, background .15s;
 }
 .slot.filled{ border-style:solid; border-color:var(--accent); background:var(--white); }
-.slot .ph{ font-size:11.5px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:600; }
-.slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; }
+.slot .ph{ font-size:11px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:700; text-transform:uppercase; text-align:center; }
+.slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; margin-left:-.08em; }
+.key.wide{ font-size:9.5px; letter-spacing:.02em; font-weight:800; padding:0 2px; }
+.deskhint{ display:none; }
+@media (min-width:620px){ .deskhint{ display:block; text-align:center; font-size:12px; color:var(--ink-3); } }
 @keyframes blink{ 50%{opacity:0} }
 .trayrow{ display:flex; align-items:center; gap:10px; }
 .pips{ display:flex; gap:5px; align-items:center; }
-.pip{ width:9px; height:9px; border-radius:50%; background:var(--accent); transition:background .3s, transform .3s; }
-.pip.spent{ background:transparent; box-shadow:inset 0 0 0 1.5px var(--line-2); transform:scale(.8); }
-.plab{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:700; }
+.pip{ width:9px; height:9px; border-radius:50%; background:var(--accent); transition:background .3s, transform .3s, box-shadow .3s; }
+.pip.spent{ background:transparent; box-shadow:inset 0 0 0 1.5px var(--line-2); transform:scale(.72); }
+.plab{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:800; }
+.plab b{ color:var(--ink-2); font-family:var(--font-mono); }
 .callit{
   margin-left:auto; background:var(--white); color:var(--accent);
-  border:1.5px solid var(--accent); font-weight:800; letter-spacing:.09em;
-  padding:10px 16px; font-size:13px; text-transform:uppercase;
+  border:1.5px solid var(--accent); font-weight:800; letter-spacing:.1em;
+  padding:11px 17px; font-size:13px; text-transform:uppercase;
   box-shadow:0 0 0 0 var(--accent-soft);
 }
 .callit:active{ background:var(--accent); color:var(--accent-ink); }
@@ -96,8 +159,16 @@
 
 /* ---------- call screen ---------- */
 .callhead{ text-align:center; }
-.callhead .t{ font-family:var(--font-display); font-size:23px; font-weight:600; margin:0; }
+.callhead .t{ font-family:var(--font-display); font-size:26px; font-weight:800; letter-spacing:-.025em; margin:0; }
 .callhead .s{ font-size:13px; color:var(--ink-2); margin:3px 0 0; }
+.callbar{
+  position:sticky; bottom:0; z-index:2; padding:10px 0 2px; background:var(--paper);
+  display:flex; flex-direction:column; gap:7px;
+}
+.callbar::before{
+  content:''; position:absolute; left:0; right:0; top:-16px; height:16px;
+  background:linear-gradient(to top, var(--paper), transparent); pointer-events:none;
+}
 .cands{ display:flex; flex-direction:column; gap:7px; }
 .cand{
   display:flex; align-items:center; gap:12px; width:100%;
@@ -118,63 +189,114 @@
 .cand.sel .box{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .cand .mk{ margin-left:auto; font-size:11px; letter-spacing:.08em; font-family:var(--font-ui); font-weight:800; text-transform:uppercase; }
 .cand.right{ border-color:var(--good); background:var(--good-soft); }
-.cand.right .box{ background:var(--good); border-color:var(--good); color:#fff; }
+.cand.right .box{ background:var(--good); border-color:var(--good); color:var(--paper); }
 .cand.right .mk{ color:var(--good); }
 .cand.wrong{ border-color:var(--bad); background:var(--bad-soft); }
-.cand.wrong .box{ background:var(--bad); border-color:var(--bad); color:#fff; }
+.cand.wrong .box{ background:var(--bad); border-color:var(--bad); color:var(--paper); }
 .cand.wrong .mk{ color:var(--bad); }
 .cand.missed{ border-style:dashed; border-color:var(--good); }
 .cand.missed .mk{ color:var(--good); }
 .cand.dud{ opacity:.5; }
-.counter{ text-align:center; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:700; }
-.counter b{ color:var(--accent); font-size:15px; }
+.counter{ text-align:center; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:800; }
+.counter b{ color:var(--accent); font-size:15px; font-family:var(--font-display); font-weight:800; }
 
 /* ---------- result ---------- */
 .res-wrap{ display:flex; flex-direction:column; gap:12px; }
-.verdict{ margin:0; letter-spacing:.02em; }
+.verdict{
+  margin:2px 0 0; font-size:clamp(34px,10.5vw,44px); font-weight:800;
+  letter-spacing:-.035em; line-height:1;
+}
 .verdict.win{ color:var(--good); }
 .verdict.lose{ color:var(--bad); }
-.scoreline{ text-align:center; margin:-4px 0 0; font-size:14px; color:var(--ink-2); }
-.scoreline b{ color:var(--ink); }
+.scoreline{ text-align:center; margin:0; font-size:14.5px; color:var(--ink-2); }
+.scoreline b{ color:var(--ink); font-weight:700; }
 .tier{
-  display:inline-block; margin-top:6px; padding:3px 11px; border-radius:var(--r-pill);
+  display:inline-block; padding:4px 12px; border-radius:var(--r-pill);
   background:var(--accent); color:var(--accent-ink);
   font-size:10.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
 }
-.tier.lose{ background:var(--bad); }
+.tier.lose{ background:var(--bad); color:var(--paper); }
 
+/* the sting / the victory lap — one sentence, the thing you say out loud */
+.sting{
+  background:var(--paper-2); border:1px solid var(--line); border-radius:var(--r);
+  padding:10px 13px; font-size:13.5px; line-height:1.5; color:var(--ink-2); text-align:center;
+}
+.sting b{ font-family:var(--font-mono); font-weight:700; color:var(--ink); letter-spacing:.04em; }
+.sting .hi{ color:var(--accent); }
+
+/* ---------- THE REVEAL — the screenshot ---------- */
 .reveal{
   background:var(--white); border:1px solid var(--line); border-radius:var(--r-lg);
-  padding:16px 16px 6px; box-shadow:var(--shadow-2); position:relative; overflow:hidden;
+  padding:18px 16px 14px; box-shadow:var(--shadow-2); position:relative; overflow:hidden;
 }
 .reveal::before{
-  content:''; position:absolute; inset:0 0 auto 0; height:4px;
+  content:''; position:absolute; inset:0 0 auto 0; height:3px;
   background:linear-gradient(90deg,var(--accent),var(--good));
 }
-.reveal .kick{ font-size:9.5px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); }
-.reveal .rule{ font-family:var(--font-display); font-size:21px; line-height:1.28; margin:5px 0 7px; font-weight:600; }
-.reveal .detail{ font-size:13.5px; color:var(--ink-2); line-height:1.5; margin:0 0 12px; }
-.evgroup{ margin:0 -16px; padding:0 16px; }
-.evgroup h4{
-  margin:12px 0 4px; font-size:9.5px; font-weight:800; letter-spacing:.12em;
-  text-transform:uppercase; color:var(--good);
+.reveal .kick{
+  font-size:9.5px; font-weight:800; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--accent); display:flex; align-items:center; gap:8px;
 }
+.reveal .kick::after{ content:''; flex:1; height:1px; background:var(--accent-soft); }
+.reveal .rule{
+  font-family:var(--font-display); font-size:clamp(22px,6.3vw,27px); line-height:1.16;
+  margin:8px 0 8px; font-weight:800; letter-spacing:-.028em; text-wrap:balance;
+}
+/* rules that name a letter set read better as a headline + a key strip */
+.reveal .rulekeys{
+  display:flex; flex-wrap:wrap; gap:4px; margin:0 0 10px;
+}
+.reveal .rulekeys span{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:700; letter-spacing:.06em;
+  color:var(--accent); background:var(--accent-soft); border-radius:6px;
+  min-width:22px; text-align:center; padding:3px 5px;
+}
+.reveal .rulekeys span.sep{ background:transparent; color:var(--ink-3); min-width:0; padding:3px 0; }
+.reveal .detail{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin:0; }
+.reveal .detail em{ font-style:normal; color:var(--ink); font-weight:700; }
+
+.evgroup{ margin:16px -16px 0; padding:0 16px; }
+.evgroup h4{
+  margin:0 0 5px; font-size:9.5px; font-weight:800; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--good); display:flex; align-items:baseline; gap:6px;
+}
+.evgroup h4 .ct{ color:var(--ink-3); font-weight:700; letter-spacing:.08em; }
+.evgroup h4 .why{ margin-left:auto; color:var(--ink-3); font-weight:700; letter-spacing:.06em; }
 .evgroup.bad h4{ color:var(--bad); }
-.evrow{ display:flex; align-items:center; gap:10px; padding:5px 0; border-top:1px solid var(--line); }
-.evrow .word{ font-family:var(--font-mono); font-size:14.5px; letter-spacing:.09em; font-weight:600; white-space:nowrap; }
-.evrow .word i{ font-style:normal; color:var(--ink-3); }
+.evrow{ display:flex; align-items:center; gap:9px; padding:6px 0; border-top:1px solid var(--line); }
+.evgroup.bad .evrow{ padding:4.5px 0; }
+.evrow .word{
+  font-family:var(--font-mono); font-size:14.5px; letter-spacing:.08em;
+  font-weight:600; white-space:nowrap; color:var(--ink);
+}
+.evgroup.bad .evrow .word{ font-size:13.5px; font-weight:500; color:var(--ink-2); }
 .evrow .word em{
   font-style:normal; color:var(--accent); font-weight:800;
-  background:var(--accent-soft); border-radius:3px; padding:1px 1.5px; margin:0 -.5px;
+  background:var(--accent-soft); border-radius:3px; padding:2px 1.5px; margin:0 -.5px;
+  box-decoration-break:clone; -webkit-box-decoration-break:clone;
 }
 .evgroup.bad .evrow .word em{ color:var(--bad); background:var(--bad-soft); }
 .evrow .tag{
-  margin-left:auto; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
-  color:var(--ink-3); font-weight:700; text-align:right; white-space:nowrap;
+  margin-left:auto; font-size:10px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--accent); font-weight:800; text-align:right; white-space:nowrap;
 }
-.evrow .src{ font-size:9px; color:var(--ink-3); letter-spacing:.06em; text-transform:uppercase; opacity:.8; }
+.evgroup.bad .evrow .tag{ color:var(--ink-3); font-weight:700; letter-spacing:.07em; }
+.evrow .src{
+  font-size:8.5px; color:var(--ink-3); letter-spacing:.11em; text-transform:uppercase;
+  font-weight:700; flex:0 0 auto; opacity:.75;
+}
+.evrow .src::before{ content:'· '; }
+/* when every failing word fails for the same reason, say it once and go dense */
+.evchips{ display:flex; flex-wrap:wrap; gap:5px; padding-top:6px; border-top:1px solid var(--line); }
+.evchips span{
+  font-family:var(--font-mono); font-size:12px; font-weight:500; letter-spacing:.05em;
+  color:var(--ink-2); background:var(--paper-2); border:1px solid var(--line);
+  border-radius:var(--r-pill); padding:3px 9px;
+}
 .next{ text-align:center; font-size:12px; color:var(--ink-3); }
-.next b{ font-family:var(--font-mono); color:var(--ink-2); letter-spacing:.06em; }
+.next b{ font-family:var(--font-mono); color:var(--ink-2); letter-spacing:.06em; font-weight:700; }
+.sharegrid{ font-size:15px; letter-spacing:.04em; text-align:left; margin:0; padding:13px 15px; }
 
 /* ---------- sheets ---------- */
 .rules code{
@@ -191,6 +313,13 @@
 
 @media (min-width:620px){
   .stage{ overflow:visible; }
+  /* auto margins centre the column when it fits and collapse to zero when it
+     does not, so a long reveal never gets its top scrolled out of reach */
+  .stage > *:first-child{ margin-top:auto; }
+  .stage > *:last-child{ margin-bottom:auto; }
+  /* nothing to stick to on desktop — the keyboard is hidden */
+  .tray, .callbar{ position:static; }
+  .tray::before, .callbar::before{ display:none; }
   .col .w{ font-size:15px; }
 }
 </style>
@@ -323,22 +452,24 @@
     if (dupe) { Kit.toast('Already on the board'); Kit.flash(slotEl, 'shake'); return; }
 
     busy = true;
-    S.probes.unshift({ w: w, ok: null });
+    var rec = { w: w, ok: null };
+    S.probes.push(rec);
     cur = '';
     paintSlot();
     renderNote();
+    renderTray();          // the pip burns down the instant you commit
     Kit.haptic(6);
+    say('Testing ' + w);
 
     setTimeout(function () {
-      var res = !!P.pred(w);
-      S.probes[0].ok = res;
+      rec.ok = !!P.pred(w);
       busy = false;
       saveDay();
       renderNote();
       renderTray();
-      Kit.haptic(res ? 14 : 26);
-      say(w + (res ? ' passes' : ' fails'));
-    }, 680);
+      Kit.haptic(rec.ok ? 14 : 26);
+      say(w + (rec.ok ? ' passes' : ' fails'));
+    }, 720);
   }
 
   /* ---------------- screens ---------------- */
@@ -351,22 +482,32 @@
   }
 
   /* ---- probe screen ---- */
-  var slotEl, noteEl, pipsEl, callBtn;
+  var slotEl, noteEl, pipsEl, callBtn, nbHead, nbLeft;
 
   function renderProbe() {
     document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · ' + Kit.dateLabel();
 
     var board = el('div', 'board');
-    var yes = el('div', 'col');
-    yes.appendChild(el('h3', null, '✅ Follows the rule'));
-    P.pass.forEach(function (w) { yes.appendChild(el('div', 'w', w)); });
-    var no = el('div', 'col no');
-    no.appendChild(el('h3', null, '❌ Breaks it'));
-    P.fail.forEach(function (w) { no.appendChild(el('div', 'w', w)); });
-    board.appendChild(yes); board.appendChild(no);
+    function col(cls, glyph, head, words) {
+      var c = el('div', 'col ' + cls);
+      var h = el('h3');
+      h.appendChild(el('span', 'gl', glyph));
+      h.appendChild(document.createTextNode(head));
+      c.appendChild(h);
+      words.forEach(function (w) { c.appendChild(el('div', 'w', w)); });
+      return c;
+    }
+    board.appendChild(col('', '✅', 'Follows the rule', P.pass));
+    board.appendChild(col('no', '❌', 'Breaks it', P.fail));
     stage.appendChild(board);
 
-    stage.appendChild(el('div', 'nb-head', 'Notebook'));
+    nbHead = el('div', 'nb-head');
+    nbHead.appendChild(el('span', null, 'Notebook'));
+    nbHead.appendChild(el('span', 'rule-line'));
+    nbLeft = el('span', 'left');
+    nbHead.appendChild(nbLeft);
+    stage.appendChild(nbHead);
+
     noteEl = el('div', 'note');
     stage.appendChild(noteEl);
     renderNote();
@@ -389,6 +530,7 @@
     callBtn.addEventListener('click', confirmCall);
     row.appendChild(callBtn);
     tray.appendChild(row);
+    tray.appendChild(el('div', 'deskhint', 'Type any letters, then press Enter to probe.'));
     stage.appendChild(tray);
 
     paintSlot();
@@ -408,39 +550,50 @@
     }
   }
 
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  /* The bench log. Six numbered lines, ruled and waiting; each probe fills
+     one in and the ✅/❌ chip lands after a beat. The unwritten lines stay
+     visible so the cost of a probe is always on screen. */
   function renderNote() {
     if (!noteEl) return;
     noteEl.innerHTML = '';
-    if (!S.probes.length) {
-      var e = el('div', 'nb-empty');
-      e.innerHTML = 'No probes yet. Test any string you like — <b>CRATE</b>, <b>AAAA</b>, ' +
-                    '<b>ZZTOP</b> — and the lab answers instantly.<br>Or call it right now on zero.';
-      noteEl.appendChild(e);
-      return;
-    }
-    S.probes.forEach(function (p, i) {
-      var cls = 'entry ' + (p.ok === null ? 'pending' : (p.ok ? 'yes' : 'no'));
-      var row = el('div', cls);
-      row.appendChild(el('span', 'n', String(S.probes.length - i)));
-      row.appendChild(document.createTextNode(p.w));
-      row.appendChild(el('span', 'res', p.ok === null ? '• • •' : (p.ok ? '✅' : '❌')));
+    for (var i = 0; i < MAX_PROBES; i++) {
+      var p = S.probes[i];
+      if (!p) {
+        var g = el('div', 'entry ghost');
+        g.appendChild(el('span', 'n', pad2(i + 1)));
+        // the first blank line doubles as the teaching prompt
+        if (i === 0 && !S.probes.length) g.appendChild(el('span', 'eg', 'CRATE · AAAA · ZZTOP · anything'));
+        else g.appendChild(el('span', 'dots'));
+        noteEl.appendChild(g);
+        continue;
+      }
+      var row = el('div', 'entry ' + (p.ok === null ? 'pending' : (p.ok ? 'yes' : 'no')));
+      row.appendChild(el('span', 'n', pad2(i + 1)));
+      row.appendChild(el('span', 'w', p.w));
+      var res = el('span', 'res');
+      if (p.ok === null) { res.innerHTML = '<span></span><span></span><span></span>'; }
+      else { res.textContent = p.ok ? '✅' : '❌'; }
+      row.appendChild(res);
       noteEl.appendChild(row);
-    });
+    }
   }
 
   function renderTray() {
     if (!pipsEl) return;
+    var used = S.probes.length, left = MAX_PROBES - used;
     pipsEl.innerHTML = '';
+    // filled pips are what you have LEFT — the meter drains rightward
     for (var i = 0; i < MAX_PROBES; i++) {
-      var d = el('div', 'pip' + (i < S.probes.length ? ' spent' : ''));
-      pipsEl.appendChild(d);
+      pipsEl.appendChild(el('div', 'pip' + (i >= left ? ' spent' : '')));
     }
-    var left = MAX_PROBES - S.probes.length;
+    if (nbLeft) nbLeft.textContent = left + ' left';
     if (callBtn) callBtn.classList.toggle('urge', left === 0);
     if (left === 0 && slotEl) {
       slotEl.innerHTML = '';
       slotEl.classList.remove('filled');
-      slotEl.appendChild(el('span', 'ph', 'OUT OF PROBES — TIME TO CALL IT'));
+      slotEl.appendChild(el('span', 'ph', 'Out of probes — time to call it'));
     }
   }
 
@@ -450,7 +603,7 @@
     Kit.sheet(
       '<h2>Call it?</h2>' +
       '<p class="sub">You think you know the rule.</p>' +
-      '<div class="rules">You will be shown <b>8 fresh words</b>. Tap the <b>exactly 3</b> that follow the rule.</div>' +
+      '<div class="rules">You will be shown <b>8 fresh words</b>. Tap the <b>three</b> that follow the rule — exactly three, no more, no fewer.</div>' +
       '<div class="warn-box"><b>You get one call.</b> No second try, no hints. Miss a single word and you are busted for the day.</div>' +
       '<div class="rules" style="margin-top:12px;text-align:center">Your score locks in at <b>' + used +
       ' probe' + (used === 1 ? '' : 's') + '</b>.</div>' +
@@ -471,12 +624,38 @@
     );
   }
 
+  function caseFileHTML() {
+    var yes = [], no = [];
+    P.pass.forEach(function (w) { yes.push(w); });
+    P.fail.forEach(function (w) { no.push(w); });
+    S.probes.forEach(function (p) {
+      if (p.ok === null) return;
+      (p.ok ? yes : no).push(p.w + ' *');
+    });
+    function colHTML(list, cls, glyph, head) {
+      return '<div class="col ' + cls + '"><h3><span class="gl">' + glyph + '</span>' + head + '</h3>' +
+        list.map(function (w) { return '<div class="w">' + Kit.esc(w) + '</div>'; }).join('') + '</div>';
+    }
+    return '<h2>Case file</h2><p class="sub">Everything you know. * = your probe.</p>' +
+      '<div class="board">' + colHTML(yes, '', '✅', 'Follows the rule') + colHTML(no, 'no', '❌', 'Breaks it') + '</div>' +
+      '<button class="btn primary wide" data-close type="button" style="margin-top:16px">Back to the call</button>';
+  }
+
   function renderCall() {
+    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · the call';
+    document.getElementById('objective').textContent =
+      'Tap the three that follow the rule. One shot, no second try.';
+
     var head = el('div', 'callhead');
     head.appendChild(el('p', 't', 'Name the three.'));
     var sub = el('p', 's');
     sub.innerHTML = 'Eight new words. Exactly <b>three</b> follow the hidden rule.';
     head.appendChild(sub);
+    var cf = el('button', 'btn ghost sm', 'Check the case file');
+    cf.type = 'button';
+    cf.style.marginTop = '8px';
+    cf.addEventListener('click', function () { Kit.sheet(caseFileHTML()); });
+    head.appendChild(cf);
     stage.appendChild(head);
 
     var list = el('div', 'cands');
@@ -493,13 +672,15 @@
     });
     stage.appendChild(list);
 
+    // the commit bar stays under your thumb no matter how far you scroll
+    var bar = el('div', 'callbar');
     var counter = el('div', 'counter');
-    stage.appendChild(counter);
-
+    bar.appendChild(counter);
     var lock = el('button', 'btn primary wide', 'Lock it in');
     lock.type = 'button';
     lock.addEventListener('click', lockIn);
-    stage.appendChild(lock);
+    bar.appendChild(lock);
+    stage.appendChild(bar);
 
     function paint() {
       list.querySelectorAll('.cand').forEach(function (b) {
@@ -559,8 +740,31 @@
   }
 
   /* ---- result + reveal ---- */
+  /* A bare "3 probes" means nothing to someone who has not played. The tier
+     word is what makes the number legible in a feed — and on a loss it is
+     the joke. Short forms, because it rides in the share line. */
+  function shareTier(used, won) {
+    if (!won) {
+      if (used === 0) return 'PURE HUBRIS';
+      if (used <= 2) return 'TOO SOON';
+      if (used <= 5) return 'NOT ENOUGH';
+      return 'ALL SIX, STILL WRONG';
+    }
+    if (used === 0) return 'LEGENDARY';
+    if (used === 1) return 'SURGICAL';
+    if (used <= 3) return 'CLEAN';
+    if (used === 4) return 'SOLID';
+    if (used === 5) return 'CLOSE ONE';
+    return 'SQUEAKER';
+  }
+
   function tierFor(used, won) {
-    if (!won) return used === 6 ? 'Went the distance' : 'Called it early';
+    if (!won) {
+      if (used === 0) return 'Pure hubris';
+      if (used <= 2) return 'Called it far too soon';
+      if (used <= 5) return 'Not enough evidence';
+      return 'All six probes. Still wrong.';
+    }
     if (used === 0) return 'Legendary';
     if (used === 1) return 'Surgical';
     if (used <= 3) return 'Clean';
@@ -582,20 +786,88 @@
     return out;
   }
 
-  function evRow(w, src) {
+  function evRow(w, src, showTag) {
     var ev = P.ev(w);
     var row = el('div', 'evrow');
     var word = el('span', 'word');
     word.innerHTML = wordHTML(w, ev);
     row.appendChild(word);
     if (src) row.appendChild(el('span', 'src', src));
-    row.appendChild(el('span', 'tag', ev.tag));
+    if (showTag !== false) row.appendChild(el('span', 'tag', ev.tag));
     return row;
   }
 
+  /* The evidence, re-sorted so it becomes obvious in hindsight: words that
+     failed (or passed) for the same reason sit next to each other. */
+  function evGroup(cls, glyph, head, rows) {
+    var g = el('div', 'evgroup ' + cls);
+    var h = el('h4');
+    h.appendChild(el('span', 'gl', glyph));
+    h.appendChild(document.createTextNode(head));
+    h.appendChild(el('span', 'ct', rows.length + (rows.length === 1 ? ' word' : ' words')));
+    g.appendChild(h);
+
+    var tags = rows.map(function (r) { return P.ev(r[0]).tag; });
+    var sameTag = tags.every(function (t) { return t === tags[0]; });
+    var noHits = rows.every(function (r) { return !P.ev(r[0]).hits.length; });
+
+    if (sameTag && noHits && rows.length > 3) {
+      // every one fails for the same reason and there is nothing to point at —
+      // say it once in the header and let the words go dense.
+      h.appendChild(el('span', 'why', tags[0]));
+      var chips = el('div', 'evchips');
+      rows.forEach(function (r) { chips.appendChild(el('span', null, r[0])); });
+      g.appendChild(chips);
+    } else {
+      rows.sort(function (a, b) {
+        var ta = P.ev(a[0]).tag, tb = P.ev(b[0]).tag;
+        return ta === tb ? (a[0] < b[0] ? -1 : 1) : (ta < tb ? -1 : 1);
+      });
+      rows.forEach(function (r) { g.appendChild(evRow(r[0], r[1], true)); });
+    }
+    return g;
+  }
+
+  /* One sentence, in plain English, naming the exact word that decided it.
+     On a bust this is the sting; on a win it is the victory lap. */
+  function stingLine() {
+    var d = el('div', 'sting');
+    var tagOf = function (w) { return Kit.esc(P.ev(w).tag); };
+    var mono = function (w) { return '<b>' + Kit.esc(w) + '</b>'; };
+    var wrongs = S.picks.filter(function (w) { return !P.pred(w); });
+    var missed = CANDS.filter(function (w) { return P.pred(w) && S.picks.indexOf(w) < 0; });
+
+    if (!S.won) {
+      var parts = [];
+      parts.push(mono(wrongs[0]) + ' was never in it: ' + tagOf(wrongs[0]) + '.');
+      if (wrongs.length > 1) parts.push('Nor was ' + mono(wrongs[1]) + '.');
+      if (missed.length) {
+        parts.push('You walked straight past ' + mono(missed[0]) +
+                   ' — <span class="hi">' + tagOf(missed[0]) + '</span>.');
+      }
+      d.innerHTML = parts.join(' ');
+      return d;
+    }
+    // a win: point at the sharpest thing they spotted
+    var shown = S.picks.filter(function (w) { return P.ev(w).hits.length; })
+                       .sort(function (a, b) { return P.ev(a).hits.length - P.ev(b).hits.length; });
+    if (S.calledAt === 0) {
+      d.innerHTML = 'Zero probes. You looked at six words and simply <span class="hi">knew</span>.';
+    } else if (shown.length) {
+      d.innerHTML = 'You saw <span class="hi">' + tagOf(shown[0]) + '</span> inside ' +
+                    mono(shown[0]) + '. That is the whole game.';
+    } else {
+      d.innerHTML = 'You had it: <span class="hi">' + tagOf(S.picks[0]) +
+                    '</span>. Three for three, no luck involved.';
+    }
+    return d;
+  }
+
   function renderResult() {
-    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · solved';
-    document.getElementById('objective').textContent = P.rule;
+    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · closed';
+    document.getElementById('objective').textContent = S.won
+      ? 'You called it and you were right. Here is what you were looking at all along.'
+      : 'One call, and it got away. Here is what you were looking at all along.';
 
     var used = S.calledAt || 0;
     var wrap = el('div', 'res-wrap');
@@ -614,9 +886,16 @@
     tw.appendChild(el('span', 'tier' + (S.won ? '' : ' lose'), tierFor(used, S.won)));
     wrap.appendChild(tw);
 
-    // the picks, resolved — the sting or the victory lap
+    // the call, resolved — the sting or the victory lap.
+    // Only what you touched and what you should have: the other five
+    // near-misses are laid out in full inside the reveal below.
+    var head = el('div', 'nb-head');
+    head.appendChild(el('span', null, S.won ? 'Your call — all three' : 'Your call'));
+    head.appendChild(el('span', 'rule-line'));
+    wrap.appendChild(head);
+
     var list = el('div', 'cands');
-    CANDS.forEach(function (w) {
+    CANDS.filter(function (w) { return S.picks.indexOf(w) >= 0 || P.pred(w); }).forEach(function (w) {
       var b = el('div', 'cand');
       b.dataset.w = w;
       b.appendChild(el('span', 'box', '✓'));
@@ -626,10 +905,24 @@
     });
     wrap.appendChild(list);
 
-    // THE REVEAL
+    // the sentence you say out loud — names the word that killed you
+    wrap.appendChild(stingLine());
+
+    // ---- THE REVEAL ----
     var rev = el('div', 'reveal');
-    rev.appendChild(el('div', 'kick', 'The rule was'));
-    rev.appendChild(el('div', 'rule', P.rule));
+    rev.appendChild(el('div', 'kick', 'Today’s rule was'));
+    // "…: Q W E R T / A S D F G" reads far better as a headline plus a key strip
+    var m = /^(.*?):\s*([A-Z][A-Z\s/]*)\.?$/.exec(P.rule);
+    if (m) {
+      rev.appendChild(el('div', 'rule', m[1] + '.'));
+      var keys = el('div', 'rulekeys');
+      m[2].trim().split(/\s+/).forEach(function (k) {
+        keys.appendChild(el('span', k === '/' ? 'sep' : null, k));
+      });
+      rev.appendChild(keys);
+    } else {
+      rev.appendChild(el('div', 'rule', P.rule));
+    }
     rev.appendChild(el('p', 'detail', P.detail));
 
     var seen = {};
@@ -641,22 +934,19 @@
     }
     P.pass.forEach(function (w) { add(w, 'opener'); });
     P.fail.forEach(function (w) { add(w, 'opener'); });
-    S.probes.slice().reverse().forEach(function (p) { add(p.w, 'your probe'); });
-    CANDS.forEach(function (w) { add(w, 'the call'); });
+    S.probes.forEach(function (p) { if (p.ok !== null) add(p.w, 'probe'); });
+    CANDS.forEach(function (w) { add(w, 'call'); });
 
-    var g1 = el('div', 'evgroup');
-    g1.appendChild(el('h4', null, '✅ Obeys — ' + yes.length + ' words'));
-    yes.forEach(function (r) { g1.appendChild(evRow(r[0], r[1])); });
-    rev.appendChild(g1);
-
-    var g2 = el('div', 'evgroup bad');
-    g2.appendChild(el('h4', null, '❌ Breaks it — ' + no.length + ' words'));
-    no.forEach(function (r) { g2.appendChild(evRow(r[0], r[1])); });
-    rev.appendChild(g2);
-
+    rev.appendChild(evGroup('', '✅', 'Obeys it', yes));
+    rev.appendChild(evGroup('bad', '❌', 'Breaks it', no));
     wrap.appendChild(rev);
 
-    var sh = el('button', 'btn primary wide', 'Share result');
+    // what you will actually paste
+    var sg = el('div', 'sharegrid');
+    sg.textContent = shareText();
+    wrap.appendChild(sg);
+
+    var sh = el('button', 'btn primary wide', S.won ? 'Share the flex' : 'Share the damage');
     sh.type = 'button';
     sh.addEventListener('click', function () { Kit.share(shareText(), sh); });
     wrap.appendChild(sh);
@@ -677,14 +967,19 @@
     var used = S.calledAt || 0;
     var lines = ['THE RULE #' + DAY];
     if (used > 0) {
-      var story = S.probes.slice().reverse().map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
+      var story = S.probes.map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
       lines.push('🔬 ' + story);
     }
+    var tier = shareTier(used, S.won);
     if (S.won) {
-      lines.push(used === 0 ? '👑 CRACKED IT COLD · 0 probes'
-                            : '🧠 CRACKED IT · ' + used + ' probe' + (used === 1 ? '' : 's'));
+      // the 👑 line already says everything; anywhere else the tier word is
+      // what tells a non-player whether the number was good
+      lines.push(used === 0
+        ? '👑 CRACKED IT COLD · 0 probes'
+        : '🧠 CRACKED IT · ' + used + ' probe' + (used === 1 ? '' : 's') + ' · ' + tier);
     } else {
-      lines.push('💀 BUSTED · ' + S.hits + '/3 on ' + used + ' probe' + (used === 1 ? '' : 's'));
+      lines.push('💀 BUSTED · ' + S.hits + '/3 on ' + used +
+                 ' probe' + (used === 1 ? '' : 's') + ' · ' + tier);
     }
     lines.push('sfun.games/rule');
     return lines.join('\n');
@@ -697,7 +992,7 @@
     '<li><b>Probe it.</b> Type any string of letters — a real word, or deliberate nonsense — and get an instant ✅ or ❌. ' +
     'Testing <code>AAAA</code> to check for double letters is not cheating, it is good science.</li>' +
     '<li>You get <b>6 probes</b>.</li>' +
-    '<li><b>Call it</b> whenever you like. You will see 8 fresh words and must tap the exactly 3 that follow the rule.</li>' +
+    '<li><b>Call it</b> whenever you like. You will see 8 fresh words and must tap the <b>three</b> that follow the rule — exactly three.</li>' +
     '<li>You get <b>one call</b>. Three right and you cracked it. Anything else and you are busted.</li>' +
     '<li>Your score is <b>how many probes you spent</b>. Calling on 0 is legendary. Calling on 6 is a squeaker.</li>' +
     '</ul>';

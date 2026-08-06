@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CHAINS — compound-word golf</title>
+<link rel="stylesheet" href="../shared/kit.css">
+<style>
+  /* NB: setting --accent-soft on :root here would out-cascade the kit's own
+     dark-mode value (both land on :root, ours is later), which lit the pin and
+     the entry box up like mint paint on a black page. Every dark branch below
+     has to restate it. */
+  :root { --accent:#1f7a63; --accent-soft:#d9ece5; --accent-ink:#fff; --accent-hi:#1f7a63; }
+  @media (prefers-color-scheme: dark) { :root { --accent-hi:#6cc4a8; --accent-soft:#17342c; } }
+  :root[data-theme="dark"]  { --accent-hi:#6cc4a8; --accent-soft:#17342c; }
+  :root[data-theme="light"] { --accent-hi:#1f7a63; --accent-soft:#d9ece5; }
+
+  /* ------------------------------------------------------------------
+     TYPE. Google Sans Flex is a sans, not the serif this was first cut
+     for: display sizes want more weight and NEGATIVE tracking, while the
+     little caps labels want the opposite — open tracking, heavy weight,
+     small size. Everything below follows that split.
+     ------------------------------------------------------------------ */
+  .bar { margin-bottom: 12px; padding-bottom: 11px; }
+  .bar h1 { font-size:17.5px; font-weight:800; letter-spacing:.2em; text-indent:.2em; }
+  .iconbtn { width:44px; height:44px; flex:0 0 44px; }   /* 44px thumb target */
+  .iconbtn svg { width:19px; height:19px; }
+
+  /* ---------- layout ----------
+     .app must be BOUNDED, not just min-height: an unbounded flex column grows
+     past the viewport and pushes the keyboard's bottom row off a 390×844
+     phone. Bounded, the scrolling course absorbs the overflow instead. */
+  .app { height: 100dvh; padding-bottom: calc(10px + var(--safe-b)); }
+  .stage { justify-content: flex-start; gap: 12px; min-height: 0; }
+  .prompt { padding: 11px 15px; }
+  .prompt .k {
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    margin-bottom:4px; font-size:10px; font-weight:800; letter-spacing:.16em;
+    color: var(--accent-hi);
+  }
+  .prompt .v { font-size: 13.5px; line-height: 1.45; }
+  .prompt .par { color: var(--ink-3); letter-spacing:.16em; white-space:nowrap; }
+  .prompt .long { color: var(--warn); }
+
+  /* ---------- score bar ---------- */
+  .scorebar {
+    display:flex; align-items:center; gap:10px;
+    background: var(--white); border:1px solid var(--line);
+    border-radius: var(--r-pill); padding:5px 5px 5px 17px;
+    box-shadow: var(--shadow-1);
+    transition: background .25s, border-color .25s;
+  }
+  .tally { flex:1; display:flex; align-items:center; gap:12px; min-width:0; }
+  .tally .n {
+    font-family: var(--font-display); font-size:27px; font-weight:700; line-height:1;
+    letter-spacing:-.03em; font-variant-numeric: tabular-nums lining-nums;
+    transition: color .2s;
+  }
+  .tally .meta { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .tally .lbl {
+    font-size:9.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--ink-3); white-space:nowrap;
+  }
+  .tally .warnl {
+    font-size:11.5px; font-weight:700; letter-spacing:-.005em; color:var(--warn);
+    white-space:nowrap; line-height:1.1;
+  }
+  .tally .warnl:empty { display:none; }
+  .scorebar.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .scorebar.warn .tally .n { color: var(--warn); }
+  .scorebar.alarm { border-color: var(--bad); background: var(--bad-soft); animation: alarm 1.4s ease-in-out infinite; }
+  .scorebar.alarm .tally .n,
+  .scorebar.alarm .tally .warnl { color: var(--bad); }
+  .scorebar.alarm .lbl { color: var(--bad); }
+  @keyframes alarm { 50% { box-shadow: var(--shadow-1), 0 0 0 5px rgba(179,64,47,.14); } }
+
+  .caddie {
+    display:flex; align-items:center; gap:7px;
+    border:1px solid var(--line); background:var(--paper-2); color:var(--ink);
+    border-radius: var(--r-pill); padding:0 15px; height:44px; min-width:44px;
+    font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    cursor:pointer; white-space:nowrap;
+    box-shadow: var(--shadow-1);
+    transition: transform .1s, background .15s, border-color .15s, box-shadow .15s;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  }
+  .caddie .g { font-size:15px; letter-spacing:0; }
+  .caddie:hover { border-color: var(--line-2); }
+  .caddie:active { transform: scale(.955); box-shadow:none; }
+  .caddie[disabled] { opacity:.38; cursor:default; box-shadow:none; }
+
+  /* ---------- the course ---------- */
+  /* margin-top:auto on the chain (not justify-content) bottom-aligns a short
+     chain so the entry box always sits just above the pin — no dead gap on the
+     opening screen — while still scrolling correctly once the chain overflows. */
+  .course {
+    flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    display:flex; flex-direction:column;
+    padding: 0 0 2px; scrollbar-width:thin;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
+  }
+  .chain { display:flex; flex-direction:column; align-items:center; margin-top:auto; }
+
+  .node {
+    position:relative; width:100%; max-width:290px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--white); border:1.5px solid var(--line);
+    border-radius: 13px; box-shadow: var(--shadow-1);
+    padding: 12px 46px; min-height:52px;
+    font-family: var(--font-tile); font-weight:700; font-size:20px;
+    letter-spacing:.05em; text-transform:uppercase; user-select:none;
+  }
+  /* The tee word is the one piece of context you must never lose. On a long
+     hole the chain outgrows the course and scrolls it away, so it pins to the
+     top of the scroller and the rest of the line runs underneath it. */
+  .node.tee {
+    position: sticky; top:0; z-index:2; margin-bottom:1px;
+    background: var(--paper); border:1.5px dashed var(--line-2);
+    box-shadow:none; color:var(--ink-2); font-weight:600;
+    min-height:42px; padding:9px 46px; font-size:17.5px;   /* reference, not a stroke */
+  }
+  /* a soft edge under the pinned tee so scrolled links read as passing behind
+     it rather than as linking directly to it */
+  .node.tee::after {
+    content:''; position:absolute; left:-20px; right:-20px; top:100%; height:11px;
+    background: linear-gradient(var(--paper), rgba(0,0,0,0)); pointer-events:none;
+  }
+  .node .tag {
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    font-family:var(--font-ui); font-size:8.5px; font-weight:800; letter-spacing:.17em;
+    color:var(--ink-3); text-transform:uppercase; line-height:1;
+    border:1px solid var(--line); border-radius:var(--r-pill);
+    padding:3px 7px 3px 8px; background:var(--paper-2);
+  }
+  .node.caddied { border-color: var(--warn); background: var(--warn-soft); }
+  .node.caddied::after {
+    content:'🧤'; position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:13px; line-height:1;
+  }
+  .node.snap { animation: snap .34s cubic-bezier(.18,1.2,.4,1); }
+  @keyframes snap {
+    0%   { transform: translateY(-16px) scale(.9); opacity:0; }
+    60%  { transform: translateY(2px) scale(1.03); opacity:1; }
+    100% { transform: none; }
+  }
+
+  /* the spine, carrying the compound each link formed */
+  .rung { display:flex; flex-direction:column; align-items:center; width:100%; }
+  .rung i { display:block; width:2px; height:11px; background:var(--line-2); border-radius:1px; }
+  .made {
+    font-family: var(--font-mono); font-size:9.5px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color: var(--ink-3);
+    background: var(--paper); border:1px solid var(--line);
+    border-radius: var(--r-pill); padding:2.5px 11px; white-space:nowrap; line-height:1.25;
+  }
+  .rung.fresh i { background: var(--accent-hi); }
+  .rung.fresh .made {
+    color: var(--accent-ink); background: var(--accent); border-color:transparent;
+    animation: madeflash 2.2s ease-out forwards;
+  }
+  @keyframes madeflash {
+    0%   { transform: scale(.7); opacity:0; }
+    18%  { transform: scale(1.06); opacity:1; }
+    30%  { transform: scale(1); }
+    72%  { color: var(--accent-ink); background: var(--accent); border-color:transparent; }
+    100% { color: var(--ink-3); background: var(--paper); border-color: var(--line); }
+  }
+
+  /* the word being typed */
+  .node.entry {
+    border:1.5px dashed var(--accent-hi); background:var(--accent-soft);
+    box-shadow:none; color:var(--ink);
+  }
+  .node.entry.empty {
+    color: var(--ink-3); font-size:10px; font-family:var(--font-ui);
+    font-weight:800; letter-spacing:.17em;
+  }
+  .caret { display:inline-block; width:2px; height:19px; background:var(--accent-hi);
+    margin-left:3px; vertical-align:-3px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0 } }
+
+  /* ---------- the pin ---------- */
+  .tothepin { display:flex; justify-content:center; margin:-4px 0 -2px; }
+  .tothepin::before { content:''; width:0; height:15px; border-left:2px dashed var(--line-2); }
+
+  .pin {
+    display:flex; align-items:center; gap:14px;
+    border:1.5px solid var(--accent-hi);
+    background: var(--accent-soft);
+    border-radius: var(--r); padding:11px 16px; position:relative;
+    box-shadow: var(--shadow-1);
+    transition: background .3s, border-color .3s;
+  }
+  .pin .flag { flex:0 0 28px; height:28px; color:var(--accent-hi); display:grid; place-items:center; }
+  .pin .flag svg { width:28px; height:28px; display:block; }
+  .pin .body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .pin .lbl {
+    font-size:8.5px; font-weight:800; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink-3); line-height:1;
+  }
+  .pin .word {
+    font-family:var(--font-tile); font-weight:800; font-size:22px; line-height:1.1;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--accent-hi);
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .pin.done { background: var(--good-soft); border-color: var(--good); }
+  .pin.done .flag, .pin.done .word { color: var(--good); }
+  .pin.holed { animation: holed .5s ease-out; }
+  @keyframes holed { 0%{transform:none} 40%{transform:scale(1.045)} 100%{transform:none} }
+
+  .deskhint { display:none; }
+  @media (min-width:620px) {
+    .deskhint {
+      display:block; text-align:center; padding-top:14px; margin-top:auto;
+      font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
+      color:var(--ink-3);
+    }
+  }
+
+  /* ---------- scorecard ---------- */
+  .card {
+    width:100%; border-collapse:collapse; font-size:14px; margin:6px 0 2px;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .card th {
+    font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
+    font-weight:800; text-align:left; padding:0 6px 7px; border-bottom:1px solid var(--line);
+  }
+  .card th.num, .card td.num { text-align:right; }
+  .card td { padding:10px 6px; border-bottom:1px solid var(--line); }
+  .card td.hole { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); letter-spacing:.04em; width:16px; }
+  .card td.leg { font-weight:600; letter-spacing:-.005em; }
+  .card td.res { font-weight:800; letter-spacing:-.01em; }
+  .card tr.pending td { color: var(--ink-3); }
+  .card tr.tot td { border-bottom:none; font-weight:800; padding-top:13px; font-size:15px; letter-spacing:-.01em; }
+  .res.under { color: var(--good); }
+  .res.even  { color: var(--ink); }
+  .res.over  { color: var(--warn); }
+  .res.blown { color: var(--bad); }
+
+  .lineout {
+    background:var(--paper-2); border:1px solid var(--line); border-radius:var(--r);
+    padding:12px 14px; margin:16px 0 2px; text-align:center;
+  }
+  .lineout .cap {
+    display:block; font-size:9px; font-weight:800; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--ink-3); margin-bottom:7px;
+  }
+  .lineout b {
+    font-family:var(--font-mono); font-size:12.5px; line-height:1.75; letter-spacing:.09em;
+    color:var(--ink); font-weight:600; word-break:break-word;
+  }
+  .lineout.missed {
+    margin-top:9px; background:var(--accent-soft);
+    border-color:var(--accent-hi);
+    border-color:color-mix(in srgb, var(--accent-hi) 45%, transparent);
+  }
+  .lineout.missed .cap { color:var(--accent-hi); }
+
+  .badge { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.16em;
+    text-transform:uppercase; padding:5px 12px; border-radius:var(--r-pill); }
+  .badge.under { background:var(--good-soft); color:var(--good); }
+  .badge.even  { background:var(--accent-soft); color:var(--accent-hi); }
+  .badge.over  { background:var(--warn-soft); color:var(--warn); }
+  .badge.blown { background:var(--bad-soft); color:var(--bad); }
+
+  .foot { display:flex; align-items:center; justify-content:center; gap:8px;
+    font-size:10px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--ink-3); margin-top:16px; }
+  .foot b { font-family:var(--font-mono); font-weight:600; letter-spacing:.06em;
+    text-transform:none; font-size:11.5px; color:var(--ink-2); }
+
+  /* the share block has to fit a 390px phone without sideways scrolling —
+     the kit default is tuned for short emoji grids, not a scorecard line */
+  .sharegrid { font-size:13px; letter-spacing:.02em; padding:13px 10px; }
+
+  /* ---------- help: a diagram beats six paragraphs ---------- */
+  .demo {
+    display:flex; flex-direction:column; align-items:center;
+    background:var(--paper-2); border:1px solid var(--line);
+    border-radius:var(--r); padding:11px 12px; margin:2px 0 0;
+  }
+  .demo .w {
+    font-family:var(--font-tile); font-weight:700; font-size:14px; letter-spacing:.06em;
+    background:var(--white); border:1px solid var(--line); border-radius:8px;
+    padding:3px 15px; min-width:104px; text-align:center; color:var(--ink);
+  }
+  .demo .w.tee  { background:transparent; border-style:dashed; color:var(--ink-2); }
+  .demo .w.pinw { color:var(--accent-hi); border-color:var(--accent-hi); background:var(--accent-soft); }
+  .demo .l {
+    display:flex; align-items:center; gap:8px; padding:3px 0;
+    font-family:var(--font-mono); font-size:9px; font-weight:600;
+    letter-spacing:.15em; text-transform:uppercase; color:var(--ink-3);
+  }
+  .demo .l::before, .demo .l::after { content:''; width:12px; height:1px; background:var(--line-2); }
+  .demolbl {
+    text-align:center; font-size:9.5px; font-weight:800; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--ink-3); margin:8px 0 11px;
+  }
+  .demolbl b { color:var(--accent-hi); }
+  .sheet { padding-top:20px; }
+  .sheet h2 { letter-spacing:-.025em; }
+  .sheet .rules { font-size:14px; line-height:1.55; }
+  .sheet .rules li { margin-bottom:5px; }
+  .fineprint {
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--line);
+    font-size:12px; line-height:1.65; color:var(--ink-2);
+  }
+  .fineprint b { color:var(--ink); }
+
+  .legend { font-size:13px; color:var(--ink-2); line-height:1.75; }
+  .legend code { font-family:var(--font-mono); font-size:11.5px; background:var(--paper-2);
+    border:1px solid var(--line); border-radius:5px; padding:1.5px 5px; letter-spacing:.04em; }
+  .keymap { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px;
+    font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-2); }
+  .keymap span { white-space:nowrap; }
+
+  @media (max-height: 700px) {
+    .node { min-height:46px; padding:9px 44px; font-size:19px; }
+    .node.tee { min-height:38px; padding:7px 44px; font-size:16px; }
+    .prompt .v { display:none; }
+    .prompt { padding:9px 15px; }
+    .tally .n { font-size:24px; }
+    .pin { padding:9px 15px; }
+    .pin .word { font-size:20px; }
+    .stage { gap:10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="bar">
+    <button class="iconbtn" id="statsBtn" aria-label="Scorecard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2.6"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/>
+      </svg>
+    </button>
+    <h1>Chains</h1>
+    <button class="iconbtn" id="helpBtn" aria-label="How to play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.5"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="prompt">
+    <span class="k"><span id="holeNo">Hole 1 of 3</span><span class="par" id="parLbl">Par 4</span></span>
+    <span class="v" id="objective">Play a word that makes a compound with the one above it. Reach the pin.</span>
+  </div>
+
+  <div class="stage">
+    <div class="scorebar" id="scorebar">
+      <div class="tally" role="status" aria-live="polite">
+        <span class="n" id="strokeN">0</span>
+        <span class="meta">
+          <span class="lbl" id="strokeL">strokes · par 4</span>
+          <span class="warnl" id="strokeW"></span>
+        </span>
+      </div>
+      <button class="caddie" id="caddieBtn"><span class="g" id="caddieIcon">🧤</span><span id="caddieLbl">Caddie</span></button>
+    </div>
+
+    <div class="course" id="course"><div class="chain" id="chain"></div></div>
+
+    <div class="tothepin" aria-hidden="true"></div>
+
+    <div class="pin" id="pin">
+      <span class="flag" aria-hidden="true">
+        <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 24.5V4"/>
+          <path d="M9 4.8h11.5l-3.1 4.3 3.1 4.3H9" fill="currentColor" stroke-linejoin="round"/>
+          <path d="M4 24.5h10" opacity=".45"/>
+        </svg>
+      </span>
+      <span class="body">
+        <span class="lbl" id="pinLbl">The pin</span>
+        <span class="word" id="pinWord">WORK</span>
+      </span>
+    </div>
+  </div>
+
+  <div id="kbd"></div>
+  <div class="deskhint">Type a word · Enter plays it · Backspace edits</div>
+  <p class="sr" id="live" role="status" aria-live="polite"></p>
+</div>
+
+<script src="../shared/kit.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const LINKS  = window.CHAINS_LINKS;
+  const ROUNDS = window.CHAINS_ROUNDS;
+
+  const DAY   = Kit.dayNumber();
+  const ROUND = Kit.pick(ROUNDS);
+  const HOLES = ROUND.holes;
+
+  const save  = Kit.store('chains');
+  const stats = Kit.store('chains:stats');
+  const seen  = Kit.store('chains:seen');
+
+  /* ---------- graph helpers ------------------------------------------- */
+  const linked = (a, b) => !!(LINKS[a] && LINKS[a].indexOf(b) >= 0);
+
+  function distTo(from, to) {              // strokes still needed, or Infinity
+    if (from === to) return 0;
+    const seen = new Set([from]);
+    let frontier = [from], d = 0;
+    while (frontier.length) {
+      d++;
+      const next = [];
+      for (const w of frontier) for (const b of (LINKS[w] || [])) {
+        if (b === to) return d;
+        if (!seen.has(b)) { seen.add(b); next.push(b); }
+      }
+      frontier = next;
+    }
+    return Infinity;
+  }
+
+  /* one full shortest line from tee to pin — shown only after a hole is over,
+     so it can never help you and can only sting */
+  function bestLine(from, to) {
+    if (from === to) return [from];
+    const prev = new Map([[from, null]]);
+    let frontier = [from];
+    while (frontier.length) {
+      const next = [];
+      for (const w of frontier) for (const b of (LINKS[w] || [])) {
+        if (prev.has(b)) continue;
+        prev.set(b, w);
+        if (b === to) {
+          const out = [];
+          let c = b;
+          while (c !== null) { out.unshift(c); c = prev.get(c); }
+          return out;
+        }
+        next.push(b);
+      }
+      frontier = next;
+    }
+    return null;
+  }
+
+  function stepToward(from, to) {          // first word on a shortest path
+    if (linked(from, to)) return to;
+    const prev = new Map([[from, null]]);
+    let frontier = [from];
+    while (frontier.length) {
+      const next = [];
+      for (const w of frontier) {
+        for (const b of (LINKS[w] || [])) {
+          if (prev.has(b)) continue;
+          prev.set(b, w);
+          if (b === to) {
+            let cur = b;
+            while (prev.get(cur) !== from) cur = prev.get(cur);
+            return cur;
+          }
+          next.push(b);
+        }
+      }
+      frontier = next;
+    }
+    const any = LINKS[from] || [];
+    return any.length ? any[0] : null;
+  }
+
+  /* ---------- scoring vocabulary --------------------------------------- */
+  function verdict(strokes, par, pickedUp) {
+    if (pickedUp) return { name: 'Picked up', short: 'picked up', diff: par + 4 - par, tone: 'blown' };
+    const d = strokes - par;
+    const tone = d < 0 ? 'under' : d === 0 ? 'even' : d === 1 ? 'over' : 'blown';
+    const name =
+      d <= -3 ? 'Albatross' : d === -2 ? 'Eagle' : d === -1 ? 'Birdie' :
+      d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double bogey' : 'Triple bogey';
+    return { name, short: name.toLowerCase(), diff: d, tone };
+  }
+  const toPar = (d) => d === 0 ? 'E' : d > 0 ? '+' + d : '−' + Math.abs(d);
+  const SQ = { under2: '🟦', under: '🟩', even: '🟨', over: '🟧', blown: '🟥', pick: '⬛' };
+  function squareFor(v) {
+    if (v.tone === 'blown' && v.name === 'Picked up') return SQ.pick;
+    if (v.diff <= -2) return SQ.under2;
+    if (v.diff === -1) return SQ.under;
+    if (v.diff === 0) return SQ.even;
+    if (v.diff === 1) return SQ.over;
+    return SQ.blown;
+  }
+
+  /* ---------- state ---------------------------------------------------- */
+  let S = save.get();
+  if (!S || S.d !== DAY) {
+    S = { d: DAY, hole: 0, chain: [HOLES[0].start.toLowerCase()], strokes: 0,
+          caddie: false, caddieAt: -1, caddieHole: -1, caddieWord: null,
+          scores: [], done: false };
+    save.set(S);
+  }
+  let typed = '';
+  let busy  = false;
+
+  const hole = () => HOLES[S.hole];
+  const head = () => S.chain[S.chain.length - 1];
+  const maxStrokes = () => hole().par + 3;
+
+  /* ---------- DOM ------------------------------------------------------ */
+  const el = (id) => document.getElementById(id);
+  const chainEl = el('chain'), courseEl = el('course'), pinEl = el('pin');
+
+  function renderHeader() {
+    const h = hole();
+    el('holeNo').textContent = `Hole ${S.hole + 1} of ${HOLES.length}`;
+    el('parLbl').innerHTML = `Par ${h.par}` + (h.long ? ' <span class="long">· long</span>' : '');
+    el('pinWord').textContent = h.target;
+    /* the tee card and the pin already say WHERE — this line only has to say
+       what a stroke is, and (on the closer) what a good score looks like */
+    el('objective').textContent = h.long
+      ? `The long hole. A perfect line here is an eagle.`
+      : `Make a compound with the word above.`;
+    /* once the round is signed the caddie has nothing left to do — the button
+       becomes the way back into your card, so the last screen is never a wall */
+    if (S.done) {
+      el('caddieIcon').textContent = '⛳';
+      el('caddieLbl').textContent = 'Card';
+      el('caddieBtn').disabled = false;
+    } else {
+      el('caddieIcon').textContent = '🧤';
+      el('caddieLbl').textContent = S.caddie ? 'Used' : 'Caddie';
+      el('caddieBtn').disabled = S.caddie;
+    }
+    const holed = S.done || head() === h.target.toLowerCase();
+    pinEl.classList.toggle('done', holed);
+    el('pinLbl').textContent = holed ? 'Holed out' : 'The pin';
+  }
+
+  function renderScore() {
+    const h = hole(), left = maxStrokes() - S.strokes;
+    const need = S.done ? 0 : distTo(head(), h.target.toLowerCase());
+    el('strokeN').textContent = S.strokes;
+    el('strokeL').textContent = S.strokes === 1 ? 'stroke' : 'strokes';
+    let tail = '';
+    if (!S.done) {
+      if (left === 1) tail = 'Last swing';
+      else if (need === left) tail = 'Needs a perfect line';
+      else if (left === 2) tail = 'Two swings left';
+    }
+    el('strokeW').textContent = tail;
+    const bar = el('scorebar');
+    bar.classList.toggle('alarm', !S.done && (left <= 1 || need === left));
+    bar.classList.toggle('warn', !S.done && left === 2 && need !== left);
+  }
+
+  function renderChain(fresh) {
+    chainEl.innerHTML = '';
+    S.chain.forEach((w, i) => {
+      if (i > 0) {
+        const r = document.createElement('div');
+        r.className = 'rung' + (fresh && i === S.chain.length - 1 ? ' fresh' : '');
+        r.innerHTML = `<i></i><span class="made">${Kit.esc(S.chain[i - 1])}·${Kit.esc(w)}</span><i></i>`;
+        chainEl.appendChild(r);
+      }
+      const n = document.createElement('div');
+      n.className = 'node' + (i === 0 ? ' tee' : '') +
+                    (fresh && i === S.chain.length - 1 ? ' snap' : '') +
+                    (S.caddieAt === i ? ' caddied' : '');
+      n.innerHTML = (i === 0 ? '<span class="tag">tee</span>' : '') + Kit.esc(w);
+      chainEl.appendChild(n);
+    });
+
+    if (!S.done) {
+      const r = document.createElement('div');
+      r.className = 'rung';
+      r.innerHTML = '<i></i><span class="made">?</span><i></i>';
+      chainEl.appendChild(r);
+      const e = document.createElement('div');
+      e.className = 'node entry' + (typed ? '' : ' empty');
+      e.id = 'entry';
+      e.innerHTML = typed ? Kit.esc(typed) + '<span class="caret"></span>' : 'type your word';
+      chainEl.appendChild(e);
+    }
+    courseEl.scrollTop = courseEl.scrollHeight;
+  }
+
+  /* typing must not rebuild the chain — that would cut the compound flash short */
+  function renderEntry() {
+    const e = el('entry');
+    if (!e) return;
+    e.classList.toggle('empty', !typed);
+    e.innerHTML = typed ? Kit.esc(typed) + '<span class="caret"></span>' : 'type your word';
+  }
+
+  function render(fresh) { renderHeader(); renderScore(); renderChain(fresh); }
+
+  /* ---------- play ----------------------------------------------------- */
+  function onKey(k) {
+    /* a sheet is open — the physical keyboard belongs to the sheet, not the
+       board behind it, or typing during the help screen silently loads a word */
+    if (document.querySelector('.scrim')) return;
+    if (busy || S.done) return;
+    if (k === 'BACK') { typed = typed.slice(0, -1); renderEntry(); return; }
+    if (k === 'ENTER') { submit(); return; }
+    if (/^[A-Z]$/.test(k) && typed.length < 12) { typed += k.toLowerCase(); renderEntry(); }
+  }
+
+  let misses = 0;   // rejections on this hole — enough of them and we point
+                    // at the caddie, because silent frustration is how a
+                    // player decides the dictionary is the enemy
+  function bounce(msg) {
+    Kit.toast(msg, 2300);
+    Kit.haptic(24);
+    const e = el('entry');
+    if (e) Kit.flash(e, 'shake');
+    el('live').textContent = msg;
+    if (++misses === 3 && !S.caddie && !S.done) {
+      setTimeout(() => {
+        if (S.done || S.caddie || document.querySelector('.scrim')) return;
+        Kit.toast('Stuck? The caddie is one tap away', 2600);
+      }, 2400);
+    }
+  }
+
+  function submit() {
+    const w = typed.trim().toLowerCase();
+    const from = head();
+    if (!w) return;
+    if (w.length < 2) { bounce('A little longer than that'); return; }
+    if (!linked(from, w)) {
+      bounce(`${from.toUpperCase()} · ${w.toUpperCase()} isn't in today's dictionary`);
+      return;
+    }
+    commit(w);
+  }
+
+  function commit(w) {
+    busy = true;
+    typed = '';
+    S.chain.push(w);
+    S.strokes++;
+    /* mark the node the caddie actually handed you — not just the hole she was
+       spent on, so the card shows where the help landed */
+    if (S.caddieHole === S.hole && w === S.caddieWord && S.caddieAt < 0) {
+      S.caddieAt = S.chain.length - 1;
+    }
+    save.set(S);
+    Kit.haptic(10);
+    el('live').textContent =
+      `${S.chain[S.chain.length - 2]} ${w} — stroke ${S.strokes} of ${maxStrokes()}.`;
+    render(true);
+    if (!settle()) busy = false;
+  }
+
+  /* After every stroke: holed out, out of swings, or mathematically dead.
+     A player is never left flailing at a position the pin can't be reached
+     from — the hole ends there, and it ends loudly. */
+  function settle() {
+    const h = hole(), t = h.target.toLowerCase();
+    if (head() === t) {
+      Kit.flash(pinEl, 'holed');
+      setTimeout(() => finishHole(false), 620);
+      return true;
+    }
+    const left = maxStrokes() - S.strokes;
+    const need = distTo(head(), t);
+    if (left <= 0)        { setTimeout(() => finishHole(true, 'swings'), 520); return true; }
+    if (need === Infinity){ setTimeout(() => finishHole(true, 'nowhere'), 520); return true; }
+    if (need > left)      { setTimeout(() => finishHole(true, 'short', need), 520); return true; }
+    return false;
+  }
+
+  /* ---------- caddie --------------------------------------------------- */
+  el('caddieBtn').addEventListener('click', () => {
+    if (S.done) { resultSheet(); return; }
+    if (S.caddie || busy) return;
+    const h = hole();
+    const t = h.target.toLowerCase();
+    if (distTo(head(), t) >= maxStrokes() - S.strokes) {
+      Kit.toast('No time for a caddie — you need every swing', 2400);
+      return;
+    }
+    openSheet(`
+      <h2>Call the caddie?</h2>
+      <p class="sub">She'll name one word that keeps you alive from <b>${Kit.esc(head().toUpperCase())}</b>.</p>
+      <div class="legend" style="text-align:center">
+        It costs you <b>one stroke</b>, right now, and you only get one caddie
+        per round — three holes. Spending her here means playing
+        ${S.hole < HOLES.length - 1 ? 'the rest of the round' : 'nothing'} alone.
+      </div>
+      <button class="btn primary wide" id="cadYes" style="margin-top:18px">Take the penalty</button>
+      <button class="btn ghost wide" data-close style="margin-top:8px">Play it myself</button>
+    `, { onOpen(root, close) {
+      root.querySelector('#cadYes').addEventListener('click', () => {
+        close();
+        S.caddie = true;
+        S.caddieHole = S.hole;
+        S.strokes++;                       // the penalty stroke
+        const next = stepToward(head(), t);
+        S.caddieWord = next;
+        save.set(S);
+        if (!next) { render(false); Kit.toast('Even the caddie is stumped', 2400); settle(); return; }
+        Kit.toast(`Caddie says: ${next.toUpperCase()}`, 3200);
+        typed = next;
+        render(false);
+        settle();
+      });
+    }});
+  });
+
+  /* ---------- hole / round end ----------------------------------------- */
+  function finishHole(pickedUp, why, need) {
+    const h = hole();
+    const v = verdict(S.strokes, h.par, pickedUp);
+    const score = pickedUp ? h.par + 4 : S.strokes;
+    S.scores.push({ strokes: score, swings: S.strokes, par: h.par, pickedUp,
+                    caddie: S.caddieHole === S.hole, chain: S.chain.slice() });
+    const last = S.hole >= HOLES.length - 1;
+    save.set(S);
+    holeSheet(v, pickedUp, last, why, need);
+  }
+
+  function holeSheet(v, pickedUp, last, why, need) {
+    const h = hole();
+    const line = S.chain.map(w => w.toUpperCase()).join(' · ');
+    let title = v.name, body;
+    if (pickedUp) {
+      if (why === 'nowhere') {
+        title = 'Stranded';
+        body = `<p class="sub">There is no line from <b>${Kit.esc(head().toUpperCase())}</b> back to
+                <b>${Kit.esc(h.target)}</b> — not in one more link, not in a hundred.
+                Pick up: ${h.par + 4}.</p>`;
+      } else if (why === 'short') {
+        title = 'Unplayable';
+        body = `<p class="sub">${need} more links to the pin and only ${maxStrokes() - S.strokes}
+                swing${maxStrokes() - S.strokes === 1 ? '' : 's'} left. You can't get there from
+                <b>${Kit.esc(head().toUpperCase())}</b>. Pick up: ${h.par + 4}.</p>`;
+      } else {
+        title = 'Picked up';
+        body = `<p class="sub">Out of swings, still short of <b>${Kit.esc(h.target)}</b>.
+                Take the ${h.par + 4} and walk to the next tee.</p>`;
+      }
+    } else {
+      body = `<p class="sub">${S.strokes} stroke${S.strokes === 1 ? '' : 's'} on a par ${h.par}.</p>`;
+    }
+    openSheet(`
+      <h2>${title}</h2>
+      ${body}
+      <div style="text-align:center"><span class="badge ${v.tone}">${pickedUp ? 'no return' : toPar(v.diff)}</span></div>
+      <div class="lineout"><span class="cap">${pickedUp ? 'your line ran out at' : 'your line'}</span>
+        <b>${Kit.esc(line)}${pickedUp ? ' …' : ''}</b></div>
+      ${missedHTML(pickedUp)}
+      ${cardHTML(true)}
+      <button class="btn primary wide" id="nextBtn" style="margin-top:16px">
+        ${last ? 'Sign the card' : 'Next hole →'}
+      </button>
+    `, { sticky: true, onOpen(root, close) {
+      root.querySelector('#nextBtn').addEventListener('click', () => {
+        close();
+        if (last) { endRound(); return; }
+        S.hole++;
+        S.chain = [HOLES[S.hole].start.toLowerCase()];
+        S.strokes = 0;
+        S.caddieAt = -1;
+        typed = '';
+        busy = false;
+        misses = 0;
+        save.set(S);
+        render(false);
+      });
+    }});
+  }
+
+  /* The hole is over — now show what was there. Not when they already found a
+     tightest line (nothing to teach, and it would flatten the win), only when
+     they didn't. This is where the day's "oh, COME ON" lives, and it's also how
+     a player learns the dictionary without ever being helped mid-hole. */
+  function missedHTML(pickedUp) {
+    const h = hole();
+    if (!pickedUp && S.strokes <= h.best) return '';
+    const bl = bestLine(h.start.toLowerCase(), h.target.toLowerCase());
+    if (!bl) return '';
+    const short = bl.length - 1;
+    const kind = h.long ? 'eagle' : 'birdie';
+    return `<div class="lineout missed"><span class="cap">there was a ${short}-stroke line — ${kind}</span>
+      <b>${Kit.esc(bl.map(w => w.toUpperCase()).join(' · '))}</b></div>`;
+  }
+
+  function cardHTML(partial) {
+    let rows = '', total = 0, parTotal = 0;
+    HOLES.forEach((h, i) => {
+      const sc = S.scores[i];
+      parTotal += h.par;
+      if (!sc) {
+        rows += `<tr class="pending"><td class="hole">${i + 1}</td><td class="leg">${Kit.esc(h.start)} → ${Kit.esc(h.target)}</td>
+                 <td class="num">${h.par}</td><td class="num">—</td><td class="res num"></td></tr>`;
+        return;
+      }
+      total += sc.strokes;
+      const v = verdict(sc.pickedUp ? sc.par + 4 : sc.strokes, sc.par, sc.pickedUp);
+      rows += `<tr><td class="hole">${i + 1}</td><td class="leg">${Kit.esc(h.start)} → ${Kit.esc(h.target)}${sc.caddie ? ' 🧤' : ''}</td>
+               <td class="num">${sc.par}</td><td class="num">${sc.strokes}</td>
+               <td class="res num ${v.tone}">${sc.pickedUp ? 'X' : toPar(v.diff)}</td></tr>`;
+    });
+    const played = S.scores.length;
+    const parSoFar = S.scores.reduce((a, s) => a + s.par, 0);
+    const d = total - (partial ? parSoFar : parTotal);
+    const tone = d < 0 ? 'under' : d === 0 ? 'even' : d <= 2 ? 'over' : 'blown';
+    rows += `<tr class="tot"><td></td><td class="leg">${played < HOLES.length ? 'Through ' + played : 'Round'}</td>
+             <td class="num">${partial ? parSoFar : parTotal}</td><td class="num">${total}</td>
+             <td class="res num ${tone}">${toPar(d)}</td></tr>`;
+    return `<table class="card"><thead><tr><th></th><th>Hole</th><th class="num">Par</th>
+            <th class="num">Sc</th><th class="num">+/−</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  /* ---------- share ---------------------------------------------------- */
+  function shareText() {
+    const total = S.scores.reduce((a, s) => a + s.strokes, 0);
+    const par   = HOLES.reduce((a, h) => a + h.par, 0);
+    const d     = total - par;
+    const lines = S.scores.map((sc) => {
+      const v = verdict(sc.pickedUp ? sc.par + 4 : sc.strokes, sc.par, sc.pickedUp);
+      const n = Math.max(1, sc.swings != null ? sc.swings : sc.strokes);
+      return `⛳ ${squareFor(v).repeat(n)} ${sc.pickedUp ? 'picked up' : v.short}${sc.caddie ? ' 🧤' : ''}`;
+    });
+    /* headline first, the way a golfer reads a card: the number to par, then
+       the strokes. Kept short enough to render on a 390px phone unwrapped. */
+    return [`CHAINS #${DAY} · ${toPar(d)} (${total} strokes)`]
+      .concat(lines)
+      .concat(['sfun.games/chains'])
+      .join('\n');
+  }
+
+  function endRound() {
+    S.done = true;
+    save.set(S);
+    bumpStats();
+    render(false);
+    resultSheet();
+  }
+
+  function bumpStats() {
+    if (S.counted) return;
+    const st = stats.get() || { rounds: 0, toPar: 0, best: null, birdies: 0, eagles: 0 };
+    const total = S.scores.reduce((a, s) => a + s.strokes, 0);
+    const par   = HOLES.reduce((a, h) => a + h.par, 0);
+    st.rounds++;
+    st.toPar += (total - par);
+    st.best = st.best === null ? (total - par) : Math.min(st.best, total - par);
+    S.scores.forEach(sc => {
+      if (sc.pickedUp) return;
+      const d = sc.strokes - sc.par;
+      if (d === -1) st.birdies++;
+      if (d <= -2) st.eagles++;
+    });
+    stats.set(st);
+    S.counted = true;
+    save.set(S);
+  }
+
+  function resultSheet() {
+    const total = S.scores.reduce((a, s) => a + s.strokes, 0);
+    const par   = HOLES.reduce((a, h) => a + h.par, 0);
+    const d     = total - par;
+    const st    = stats.get() || { rounds: 0, toPar: 0, best: null, birdies: 0, eagles: 0 };
+    const headline =
+      d <= -2 ? 'A card to frame' : d === -1 ? 'Under par' : d === 0 ? 'Level par' :
+      d <= 2 ? 'One over here or there' : 'Rough day on the course';
+    openSheet(`
+      <h2>${headline}</h2>
+      <p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
+      ${cardHTML(false)}
+      <div class="sharegrid" id="sg">${Kit.esc(shareText())}</div>
+      <button class="btn primary wide" id="shareBtn">Copy scorecard</button>
+      <div class="statrow">
+        <div class="stat"><span class="n">${st.rounds}</span><span class="l">rounds</span></div>
+        <div class="stat"><span class="n">${st.rounds ? toPar(Math.round(st.toPar / st.rounds)) : '—'}</span><span class="l">average</span></div>
+        <div class="stat"><span class="n">${st.best === null ? '—' : toPar(st.best)}</span><span class="l">best</span></div>
+        <div class="stat"><span class="n">${st.birdies + st.eagles}</span><span class="l">birdie+</span></div>
+      </div>
+      <div class="foot">Next tee time in <b id="cd">--:--:--</b></div>
+      <button class="btn ghost wide" data-close style="margin-top:12px">Close</button>
+    `, { onOpen(root) {
+      root.querySelector('#shareBtn').addEventListener('click', (e) => Kit.share(shareText(), e.currentTarget));
+      const cd = root.querySelector('#cd');
+      const t = Kit.countdown(cd);
+      const obs = setInterval(() => { if (!document.body.contains(cd)) { clearInterval(t); clearInterval(obs); } }, 1000);
+    }});
+  }
+
+  /* ---------- help / scorecard buttons --------------------------------- */
+  /* The rules are two sentences and a picture. Everything else is fine print —
+     a first-timer should be able to close this sheet after four seconds. */
+  const HELP = `
+    <div class="demo" aria-hidden="true">
+      <span class="w tee">FIRE</span>
+      <span class="l">firehouse</span>
+      <span class="w">HOUSE</span>
+      <span class="l">houseboat</span>
+      <span class="w">BOAT</span>
+      <span class="l">boat race</span>
+      <span class="w">RACE</span>
+      <span class="l">race car</span>
+      <span class="w pinw">CAR ⛳</span>
+    </div>
+    <p class="demolbl">Fire to car in <b>four strokes</b></p>
+    <ul class="rules">
+      <li>Each word makes a <b>compound</b> — or a very common two-word phrase —
+          with the word above it.</li>
+      <li><b>No undo.</b> A word that doesn't link bounces. A word that links is
+          <i>played</i>, and you carry on from there.</li>
+      <li>Par is one over the tightest line known: a perfect route is a
+          <b>birdie</b>, or an <b>eagle</b> on the long hole.</li>
+    </ul>
+    <div class="fineprint">
+      <b>Out of swings</b> short of the pin? Pick up for par + 4.
+      <b>One caddie a round</b> names a word that keeps you alive, for a stroke.
+    </div>
+    <div class="keymap" style="margin-top:12px">
+      <span>TYPE — a word</span><span>ENTER — play it</span><span>⌫ — edit</span>
+    </div>`;
+
+  /* Kit.sheet focuses the first button, which on a tall sheet scrolls the title
+     and the diagram off the top before you ever see them. Always start at 0. */
+  function openSheet(html, opts) {
+    opts = Object.assign({}, opts);
+    const inner = opts.onOpen;
+    opts.onOpen = (root, close) => { root.scrollTop = 0; if (inner) inner(root, close); };
+    return Kit.sheet(html, opts);
+  }
+  const openHelp = () => openSheet(
+    `<h2>Compound-word golf</h2><div class="rules">${HELP}</div>
+     <button class="btn primary wide" data-close style="margin-top:16px">Got it</button>`);
+  el('helpBtn').addEventListener('click', openHelp);
+  el('statsBtn').addEventListener('click', () => {
+    if (S.done) { resultSheet(); return; }
+    openSheet(`<h2>Your card</h2><p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
+      ${cardHTML(true)}
+      <div class="legend" style="margin-top:10px">
+        🟦 eagle &nbsp; 🟩 birdie &nbsp; 🟨 par &nbsp; 🟧 bogey &nbsp; 🟥 worse &nbsp; ⬛ picked up
+      </div>
+      <button class="btn primary wide" data-close style="margin-top:16px">Back to the tee</button>`);
+  });
+
+  /* ---------- boot ------------------------------------------------------ */
+  Kit.keyboard(el('kbd'), onKey, { enterLabel: 'PLAY' });
+  render(false);
+
+  if (S.done) {
+    setTimeout(resultSheet, 260);
+  } else if (!seen.get()) {
+    seen.set(1);
+    setTimeout(openHelp, 260);
+  }
+})();
+</script>
+</body>
+</html>

@@ -41,15 +41,37 @@ const MAX_SKIPS = 2;
    `note` is the hand-check: the witness chain was read by a human.
    -------------------------------------------------------------------------*/
 const PUZZLES = [
-  { seed: 'EAT', queue: 'CFRWSLPIE' },
-  { seed: 'TIE', queue: 'RPNSEBDPS' },
-  { seed: 'AGE', queue: 'KTRUSNEEM' },
+  { seed: 'RUN', queue: 'TEGWEVDAS' },
   { seed: 'EAR', queue: 'TLNIVOATC' },
   { seed: 'SET', queue: 'MLINAGHMN' },
-  { seed: 'TIN', queue: 'EQSRWEAUQ' },
-  { seed: 'ALE', queue: 'YSRTGNIEV' },
-  { seed: 'TEN', queue: 'OREIADPSG' },
+  { seed: 'RAT', queue: 'DEECSLBEP' },
+  { seed: 'NET', queue: 'RDYEPSERS' },
+  { seed: 'CAR', queue: 'MEPLIPTSE' },
+  { seed: 'RED', queue: 'AGDNEETGE' },
+  // Found by search.js (see PITCH.md) and then hand-read rack by rack. These
+  // three replaced thin, single-file puzzles: ACE/APE/DIE offer 17-27 spare
+  // words across their reachable racks, so two players who both reach a 9
+  // almost certainly walked different roads to get there.
+  { seed: 'SIR', queue: 'AENGAUNTS' },
+  { seed: 'APE', queue: 'CRSISTATS' },
+  { seed: 'DIE', queue: 'ANRSCIGPS' },
 ];
+
+/* Rejected by hand review, kept here so nobody re-proposes them. Every one of
+   these looked excellent on the search.js scoreboard:
+     TIE / DCSREONPP -> PERCEPTIONS (11).  Rich and clean everywhere except the
+       one place it matters: the only route to the 11 runs through the rack
+       CEIRST, whose sole answer is STERIC. A daily puzzle may not gate its
+       maximum behind a chemistry adjective.
+     ACE / DPRSDTIDH -> DISPATCHER (10).  Same failure, different word: the
+       rack ACEIPRST resolves only to PRACTISE, the Commonwealth spelling.
+     ACE / DNRSAIOTN -> CONTAINERS (10).  Scored branch 18 before curation, but
+       once CADE/CARNE/CESAR/SARACEN/CAESAR were struck the greedy player
+       stopped dying — verify.js caught it. A puzzle whose difficulty came from
+       junk words has no difficulty.
+     MAN / AEILDNILL -> MILLENNIAL (10).  Half its racks are proper-noun mush
+       (MNA, NAAM, IMAN, MIAN, NAIM, LIMAN, MELINDA); blocklisting honestly
+       leaves it thinner than what it would have replaced. */
 
 /* The par chain is shown to the player on the death screen ("show me the 11"),
    so every word on it is hand-picked from the rack's word list rather than
@@ -62,16 +84,41 @@ const PAR_PICKS = new Set(`
    Junk filter.
 
    lexgen is frequency-filtered but still carries abbreviations, proper-noun
-   residue and morphological accidents. Length 3 needs no filtering — the only
-   3-letter rack in the game is the authored seed itself. From length 4 up,
-   a junk word can silently prop up a rack the player would never guess, or
-   worse, carry a "best possible: 11" claim the player can't believe.
+   residue and morphological accidents. A junk word can silently prop up a rack
+   the player would never guess, or worse, carry a "best possible: 11" claim
+   the player can't believe. It also looks terrible on the death screen when we
+   list "words you could have played" and one of them is `TRA`.
 
-   This list is HAND-CURATED: it was built by running `node build.js --report`,
-   reading every word the solver emitted for these eight puzzles, and striking
+   Applies at EVERY length, including 3 — the seed rack is displayed, and
+   shipping `EST` / `TRA` / `AER` next to the seed word reads as a bug.
+
+   This list is HAND-CURATED: it was built by running `node build.js --dump`,
+   reading every word the solver emitted for all nine puzzles, and striking
    the ones a reasonable English speaker would reject.
    -------------------------------------------------------------------------*/
 const BLOCKLIST = new Set(`
+aer der est rea tra neo dei ide epa
+carte seater
+cade carne cesar saracen caesar cartesian picea persia casper
+enid reid diane sadie denis darien snider
+irs sri rais reis ries seri raines aries
+
+amin amine amines amit amrita andre andries angeles ansel anton
+acer arte artie ariel arles arne asher boden
+carle cate ceres cetera claire clare crimea cristina corse crosse
+dante darin
+edgar ela elia elsa electra elvira enos entre eros eton
+garde gare grande greta gunter
+irena israelite israelites
+lanier lear
+marc marcel carmel mets metis mitra
+nist noire nore nora norah norse notre
+orestes
+parc petersen petri petrie pieter piet
+rea redd reina renate reno rita ronde
+sade sainte selena stein stela stipe
+teresa teri tera terai tien tuareg tyne
+yale
 `.trim().split(/\s+/).filter(Boolean));
 
 /* --------------------------------------------------------------------------
@@ -86,7 +133,7 @@ function loadIndex() {
   const index = new Map();
   for (const w of raw) {
     if (!/^[a-z]{3,12}$/.test(w)) continue;
-    if (w.length >= 4 && BLOCKLIST.has(w)) continue;
+    if (BLOCKLIST.has(w)) continue;
     const k = key(w);
     let bucket = index.get(k);
     if (!bucket) index.set(k, (bucket = []));
@@ -164,6 +211,7 @@ function solve(puz, index) {
   // word (PAR_PICKS) when one is available, else the first alphabetically.
   const chain = [];
   const skipAt = [];
+  const path = [];   // the full optimal line, takes AND skips, in queue order
   let cur = best;
   while (cur) {
     const st = cur.st;
@@ -176,13 +224,18 @@ function solve(puz, index) {
         throw new Error(`par pick "${pick}" is not legal for rack ${st.rack}`);
       }
       chain.push({ word: pick, len: st.rack.length, rack: st.rack, all: words });
+      path.push({ act: 'take', word: pick, letter: st.via ? st.via.letter : null });
     }
-    if (st.via && st.via.act === 'skip') skipAt.push(st.via.letter);
+    if (st.via && st.via.act === 'skip') {
+      skipAt.push(st.via.letter);
+      path.push({ act: 'skip', letter: st.via.letter, word: null });
+    }
     const prevId = st.prev;
     cur = prevId ? { id: prevId, st: alive.get(prevId) } : null;
   }
   chain.reverse();
   skipAt.reverse();
+  path.reverse();
 
   // Greedy baseline: always take when a word exists; skip only when forced.
   let gRack = seed.split('').sort().join('');
@@ -211,7 +264,7 @@ function solve(puz, index) {
     seed, queue: queue.join(''),
     max: best.st.rack.length,
     maxSkips: best.st.skips,
-    chain, skipAt,
+    chain, skipAt, path,
     greedy: gRack.length, greedySkips: gSkips, greedyDead: gDead,
     words, keyCount: Object.keys(words).length, wordCount,
     aliveStates: alive.size,
@@ -258,12 +311,18 @@ function main() {
     max: s.max,
     maxSkips: s.maxSkips,
     par: s.chain.map(c => c.word),
+    // The optimal line as the player would have had to walk it: a flat list of
+    // "T<word>" (take, play this) and "S<letter>" (skip, throw this away), in
+    // queue order. The death screen replays it so "show me the 11" shows the
+    // *decisions*, not just a word list.
+    path: s.path.map(p => p.act === 'take' ? 'T' + p.word : 'S' + p.letter),
     words: s.words,
   }));
 
   const body = out.map(p => {
     const wordLines = Object.keys(p.words).sort().map(k => `${JSON.stringify(k)}:${JSON.stringify(p.words[k])}`);
-    return `{n:${p.n},seed:${JSON.stringify(p.seed)},queue:${JSON.stringify(p.queue)},max:${p.max},maxSkips:${p.maxSkips},par:${JSON.stringify(p.par)},words:{\n  ${wordLines.join(',\n  ')}\n}}`;
+    return `{n:${p.n},seed:${JSON.stringify(p.seed)},queue:${JSON.stringify(p.queue)},max:${p.max},maxSkips:${p.maxSkips},` +
+      `par:${JSON.stringify(p.par)},path:${JSON.stringify(p.path)},words:{\n  ${wordLines.join(',\n  ')}\n}}`;
   }).join(',\n');
 
   const js = `/* SEED — generated by build.js. Do not edit by hand.
@@ -279,6 +338,6 @@ ${body}
   console.log(`wrote ${OUT_PATH} (${kb} KB)`);
 }
 
-module.exports = { loadIndex, solve, explore, key, MAX_SKIPS };
+module.exports = { loadIndex, solve, explore, key, MAX_SKIPS, PUZZLES, BLOCKLIST, LEX_PATH };
 
 if (require.main === module) main();

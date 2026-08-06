@@ -427,7 +427,70 @@
     worm: 'hole',
 
     /* --- Y --- */
-    yard: 'stick sale work arm'
+    yard: 'stick sale work arm',
+
+    /* ------------------------------------------------------------------
+       RECALL PASS.  Playtesting stranded a player on ROOM · SERVICE —
+       a link they'd played correctly — because SERVICE had no onward
+       links of its own, even though SERVICE STATION is obvious.  Every
+       word below was a dead end in the first pass purely because I
+       forgot to give it a row.  Being stranded has to be the player's
+       fault, never the dictionary's.
+       ------------------------------------------------------------------ */
+    alarm: 'clock bell call',
+    bank: 'note roll account holiday card robber',
+    bomb: 'shell site squad proof scare',
+    bone: 'dry marrow yard head china',
+    bottle: 'neck cap opener top',
+    brake: 'pad light fluid disc',
+    center: 'piece field point stage line court',
+    centre: 'piece field point stage line court',
+    check: 'list point book mate out in box up',
+    clip: 'board art on',
+    clock: 'work wise tower radio face',
+    cold: 'front snap war sore call shoulder cut',
+    collar: 'bone',
+    cook: 'book out house ware',
+    count: 'down',
+    cover: 'up girl story letter charge',
+    craft: 'beer work shop',
+    dance: 'floor hall party move class',
+    dish: 'washer cloth towel rack water',
+    face: 'lift mask paint time value plant off',
+    fall: 'out back guy off',
+    feed: 'back bag',
+    forest: 'fire floor',
+    gear: 'box stick shift',
+    hill: 'side top climb country',
+    hose: 'pipe',
+    lady: 'bug bird luck finger',
+    leg: 'room work',
+    metal: 'work detector head',
+    over: 'head time night board coat pass lap load flow drive dose look turn view kill run sight',
+    pain: 'killer relief',
+    party: 'animal trick line hat favor pooper',
+    pen: 'pal knife name',
+    pie: 'chart crust',
+    pin: 'ball point wheel head stripe cushion',
+    pit: 'fall stop bull crew lane',
+    puppet: 'show master theater',
+    rest: 'room stop home area',
+    ring: 'master side finger tone leader road',
+    seat: 'belt back cover',
+    service: 'station road charge desk man',
+    share: 'holder price',
+    shift: 'work key',
+    sick: 'bay day leave note',
+    site: 'map plan',
+    spot: 'light check on',
+    stage: 'coach door fright hand name',
+    stream: 'line',
+    street: 'light car lamp food corner wise party sign',
+    style: 'guide sheet',
+    talk: 'show back time',
+    tower: 'block crane',
+    will: 'power',
+    window: 'sill pane box seat frame shopping'
   };
 
   /* expand to {first: Set(second)} */
@@ -435,39 +498,41 @@
   for (const k in RAW) LINKS[k] = RAW[k].split(' ');
 
   /* ---- the daily rounds: 6 × 3 holes ------------------------------------
-     par is the TRUE shortest path through LINKS (proved by verify.js).
-     `line` is the reference route used by the caddie's flavour text and by
-     verify.js's readability check.                                       */
+     `best` is the TRUE shortest path through LINKS (BFS-proved by verify.js).
+     `par`  is what a good player shoots.  par = best + 1 on a normal hole,
+            so finding the tightest line is a BIRDIE, and par = best + 2 on
+            the round's closing "long" hole, where the tightest line is an
+            EAGLE.  Max strokes = par + 3.                                */
   const ROUNDS = [
     { name: 'Opening Round', holes: [
-      { start: 'STAR',   target: 'WORK',    par: 3 },
-      { start: 'SNOW',   target: 'GROUND',  par: 4 },
-      { start: 'FIRE',   target: 'CAR',     par: 4 }
+      { start: 'STAR',   target: 'WORK',    best: 3, par: 4 },
+      { start: 'SNOW',   target: 'TOWER',   best: 4, par: 5 },
+      { start: 'FIRE',   target: 'CAR',     best: 4, par: 6, long: true }
     ]},
     { name: 'The Turn', holes: [
-      { start: 'MOON',   target: 'PARTY',   par: 3 },
-      { start: 'RAIN',   target: 'CRACKER', par: 4 },
-      { start: 'BOOK',   target: 'TIME',    par: 3 }
+      { start: 'MOON',   target: 'PARTY',   best: 3, par: 4 },
+      { start: 'RAIN',   target: 'SCREEN',  best: 4, par: 5 },
+      { start: 'BOOK',   target: 'TIME',    best: 3, par: 5, long: true }
     ]},
     { name: 'Seaside Links', holes: [
-      { start: 'SEA',    target: 'BAND',    par: 3 },
-      { start: 'DAY',    target: 'MUSIC',   par: 3 },
-      { start: 'SUN',    target: 'ALARM',   par: 4 }
+      { start: 'SEA',    target: 'BAND',    best: 3, par: 4 },
+      { start: 'DAY',    target: 'MUSIC',   best: 3, par: 4 },
+      { start: 'SUN',    target: 'ALARM',   best: 4, par: 6, long: true }
     ]},
     { name: 'Windward', holes: [
-      { start: 'HORSE',  target: 'LIGHT',   par: 3 },
-      { start: 'ICE',    target: 'DOOR',    par: 3 },
-      { start: 'GOLD',   target: 'STOP',    par: 4 }
+      { start: 'HORSE',  target: 'LIGHT',   best: 3, par: 4 },
+      { start: 'ICE',    target: 'DOOR',    best: 3, par: 4 },
+      { start: 'GOLD',   target: 'STOP',    best: 4, par: 6, long: true }
     ]},
     { name: 'Long Course', holes: [
-      { start: 'BUTTER', target: 'ROOM',    par: 3 },
-      { start: 'NIGHT',  target: 'SMOKE',   par: 4 },
-      { start: 'SILVER', target: 'CLUB',    par: 4 }
+      { start: 'BUTTER', target: 'ROOM',    best: 3, par: 4 },
+      { start: 'NIGHT',  target: 'SMOKE',   best: 4, par: 5 },
+      { start: 'SILVER', target: 'CLUB',    best: 4, par: 6, long: true }
     ]},
     { name: 'Championship', holes: [
-      { start: 'GREEN',  target: 'WALK',    par: 3 },
-      { start: 'WHITE',  target: 'DRILL',   par: 4 },
-      { start: 'FOOT',   target: 'CAR',     par: 4 }
+      { start: 'GREEN',  target: 'WALK',    best: 3, par: 4 },
+      { start: 'WHITE',  target: 'DRILL',   best: 4, par: 5 },
+      { start: 'FOOT',   target: 'STAND',   best: 4, par: 6, long: true }
     ]}
   ];
 

@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stowaways — Superfun Daily</title>
+<meta name="description" content="Six themed words are hiding in two ordinary sentences. Find them.">
+<link rel="stylesheet" href="../shared/kit.css">
+<style>
+  :root { --accent:#0e6f9e; --accent-soft:#d7ebf6; --accent-ink:#fff; --key:#b07f12; --key-soft:#fbeec8; --key-ink:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --accent:#4aa8d8; --accent-soft:#0d2f42; --accent-ink:#0a1a24;
+            --key:#e0b64a; --key-soft:#3a2f12; --key-ink:#1c1608; }
+  }
+  :root[data-theme="dark"] {
+    --accent:#4aa8d8; --accent-soft:#0d2f42; --accent-ink:#0a1a24;
+    --key:#e0b64a; --key-soft:#3a2f12; --key-ink:#1c1608;
+  }
+  :root[data-theme="light"] {
+    --accent:#0e6f9e; --accent-soft:#d7ebf6; --accent-ink:#fff;
+    --key:#b07f12; --key-soft:#fbeec8; --key-ink:#fff;
+  }
+
+  .stage { justify-content: flex-start; gap: 10px; padding: 4px 0 0; }
+  /* the live region is absolutely positioned; pin it so it cannot add a
+     stray pixel of page height and defeat the no-scroll layout */
+  #live { position: fixed; top: 0; left: 0; }
+  /* Toasts sit low, in the gap above the controls — never over the passage or
+     the theme strip, which are the two things you are reading. #afterwards is
+     empty until the reveal, so while playing it holds that gap open and the
+     autofit grower is forced to respect it. */
+  #toast-layer { top: auto; bottom: calc(80px + var(--safe-b)); }
+  #afterwards:empty { min-height: 58px; }
+  .bar .iconbtn { text-decoration: none; }
+
+  /* ---------- progress chips ----------
+     NB the keystone modifier is `.ks`, not `.key` — kit.css already owns
+     `.key` for the on-screen keyboard and it would flex-grow the chip. */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+  .chip {
+    flex: 0 0 auto;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .06em;
+    line-height: 1.2; text-transform: uppercase; font-weight: 700;
+    padding: 5px 10px; min-width: 34px; height: 26px; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px dashed var(--line-2); border-radius: var(--r-pill);
+    color: var(--ink-3); background: transparent;
+    transition: background .25s, color .25s, border-color .25s, transform .2s;
+  }
+  .chip.on { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+  .chip.ks { border-color: var(--key); color: var(--key); }
+  .chip.ks.on { background: var(--key-soft); color: var(--key); border-color: var(--key); }
+  .chip.miss { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad); }
+  .chip.just { transform: scale(1.16); }
+
+  /* ---------- readout ---------- */
+  .readout {
+    height: 30px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 15px; letter-spacing: .16em;
+    color: var(--accent); font-weight: 700; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-align: center;
+  }
+  .readout.idle { font-family: var(--font-ui); font-size: 13px; letter-spacing: 0;
+    color: var(--ink-3); font-weight: 400; text-transform: none;
+    white-space: normal; line-height: 1.3; }
+
+  /* ============================================================
+     THE PASSAGE — the hero.
+
+     Every character is its own targetable span, which is normally a
+     recipe for text that looks like a ransom note. Three rules keep it
+     reading as prose:
+
+       1. Each cell pads outward by --bleed and pulls back in by the
+          same amount in negative margin. Net advance width is exactly
+          the natural glyph width, so tracking is untouched — but the
+          painted boxes of neighbouring cells OVERLAP, so a highlight
+          runs as one unbroken ribbon straight through the spaces it
+          hides in. No gaps, no fragmentation, no reflow.
+       2. EVERY cell is an inline-block with the same --band line-height
+          and no vertical padding. That is what makes the ribbon flush:
+          letters, commas and spaces all paint a box of identical height
+          on an identical baseline. Leave a space as `display:inline` and
+          its background is sized by font metrics instead, which notches
+          the ribbon at every gap. The <wbr> the renderer emits after
+          each space is what keeps the paragraph wrapping once the
+          spaces stop being breakable text.
+       3. Nothing that highlights may touch the box model. Ever. If the
+          letter you are aiming at moves, the game is broken.
+     ============================================================ */
+  .passage {
+    --bleed: .085em;
+    --band: 1.5;
+    --rest-op: 1;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-2);
+    padding: 18px 16px 20px;
+    font-family: var(--font-display);
+    font-size: clamp(17px, 4.9vw, 20px);
+    font-weight: 400;
+    line-height: 2.05;
+    letter-spacing: 0;
+    color: var(--ink);
+    text-wrap: pretty;
+    user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none; cursor: crosshair;
+    hyphens: none;
+  }
+  /* The passage takes focus on pointerdown so the keyboard path keeps working
+     after a tap — but a tap must not paint a focus ring round the whole card.
+     .pf marks "focus came from a pointer" and is dropped on the first keypress. */
+  .passage:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .passage.pf:focus-visible { outline: none; }
+  .wd { display: inline-block; }
+  .ch {
+    display: inline-block;
+    line-height: var(--band);
+    padding: 0 var(--bleed);
+    margin: 0 calc(-1 * var(--bleed));
+    transition: background .2s ease, color .2s ease, opacity .45s ease;
+  }
+  .ch.sp { white-space: pre; }
+
+  /* progressive lighting-up: as stowaways come aboard, the carrier prose
+     recedes a step at a time so the finds read as the lit part of the page.
+     It never goes far enough to hurt the search. */
+  .passage .ch:not(.fnd):not(.mis):not(.sel):not(.tip) { opacity: var(--rest-op); }
+
+  .ch.fnd  { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .ch.fnd.k{ background: var(--key-soft); color: var(--key); }
+  .ch.mis  { background: var(--bad-soft); color: var(--bad); }
+  /* live selection outranks everything underneath it — while you are dragging,
+     the only thing that matters is the exact range you have marked */
+  .passage .ch.sel { background: var(--accent); color: var(--accent-ink); }
+  .passage .ch.no  { background: var(--bad-soft); color: var(--bad); }
+  /* found/missed ends use cap/cbp; the transient selection uses its own pair so
+     clearing a selection can never strand a rounded corner mid-word */
+  .ch.cap, .ch.scap { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
+  .ch.cbp, .ch.scbp { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+  .ltr.anc { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 6px; }
+  .ltr.cur { box-shadow: inset 0 0 0 2px var(--ink-2); border-radius: 6px; }
+  .ltr.tip { animation: beacon 1.4s ease-in-out infinite; border-radius: 6px; }
+  @keyframes beacon {
+    0%,100% { box-shadow: inset 0 0 0 2px var(--warn); background: var(--warn-soft); }
+    50%     { box-shadow: inset 0 0 0 2px var(--warn); background: transparent; }
+  }
+
+  /* ---------- the lock: a left-to-right wave that cools from solid to soft.
+     Staggered per cell, so a six-letter find visibly *zips* shut.  ---------- */
+  @keyframes lock-fill {
+    0%, 52% { background: var(--accent); color: var(--accent-ink); }
+    100%    { background: var(--accent-soft); color: var(--accent); }
+  }
+  @keyframes lock-fill-k {
+    0%, 52% { background: var(--key); color: var(--key-ink); }
+    100%    { background: var(--key-soft); color: var(--key); }
+  }
+  @keyframes lock-lift { 0%, 100% { transform: none } 36% { transform: translateY(-4px) } }
+  .ch.lock       { animation: lock-fill .52s ease-out both; }
+  .ltr.lock,
+  .pun.lock      { animation: lock-fill .52s ease-out both,
+                              lock-lift .4s cubic-bezier(.3,.9,.4,1) both; }
+  .ch.k.lock     { animation-name: lock-fill-k; }
+  .ltr.k.lock,
+  .pun.k.lock    { animation-name: lock-fill-k, lock-lift; }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
+  .controls .btn { flex: 1; min-height: 46px; }
+
+  /* short phones (SE, older Androids): tighten the chrome so the passage
+     keeps enough room to stay legible without the page having to scroll */
+  @media (max-height: 730px) {
+    .bar { padding: 8px 0 8px; margin-bottom: 10px; }
+    .bar h1 { font-size: 19px; }
+    .prompt { padding: 9px 12px; }
+    .prompt .v { font-size: 13px; }
+    .chips { gap: 5px; }
+    .chip { font-size: 10.5px; padding: 4px 7px; min-width: 28px; }
+    .readout { height: 24px; }
+    .passage { line-height: 1.85; padding: 14px 13px 16px; }
+    /* short screens cannot spare 58px of clear air; tighten the toast well
+       and bring the toasts down to match so the passage keeps its size */
+    #afterwards:empty { min-height: 46px; }
+    #toast-layer { bottom: calc(66px + var(--safe-b)); }
+    .stage { gap: 8px; }
+    .controls { padding-top: 8px; }
+    .controls .btn { min-height: 44px; padding: 10px 14px; }
+  }
+
+  /* ---------- reveal list ----------
+     Rows are distinguished by an inset rail (an outline, drawn inside the
+     border radius) rather than a shadow on one edge. */
+  .found-list { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+  .fl-row {
+    display: flex; gap: 10px; align-items: baseline;
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: 9px 11px;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .fl-row.k { box-shadow: inset 3px 0 0 var(--key); }
+  .fl-row.m { box-shadow: inset 3px 0 0 var(--bad); }
+  .fl-w { font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+          letter-spacing: .08em; color: var(--accent); flex: 0 0 auto; min-width: 74px; }
+  .fl-row.k .fl-w { color: var(--key); }
+  .fl-row.m .fl-w { color: var(--bad); }
+  .fl-t { font-family: var(--font-display); font-size: 14.5px; line-height: 1.75; color: var(--ink-2); }
+  .fl-t b { color: var(--ink); background: var(--accent-soft); font-weight: 700;
+            border-radius: 4px; padding: 2px 3px; margin: 0 -1px; }
+  .fl-row.k .fl-t b { background: var(--key-soft); color: var(--key); }
+  .fl-row.m .fl-t b { background: var(--bad-soft); color: var(--bad); }
+
+  .themebar {
+    text-align: center; padding: 12px; border-radius: var(--r);
+    background: var(--accent-soft); color: var(--accent);
+    font-family: var(--font-display); font-size: 18px; font-weight: 700;
+    letter-spacing: -.005em;
+  }
+  .themebar small { display: block; font-family: var(--font-ui); font-size: 12.5px;
+    font-weight: 400; letter-spacing: 0; opacity: .85; margin-top: 3px; }
+
+  /* ---------- type re-tune for the sans face ---------- */
+  .bar h1 { font-weight: 800; letter-spacing: .05em; }
+  .prompt .k { font-weight: 800; letter-spacing: .1em; }
+  .prompt .v { font-size: 14px; line-height: 1.45; }
+  .prompt .v b { font-weight: 700; color: var(--ink); }
+  .sheet h2 { font-weight: 800; letter-spacing: -.025em; }
+  .verdict { font-weight: 800; letter-spacing: -.03em; }
+  .stat .n { font-weight: 800; letter-spacing: -.03em; }
+  .btn { font-weight: 650; letter-spacing: -.005em; }
+  .sheet .rules { line-height: 1.65; }
+
+  .sheet .cd { font-family: var(--font-mono); color: var(--ink-2); }
+  .rules kbd { font-family: var(--font-mono); font-size: 12px; background: var(--paper-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+  .demo { font-family: var(--font-display); font-size: 17px; line-height: 1.95;
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--r-sm);
+    padding: 12px 14px; margin: 12px 0; color: var(--ink); text-align: center; }
+  .demo b { background: var(--accent-soft); color: var(--accent); font-weight: 700;
+    border-radius: 4px; padding: 2px 3px; margin: 0 -1px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="bar">
+    <a class="iconbtn" href="../" aria-label="Back to all games">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1>Stowaways</h1>
+    <button class="iconbtn" id="helpBtn" aria-label="How to play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.3"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
+    </button>
+  </div>
+
+  <div class="prompt">
+    <span class="k">Theme <span class="puzz-no" id="pno"></span></span>
+    <span class="v"><b id="clue"></b> — six words hide in the passage. One names the theme.</span>
+  </div>
+
+  <div class="stage">
+    <div class="chips" id="chips" aria-label="Progress"></div>
+    <div class="readout idle" id="readout">Tap the first letter, then the last. Or drag.</div>
+    <div class="passage" id="passage" tabindex="0" role="application"
+         aria-label="Hidden word passage. Use arrow keys to move, Enter to mark the start and end of a word."></div>
+    <div id="afterwards"></div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button class="btn ghost" id="hintBtn">Hint · 3</button>
+    <button class="btn ghost" id="quitBtn">Give up</button>
+    <button class="btn primary" id="resultBtn" hidden>Result</button>
+  </div>
+</div>
+
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<script src="../shared/kit.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var PUZZLES = window.STOWAWAY_PUZZLES;
+  var DAY = Kit.dayNumber();
+  var P = Kit.pick(PUZZLES);
+  var store = Kit.store('stowaways');
+  var HINTS_MAX = 3;
+
+  var passEl   = document.getElementById('passage');
+  var chipsEl  = document.getElementById('chips');
+  var readEl   = document.getElementById('readout');
+  var afterEl  = document.getElementById('afterwards');
+  var hintBtn  = document.getElementById('hintBtn');
+  var quitBtn  = document.getElementById('quitBtn');
+  var resBtn   = document.getElementById('resultBtn');
+  var liveEl   = document.getElementById('live');
+
+  document.getElementById('clue').textContent = P.clue;
+  document.getElementById('pno').textContent = '#' + DAY;
+
+  /* ---------------------------------------------------------------
+     Render the passage. Every character becomes a span so a found
+     word can wash straight across the gaps it hides in.
+     --------------------------------------------------------------- */
+  var text = P.text;
+  var cells = [];    // every span, in reading order: {el, li}
+  var letters = [];  // letters only: {ci (char index), cell (cell index)}
+  var S = '';        // letters-only, uppercase
+
+  /* Grouping matters more than it looks. A word and the space that follows it
+     go in the SAME .wd inline-block, and the only soft-wrap opportunity is the
+     <wbr> after it. That means (a) a word can never be split across lines, and
+     (b) the space at a line break stays parked at the end of the line it
+     belongs to instead of indenting the next one — which is what a loose space
+     span does, and it looks like a typo. */
+  (function render() {
+    var frag = document.createDocumentFragment();
+    var wd = null;
+    function openWord() {
+      wd = document.createElement('span');
+      wd.className = 'wd';
+      frag.appendChild(wd);
+    }
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      var sp = document.createElement('span');
+      sp.textContent = c;
+      if (!wd) openWord();
+      if (c === ' ') {
+        sp.className = 'ch sp';
+        cells.push({ el: sp, li: -1 });
+        wd.appendChild(sp);
+        frag.appendChild(document.createElement('wbr'));
+        wd = null;
+      } else if (/[A-Za-z]/.test(c)) {
+        sp.className = 'ch ltr';
+        sp.dataset.li = letters.length;
+        letters.push({ ci: i, cell: cells.length });
+        cells.push({ el: sp, li: letters.length - 1 });
+        S += c.toUpperCase();
+        wd.appendChild(sp);
+      } else {
+        sp.className = 'ch pun';
+        cells.push({ el: sp, li: -1 });
+        wd.appendChild(sp);
+      }
+    }
+    passEl.appendChild(frag);
+  })();
+
+  /* ---------------------------------------------------------------
+     Targets — verified by verify.js, so each occurs exactly once.
+     --------------------------------------------------------------- */
+  var targets = P.words.map(function (w) {
+    var s = S.indexOf(w);
+    return { w: w, s: s, e: s + w.length - 1, key: w === P.keystone, found: false, hinted: false };
+  });
+  var keystone = targets.filter(function (t) { return t.key; })[0];
+
+  /* ---------------------------------------------------------------
+     State + persistence
+     --------------------------------------------------------------- */
+  var st = { d: DAY, order: [], hinted: [], hints: 0, over: false, gave: false };
+  (function restore() {
+    var s = store.get();
+    if (s && s.d === DAY && s.id === P.id) {
+      st = s;
+      // never trust stored words blindly — a puzzle edit must not throw
+      st.order = (st.order || []).filter(function (w) { return !!byWord(w); });
+      st.hinted = (st.hinted || []).filter(function (w) { return !!byWord(w); });
+      st.hints = st.hints || 0;
+      st.order.forEach(function (w) { byWord(w).found = true; });
+      st.hinted.forEach(function (w) { byWord(w).hinted = true; });
+    } else {
+      st.id = P.id;
+    }
+  })();
+  function save() { st.d = DAY; st.id = P.id; store.set(st); }
+  function byWord(w) { for (var i = 0; i < targets.length; i++) if (targets[i].w === w) return targets[i]; return null; }
+  function remaining() { return targets.filter(function (t) { return !t.found; }); }
+
+  /* ---------------------------------------------------------------
+     Painting
+     --------------------------------------------------------------- */
+  function cellRange(a, b) { return [letters[a].cell, letters[b].cell]; }
+
+  function paintRange(a, b, cls, extra) {
+    var r = cellRange(a, b);
+    for (var i = r[0]; i <= r[1]; i++) {
+      cells[i].el.classList.add(cls);
+      if (extra) cells[i].el.classList.add(extra);
+    }
+    var sel = cls === 'sel';
+    cells[r[0]].el.classList.add(sel ? 'scap' : 'cap');
+    cells[r[1]].el.classList.add(sel ? 'scbp' : 'cbp');
+  }
+
+  function clearSel() {
+    for (var i = 0; i < cells.length; i++) {
+      cells[i].el.classList.remove('sel', 'scap', 'scbp', 'anc');
+    }
+  }
+
+  /* The lock. Every cell in the range — letters, spaces and commas alike —
+     runs the same fill-and-cool animation, delayed by its position, so the
+     word visibly zips shut left to right straight across the gaps it was
+     hiding in. Delay is set inline; the classes come off when it lands so
+     the plain .fnd styling takes over cleanly. */
+  function playLock(t) {
+    var r = cellRange(t.s, t.e);
+    var span = r[1] - r[0];
+    var step = span > 9 ? 26 : 34;
+    for (var i = r[0]; i <= r[1]; i++) {
+      var el = cells[i].el;
+      el.style.animationDelay = ((i - r[0]) * step) + 'ms';
+      el.classList.add('lock');
+    }
+    setTimeout(function () {
+      for (var i = r[0]; i <= r[1]; i++) {
+        cells[i].el.classList.remove('lock');
+        cells[i].el.style.animationDelay = '';
+      }
+    }, span * step + 620);
+  }
+
+  function paintFound(t, animate) {
+    paintRange(t.s, t.e, 'fnd', t.key ? 'k' : null);
+    cells[letters[t.s].cell].el.classList.remove('tip');
+    if (animate) playLock(t);
+  }
+
+  function paintMissed(t) { paintRange(t.s, t.e, 'mis'); }
+
+  /* Progressive lighting-up: each find pulls the carrier prose back a step,
+     so the passage reads as gradually lighting up around the stowaways.
+     Capped well short of unreadable — it is still the search surface. */
+  function relight() {
+    var n = targets.filter(function (t) { return t.found; }).length;
+    passEl.style.setProperty('--rest-op', st.over ? '1' : String(1 - Math.min(n, 5) * 0.045));
+  }
+
+  /* ---------------------------------------------------------------
+     Chips
+     --------------------------------------------------------------- */
+  function buildChips() {
+    chipsEl.innerHTML = '';
+    var plain = targets.filter(function (t) { return !t.key; });
+    for (var i = 0; i < plain.length; i++) {
+      var c = document.createElement('span');
+      c.className = 'chip'; c.textContent = '?';
+      c.dataset.slot = 'p' + i;
+      chipsEl.appendChild(c);
+    }
+    var k = document.createElement('span');
+    k.className = 'chip ks'; k.textContent = '★';
+    k.dataset.slot = 'k';
+    k.title = 'The keystone — the longest word, and it names the theme';
+    chipsEl.appendChild(k);
+  }
+
+  function fillChips(justWord) {
+    var slots = chipsEl.querySelectorAll('.chip:not(.ks)');
+    var n = 0;
+    st.order.forEach(function (w) {
+      var t = byWord(w);
+      if (t.key) return;
+      var el = slots[n++];
+      if (!el) return;
+      el.textContent = w;
+      el.classList.add('on');
+      el.classList.toggle('just', w === justWord);
+    });
+    var kEl = chipsEl.querySelector('.chip.ks');
+    if (keystone.found) {
+      kEl.textContent = keystone.w;
+      kEl.classList.add('on');
+      kEl.classList.toggle('just', keystone.w === justWord);
+    }
+    if (st.over) {
+      targets.filter(function (t) { return !t.found; }).forEach(function (t) {
+        var el = t.key ? kEl : slots[n++];
+        if (!el) return;
+        el.textContent = t.w;
+        el.classList.add('miss');
+      });
+    }
+    if (justWord) setTimeout(function () {
+      chipsEl.querySelectorAll('.just').forEach(function (e) { e.classList.remove('just'); });
+    }, 220);
+  }
+
+  /* ---------------------------------------------------------------
+     Hit testing — nearest letter to a point, weighted so a tap
+     between two lines snaps to the right line.
+     --------------------------------------------------------------- */
+  var rects = null;
+  function measure() {
+    rects = letters.map(function (L) { return cells[L.cell].el.getBoundingClientRect(); });
+  }
+  window.addEventListener('resize', function () { rects = null; });
+  window.addEventListener('scroll', function () { rects = null; }, { passive: true });
+
+  function nearest(x, y) {
+    if (!rects) measure();
+    var best = -1, bd = Infinity;
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      var dx = x < r.left ? r.left - x : (x > r.right ? x - r.right : 0);
+      var dy = y < r.top ? r.top - y : (y > r.bottom ? y - r.bottom : 0);
+      var d = dx * dx + (dy * 2.6) * (dy * 2.6);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return bd > 8100 ? -1 : best;   // ~90px slop
+  }
+
+  /* ---------------------------------------------------------------
+     Selection
+     --------------------------------------------------------------- */
+  var anchor = -1;      // armed first letter, or -1
+  var cursor = 0;       // keyboard caret
+  var press = null;
+
+  function setReadout(a, b) {
+    if (a < 0) {
+      readEl.className = 'readout idle';
+      readEl.textContent = st.over
+        ? 'That is the day. The words were hiding in plain sight.'
+        : (anchor >= 0 ? 'Start set — now pick the last letter of the word.'
+                       : 'Tap the first letter, then the last. Or drag.');
+      return;
+    }
+    var lo = Math.min(a, b), hi = Math.max(a, b);
+    readEl.className = 'readout';
+    readEl.textContent = S.slice(lo, hi + 1);
+  }
+
+  function preview(a, b) {
+    clearSel();
+    if (a < 0) { setReadout(-1); return; }
+    paintRange(Math.min(a, b), Math.max(a, b), 'sel');
+    if (anchor >= 0) cells[letters[anchor].cell].el.classList.add('anc');
+    setReadout(a, b);
+  }
+
+  function commit(a, b) {
+    var lo = Math.min(a, b), hi = Math.max(a, b);
+    var exact = null, sameStart = null, sameEnd = null;
+    targets.forEach(function (t) {
+      if (t.s === lo && t.e === hi) exact = t;
+      else if (!t.found && t.s === lo) sameStart = t;
+      else if (!t.found && t.e === hi) sameEnd = t;
+    });
+
+    if (exact && !exact.found) { land(exact); return; }
+    anchor = -1;
+    if (exact && exact.found) { clearSel(); setReadout(-1); Kit.toast('Already aboard.'); return; }
+
+    // wrong — free, but tell them when they were achingly close.
+    // The range itself flashes red; shaking the whole passage would jolt
+    // the thing you are trying to read.
+    var msg = 'Nothing there.';
+    if (sameStart) msg = 'Right first letter — wrong length.';
+    else if (sameEnd) msg = 'Right last letter — wrong length.';
+    Kit.haptic(14);
+    clearWrong();
+    var r = cellRange(lo, hi);
+    for (var i = r[0]; i <= r[1]; i++) cells[i].el.classList.add('no');
+    Kit.flash(readEl, 'shake');
+    wrongT = setTimeout(function () { clearWrong(); clearSel(); setReadout(-1); }, 400);
+    Kit.toast(msg);
+    say(msg);
+  }
+
+  var wrongT = null;
+  function clearWrong() {
+    if (wrongT) { clearTimeout(wrongT); wrongT = null; }
+    var els = passEl.querySelectorAll('.no');
+    for (var i = 0; i < els.length; i++) els[i].classList.remove('no');
+  }
+
+  function land(t) {
+    t.found = true;
+    anchor = -1;
+    clearWrong();
+    clearSel();
+    st.order.push(t.w);
+    paintFound(t, true);
+    relight();
+    fillChips(t.w);
+    save();
+    Kit.haptic(t.key ? 26 : 10);
+    Kit.toast(t.key ? '★ ' + t.w + ' — the keystone!' : t.w, t.key ? 2400 : 1600);
+    say(t.w + ' found. ' + remaining().length + ' left.');
+    setReadout(-1);
+    refit();
+    if (remaining().length === 0) setTimeout(function () { finish(false); }, 780);
+  }
+
+  function say(m) { liveEl.textContent = m; }
+
+  /* ---------------------------------------------------------------
+     Pointer: one gesture handles both drag-select and tap-tap.
+     --------------------------------------------------------------- */
+  passEl.addEventListener('pointerdown', function (e) {
+    if (st.over) return;
+    e.preventDefault();
+    passEl.classList.add('pf');
+    passEl.focus({ preventScroll: true });
+    clearWrong();
+    measure();
+    var i = nearest(e.clientX, e.clientY);
+    if (i < 0) return;
+    press = { x: e.clientX, y: e.clientY, i: i, at: i, moved: false, wasArmed: anchor >= 0 };
+    if (anchor < 0) anchor = i;
+    cursor = i;
+    preview(anchor, i);
+    try { passEl.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+  });
+
+  passEl.addEventListener('pointermove', function (e) {
+    if (!press || st.over) return;
+    var dx = e.clientX - press.x, dy = e.clientY - press.y;
+    if (!press.moved && dx * dx + dy * dy > 64) press.moved = true;
+    var i = nearest(e.clientX, e.clientY);
+    if (i < 0) return;
+    press.at = i; cursor = i;
+    preview(anchor, i);
+  });
+
+  function endPress(e) {
+    if (!press || st.over) { press = null; return; }
+    var p = press; press = null;
+    try { passEl.releasePointerCapture(e.pointerId); } catch (err) { /* noop */ }
+
+    if (p.moved) { commit(anchor, p.at); return; }         // a drag
+    // first tap — stay armed, and say so rather than echoing one letter back
+    if (!p.wasArmed) { preview(anchor, anchor); armedHint(); return; }
+    if (p.i === anchor) { anchor = -1; clearSel(); setReadout(-1); return; }  // tap same = cancel
+    commit(anchor, p.i);                                    // second tap
+  }
+  function armedHint() {
+    readEl.className = 'readout idle';
+    readEl.textContent = 'Start set — now pick the last letter of the word.';
+  }
+  passEl.addEventListener('pointerup', endPress);
+  passEl.addEventListener('pointercancel', function () { press = null; });
+  passEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  /* ---------------------------------------------------------------
+     Keyboard — full parity on desktop.
+     --------------------------------------------------------------- */
+  function lineStep(from, dir) {
+    if (!rects) measure();
+    var r0 = rects[from];
+    var cx = (r0.left + r0.right) / 2;
+    var best = from, bd = Infinity;
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      if (dir < 0 && r.bottom > r0.top + 2) continue;
+      if (dir > 0 && r.top < r0.bottom - 2) continue;
+      var dy = dir < 0 ? r0.top - r.bottom : r.top - r0.bottom;
+      var d = Math.abs((r.left + r.right) / 2 - cx) + dy * 4;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+
+  passEl.addEventListener('keydown', function (e) {
+    if (st.over) return;
+    passEl.classList.remove('pf');   // they are driving with the keyboard now
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowLeft') {
+      cursor = Math.max(0, Math.min(letters.length - 1, cursor + (k === 'ArrowRight' ? 1 : -1)));
+    } else if (k === 'ArrowDown' || k === 'ArrowUp') {
+      cursor = lineStep(cursor, k === 'ArrowDown' ? 1 : -1);
+    } else if (k === 'Home') { cursor = 0; }
+    else if (k === 'End') { cursor = letters.length - 1; }
+    else if (k === 'Enter' || k === ' ') {
+      e.preventDefault();
+      if (anchor < 0) { anchor = cursor; preview(anchor, cursor); armedHint(); }
+      else { commit(anchor, cursor); }
+      showCursor(); return;
+    } else if (k === 'Escape') {
+      anchor = -1; clearSel(); setReadout(-1); showCursor(); return;
+    } else if (k === 'h' || k === 'H') { hint(); return; }
+    else return;
+    e.preventDefault();
+    if (anchor >= 0) preview(anchor, cursor); else setReadout(-1);
+    showCursor();
+  });
+
+  function showCursor() {
+    passEl.querySelectorAll('.cur').forEach(function (e) { e.classList.remove('cur'); });
+    // the caret belongs to the keyboard path only — a thumb tap should never
+    // leave a stray outlined letter behind
+    if (st.over || passEl.classList.contains('pf')) return;
+    var el = cells[letters[cursor].cell].el;
+    el.classList.add('cur');
+  }
+  passEl.addEventListener('focus', showCursor);
+  passEl.addEventListener('blur', function () {
+    passEl.querySelectorAll('.cur').forEach(function (e) { e.classList.remove('cur'); });
+  });
+
+  /* ---------------------------------------------------------------
+     Hints
+     --------------------------------------------------------------- */
+  function hint() {
+    if (st.over) return;
+    if (st.hints >= HINTS_MAX) { Kit.toast('No hints left.'); return; }
+    var pool = remaining().filter(function (t) { return !t.hinted; });
+    if (!pool.length) { Kit.toast('Every remaining word is already marked.'); return; }
+    // Sweep left to right through the passage, and never surrender the keystone
+    // while a plain word is still available — the keystone is the flex, so it
+    // has to be the last thing a hint will give you.
+    pool.sort(function (a, b) { return a.s - b.s; });
+    var t = pool.filter(function (x) { return !x.key; })[0] || pool[0];
+    t.hinted = true;
+    st.hinted.push(t.w);
+    st.hints++;
+    save();
+    cells[letters[t.s].cell].el.classList.add('tip');
+    syncHintBtn();
+    Kit.haptic(8);
+    Kit.toast('A word starts on that flashing letter.');
+    say('Hint placed. ' + (HINTS_MAX - st.hints) + ' hints left.');
+  }
+
+  function syncHintBtn() {
+    var left = HINTS_MAX - st.hints;
+    hintBtn.textContent = left > 0 ? 'Hint · ' + left : 'No hints left';
+    hintBtn.disabled = left <= 0 || st.over;
+  }
+
+  hintBtn.addEventListener('click', hint);
+
+  quitBtn.addEventListener('click', function () {
+    if (st.over) return;
+    var n = remaining().length;
+    Kit.sheet(
+      '<h2>Give up?</h2>' +
+      '<p class="sub">' + n + (n === 1 ? ' word is' : ' words are') + ' still aboard. ' +
+      'Revealing ends the day — but you do get to see where they were.</p>' +
+      '<button class="btn primary wide" id="yesQuit">Show me</button>' +
+      '<button class="btn ghost wide" data-close style="margin-top:8px">Keep looking</button>',
+      { onOpen: function (el, close) {
+          el.querySelector('#yesQuit').addEventListener('click', function () { close(); finish(true); });
+        } }
+    );
+  });
+
+  /* ---------------------------------------------------------------
+     Ending
+     --------------------------------------------------------------- */
+  function snippet(t) {
+    var a = letters[t.s].ci, b = letters[t.e].ci;
+    var from = a, to = b;
+    while (from > 0 && text[from - 1] !== ' ') from--;
+    while (to < text.length - 1 && text[to + 1] !== ' ') to++;
+    return Kit.esc(text.slice(from, a)) + '<b>' + Kit.esc(text.slice(a, b + 1)) + '</b>' +
+           Kit.esc(text.slice(b + 1, to + 1));
+  }
+
+  function renderAfterwards() {
+    var rows = targets.slice().sort(function (a, b) { return a.s - b.s; }).map(function (t) {
+      var cls = 'fl-row' + (t.key ? ' k' : '') + (t.found ? '' : ' m');
+      return '<div class="' + cls + '"><span class="fl-w">' + t.w + '</span>' +
+             '<span class="fl-t">' + snippet(t) + '</span></div>';
+    }).join('');
+    afterEl.innerHTML =
+      '<div class="themebar" style="margin-bottom:10px">' + P.theme +
+      '<small>' + Kit.esc(P.reveal) + '</small></div>' +
+      '<div class="found-list">' + rows + '</div>';
+  }
+
+  function ordinal(n) {
+    var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function shareText() {
+    var row = st.order.map(function (w) {
+      var t = byWord(w);
+      return t.key ? '⭐' : (t.hinted ? '🟡' : '🔵');
+    });
+    targets.filter(function (t) { return !t.found; }).forEach(function () { row.push('⬜'); });
+    var kAt = st.order.indexOf(P.keystone);
+    var kLine = kAt < 0 ? 'keystone missed' : 'keystone found ' + ordinal(kAt + 1);
+    var h = st.hints === 0 ? 'no hints' : (st.hints === 1 ? '1 hint' : st.hints + ' hints');
+    // The clue goes in. It is the prompt every player sees BEFORE they start,
+    // so it leaks nothing — and it is the one line that makes each day's share
+    // read differently, which is the whole voice argument for this format.
+    return 'STOWAWAYS #' + DAY + '\n“' + P.clue + '”\n' +
+           row.join('') + '\n' + kLine + ' · ' + h + '\nsfun.games/stowaways';
+  }
+
+  function finish(gaveUp) {
+    if (st.over) { resultSheet(); return; }
+    st.over = true; st.gave = gaveUp;
+    save();
+    anchor = -1; press = null;
+    clearWrong();
+    clearSel();
+    relight();
+    targets.forEach(function (t) { if (!t.found) paintMissed(t); });
+    fillChips(null);
+    renderAfterwards();
+    syncHintBtn();
+    quitBtn.hidden = true;
+    hintBtn.hidden = true;
+    resBtn.hidden = false;
+    setReadout(-1);
+    passEl.style.cursor = 'default';
+    passEl.style.touchAction = 'auto';   // the page grows; let it scroll again
+    setTimeout(resultSheet, gaveUp ? 260 : 520);
+  }
+
+  function resultSheet() {
+    var n = st.order.length;
+    var clean = n === 6 && st.hints === 0;
+    var verdict, sub;
+    if (!st.gave) {
+      verdict = clean ? 'Clean sweep.' : 'All six aboard.';
+      sub = clean
+        ? 'Six stowaways, no hints, no help. Nobody is going to believe you.'
+        : 'All six, on ' + st.hints + (st.hints === 1 ? ' hint.' : ' hints.');
+    } else if (n === 5) {
+      verdict = 'One got away.';
+      sub = 'Five of six, and the last one was in a sentence you read nine times.';
+    } else if (n === 0) {
+      verdict = 'Nothing aboard.';
+      sub = 'Every single one was in plain sight the whole time. Look again below.';
+    } else {
+      verdict = 'Right there.';
+      sub = 'You looked straight at ' + n + ' of the six and walked past the rest. Everyone does.';
+    }
+
+    var html =
+      '<h2>' + verdict + '</h2>' +
+      '<p class="sub">' + sub + '</p>' +
+      '<div class="sharegrid" id="sg">' + Kit.esc(shareText()) + '</div>' +
+      '<div class="statrow">' +
+        '<div class="stat"><span class="n">' + n + '/6</span><span class="l">Found</span></div>' +
+        '<div class="stat"><span class="n">' + st.hints + '</span><span class="l">Hints</span></div>' +
+        '<div class="stat"><span class="n">' + (keystone.found ? '★' : '—') + '</span><span class="l">Keystone</span></div>' +
+      '</div>' +
+      '<button class="btn primary wide" id="shareBtn">Share result</button>' +
+      '<button class="btn ghost wide" data-close style="margin-top:8px">See where they were</button>' +
+      '<p class="hint" style="margin-top:14px">Next passage in <span class="cd" id="cd">--:--:--</span></p>';
+
+    Kit.sheet(html, { onOpen: function (el, close) {
+      var b = el.querySelector('#shareBtn');
+      b.addEventListener('click', function () { Kit.share(shareText(), b); });
+      var cd = el.querySelector('#cd');
+      var t = Kit.countdown(cd);
+      // stop the clock when the sheet actually leaves the document — keying it
+      // to a click on the scrim also killed it when you tapped Share
+      var guard = setInterval(function () {
+        if (!cd.isConnected) { clearInterval(t); clearInterval(guard); }
+      }, 1000);
+      void close;
+    } });
+  }
+
+  resBtn.addEventListener('click', resultSheet);
+
+  /* ---------------------------------------------------------------
+     Help
+     --------------------------------------------------------------- */
+  var HELP =
+    '<p>A few ordinary sentences. Hiding inside them, <b>six words on one theme</b> — ' +
+    'spelled straight through, but ignoring every space, comma and capital.</p>' +
+    '<div class="demo">the sam<b>ba con</b>test</div>' +
+    '<ul class="rules" style="padding-left:18px">' +
+      '<li><b>Tap the first letter, then the last.</b> Or drag across them — either ' +
+        'works. Tap the same letter twice to cancel.</li>' +
+      '<li>Every hidden word <b>straddles a gap</b> between real words. None of them ' +
+        'sit inside a single word — that would be too easy.</li>' +
+      '<li>One find is the <b>keystone ★</b>: the longest, and it names the theme. ' +
+        'Spotting it early is the flex.</li>' +
+      '<li><b>Wrong guesses cost nothing.</b> Guess constantly. This is a game about ' +
+        'looking, not risking.</li>' +
+      '<li>Three hints. Each one flashes the first letter of a word you have not found. ' +
+        'Hinted finds show as 🟡 when you share.</li>' +
+      '<li>Desktop: <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> to move, ' +
+        '<kbd>Enter</kbd> to set the start and again to set the end, <kbd>Esc</kbd> to ' +
+        'cancel, <kbd>H</kbd> for a hint.</li>' +
+    '</ul>';
+
+  var openHelp = Kit.helpButton(HELP, 'Stowaways');
+  document.getElementById('helpBtn').addEventListener('click', openHelp);
+
+  /* ---------------------------------------------------------------
+     Autofit — the passage owns `touch-action: none` so a drag never
+     scrolls the page out from under you. That is only safe if the
+     page never needs to scroll, so shrink the type until it fits.
+     --------------------------------------------------------------- */
+  var BASE_FS = null, MAX_FS = 23;
+  function autofit() {
+    if (st.over) return;
+    if (BASE_FS === null) { passEl.style.fontSize = ''; BASE_FS = parseFloat(getComputedStyle(passEl).fontSize); }
+    var size = BASE_FS, guard = 0;
+    passEl.style.fontSize = '';
+    var doc = document.documentElement;
+    var over = function () { return doc.scrollHeight > doc.clientHeight + 1; };
+    if (over()) {
+      while (over() && size > 15 && guard++ < 40) { size -= 0.5; passEl.style.fontSize = size + 'px'; }
+    } else {
+      // slack left over: the passage is the hero, so let it take the room
+      // rather than leaving a dead gap under it
+      while (!over() && size < MAX_FS && guard++ < 40) { size += 0.5; passEl.style.fontSize = size + 'px'; }
+      if (over()) { size -= 0.5; passEl.style.fontSize = size + 'px'; }
+    }
+    // If it still will not fit (very short screen), stop trapping vertical
+    // gestures — the page must stay scrollable. Tap-tap is unaffected.
+    passEl.style.touchAction = doc.scrollHeight > doc.clientHeight + 1 ? 'pan-y' : 'none';
+    rects = null;
+  }
+  /* Filling a chip with a long word (BREAKFAST, ORCHESTRA) can wrap the chip
+     row and cost a line of height mid-game. Only ever shrink here — re-running
+     the full autofit would snap the type back up and jolt the page. */
+  function refit() {
+    if (st.over) return;
+    var doc = document.documentElement;
+    if (doc.scrollHeight <= doc.clientHeight + 1) return;
+    var size = parseFloat(getComputedStyle(passEl).fontSize), guard = 0;
+    while (doc.scrollHeight > doc.clientHeight + 1 && size > 15 && guard++ < 30) {
+      size -= 0.5;
+      passEl.style.fontSize = size + 'px';
+    }
+    passEl.style.touchAction = doc.scrollHeight > doc.clientHeight + 1 ? 'pan-y' : 'none';
+    rects = null;
+  }
+
+  var fitT;
+  window.addEventListener('resize', function () {
+    BASE_FS = null;
+    clearTimeout(fitT);
+    fitT = setTimeout(autofit, 120);
+  });
+
+  /* ---------------------------------------------------------------
+     Boot
+     --------------------------------------------------------------- */
+  buildChips();
+  targets.forEach(function (t) {
+    if (t.found) paintFound(t, false);
+    else if (t.hinted && !st.over) cells[letters[t.s].cell].el.classList.add('tip');
+  });
+  fillChips(null);
+  syncHintBtn();
+  relight();
+  setReadout(-1);
+
+  if (st.over) {
+    targets.forEach(function (t) { if (!t.found) paintMissed(t); });
+    renderAfterwards();
+    quitBtn.hidden = true; hintBtn.hidden = true; resBtn.hidden = false;
+    passEl.style.cursor = 'default';
+    passEl.style.touchAction = 'auto';
+  } else {
+    autofit();
+  }
+
+  var seen = Kit.store('stowaways:seen');
+  if (!seen.get()) { seen.set(1); setTimeout(openHelp, 380); }
+
+  window.addEventListener('load', function () { rects = null; if (!st.over) autofit(); });
+})();
+</script>
+</body>
+</html>
