@@ -18,10 +18,18 @@ manufacture at least one of them, every single day, and leave behind a
 
 - **Mobile first.** Thumb-reachable, no hover dependencies, no drag where a tap
   will do, 44px minimum touch targets. Then make it good on desktop too.
-- **One puzzle a day.** Ships with 6+ hand-authored puzzles that rotate by local
-  date via `Kit.pick()`. `?d=N` pins a specific one for review.
+- **A puzzle a day, but never a lockout.** Ships with 6+ hand-authored puzzles.
+  The local date sets which one you *open* on, so everyone alive today starts
+  on the same board and the share number means something — but finishing one,
+  won or lost, hands you the next one immediately. Use `Kit.puzzleNo(ns)` for
+  the number, the share line and the save key; `Kit.pick(list, ns)` to select;
+  and end every result with `Kit.nextButton(ns)`. `?d=N` pins one for review.
+  **No countdown-to-midnight, no "come back tomorrow", anywhere.** A reviewer
+  has to be able to play four in a row, and a player who just lost has to be
+  able to see the result and immediately play on.
 - **Under 3 minutes** to play. Daily habits die on 20-minute puzzles.
 - **No dead ends without drama.** Losing must feel like a near miss, not a wall.
+  A loss shows its result screen straight away — never on the next visit.
 - **Zero build step.** Static HTML/CSS/JS. Must work opened from `file://`
   and served over http. No CDNs, no frameworks, no fetch() of local files
   (that breaks `file://` — inline data or use a `<script>` data file).
@@ -82,7 +90,9 @@ tweet and in iMessage. Use `Kit.share()`.
 - [ ] Playable on desktop with a physical keyboard.
 - [ ] Win state AND lose state both implemented, both feel good.
 - [ ] Share artifact copies to clipboard.
-- [ ] Progress persists on reload (`Kit.store`); a finished day stays finished.
+- [ ] Progress persists on reload (`Kit.store`); a finished puzzle reopens its
+      result rather than restarting — and offers the next puzzle immediately.
+- [ ] No lockout: from a finished board, win or lose, you can play on at once.
 - [ ] 6+ puzzles, every one solved and verified by you before you claim done.
 - [ ] Light and dark both look deliberate.
 - [ ] No console errors.

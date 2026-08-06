@@ -9,17 +9,49 @@
   const EPOCH = Date.UTC(2026, 0, 1); // Jan 1 2026 = puzzle #1
   const DAY = 86400000;
 
-  /* ---- daily rotation -------------------------------------------------- */
-  // Demos ship a handful of hand-authored puzzles; index rotates by local day
-  // so "come back tomorrow" is real, and ?d=N pins one for review.
+  /* ---- rotation ---------------------------------------------------------
+     The day still sets which puzzle you OPEN on, so everyone alive today
+     starts on the same one and the share number means something. What the
+     day does not do any more is lock you out: finishing a puzzle — won or
+     lost — hands you the next one immediately.
+
+     `advance(ns)` steps a per-game cursor forward, which is why puzzleNo()
+     and not dayNumber() is what a game should use for its number, its share
+     line and its save key. Step it and you get tomorrow's puzzle today; the
+     numbering stays honest because it is literally the next day's index.
+     `?d=N` still pins one absolutely and ignores the cursor, for review.  */
   function dayNumber() {
-    const q = new URLSearchParams(location.search).get('d');
-    if (q !== null && q !== '' && !isNaN(+q)) return Math.max(0, Math.floor(+q));
     const now = new Date();
     const local = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
     return Math.max(0, Math.round((local - EPOCH) / DAY)) + 1;
   }
-  function pick(list) { return list[(dayNumber() - 1) % list.length]; }
+  function pinned() {
+    const q = new URLSearchParams(location.search).get('d');
+    return (q !== null && q !== '' && !isNaN(+q)) ? Math.max(1, Math.floor(+q)) : null;
+  }
+  const cursor = (ns) => store('cursor:' + (ns || 'default'));
+
+  function puzzleNo(ns) {
+    const p = pinned();
+    if (p !== null) return p;
+    return dayNumber() + (cursor(ns).get() || 0);
+  }
+  function advance(ns, by) {
+    // A pinned ?d= URL would otherwise swallow the step and look broken.
+    if (pinned() !== null) {
+      const url = new URL(location.href);
+      url.searchParams.set('d', pinned() + (by || 1));
+      location.href = url.toString();
+      return;
+    }
+    cursor(ns).set((cursor(ns).get() || 0) + (by || 1));
+    location.reload();
+  }
+  function resetCursor(ns) { cursor(ns).clear(); }
+
+  // pick(list) keeps working for anything that has not been given a
+  // namespace yet; pass one and the puzzle follows that game's cursor.
+  function pick(list, ns) { return list[(puzzleNo(ns) - 1) % list.length]; }
   function dateLabel() {
     return new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
   }
@@ -454,8 +486,25 @@
     return true;
   }
 
+  /* The one way out of a finished puzzle. Every result sheet ends with this
+     exact control so the gesture is the same in all five games — and so no
+     demo can quietly reintroduce a "come back tomorrow" wall. */
+  function nextButton(ns, label) {
+    return `<button class="btn primary wide" type="button" data-next-puzzle="${esc(ns)}">` +
+           icon('play_arrow', { fill: 1 }) + (label || 'Next puzzle') + '</button>';
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest && e.target.closest('[data-next-puzzle]');
+    if (!b) return;
+    e.preventDefault();
+    b.disabled = true;
+    haptic(12);
+    advance(b.getAttribute('data-next-puzzle'));
+  });
+
   global.Kit = {
-    dayNumber, pick, dateLabel, countdown, msToMidnight, rng,
+    dayNumber, puzzleNo, advance, resetCursor, pinned, nextButton,
+    pick, dateLabel, countdown, msToMidnight, rng,
     store, toast, sheet, share, keyboard, haptic, flash, esc, helpButton,
     icon, themeToggle, currentTheme, count, burst, tour, once
   };
