@@ -663,9 +663,19 @@ board.addEventListener('blur', ()=>{ kbMode=false; board.classList.remove('kb');
 /* ======================================================================
    end screen + share
    ====================================================================== */
+/* One square per move: how many of the four rows were spelling words after it.
+   0 ⬜  1 🟨  2 🟧  3 🟥 (the agonising one)  4 🟩.
+   A │ is dropped in where par ran out, so "went long" is visible at a glance
+   without ever naming a letter. */
 const SQ=['⬜','🟨','🟧','🟥','🟩'];
 function trailArt(){
-  return S.trail.slice(1).map(m=>SQ[popcount(m)]).join('');
+  const sq = S.trail.slice(1).map(m=>SQ[popcount(m)]);
+  if(sq.length>puz.par) sq.splice(puz.par,0,'│');
+  let art = sq.join('');
+  if(sq.length>16){                     // keep it inside one tweet line
+    art = sq.slice(0,7).join('')+'…'+sq.slice(-8).join('');
+  }
+  return art;
 }
 function whichSolution(){ return puz.sols.findIndex(s=>s.b===key(S.grid)); }
 const PCTS = puz.sols.map(s=>s.pct);
@@ -677,8 +687,7 @@ function awayText(n){ return n>4 ? '5+ moves' : (n===1 ? '1 move' : n+' moves');
 function shareText(){
   const win = S.done && S.done.win;
   const head = `SHUNT #${DAY} · ${win? S.moves+' move'+(S.moves===1?'':'s') : 'out of moves'} (par ${puz.par})`;
-  let art = trailArt();
-  if(art.length>28) art = art.slice(0,13)+'…'+art.slice(-13);
+  const art = trailArt();
   let line3;
   if(win){
     const i=whichSolution();

@@ -26,7 +26,9 @@
 
 /* ---------- layout tweaks ---------- */
 .app{ padding-bottom: calc(8px + var(--safe-b)); }
-.stage{ justify-content:flex-start; gap:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+/* min-height:0 is load-bearing: without it the flex item refuses to shrink
+   below its content and the on-screen keyboard gets shoved off the phone. */
+.stage{ justify-content:flex-start; gap:12px; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .prompt{ padding:9px 13px; }
 .prompt .v{ font-size:13.5px; }
 .bar{ margin-bottom:10px; }
