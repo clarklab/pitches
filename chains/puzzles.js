@@ -506,12 +506,12 @@
   const ROUNDS = [
     { name: 'Opening Round', holes: [
       { start: 'STAR',   target: 'WORK',    best: 3, par: 4 },
-      { start: 'SNOW',   target: 'GROUND',  best: 4, par: 5 },
+      { start: 'SNOW',   target: 'TOWER',   best: 4, par: 5 },
       { start: 'FIRE',   target: 'CAR',     best: 4, par: 6, long: true }
     ]},
     { name: 'The Turn', holes: [
       { start: 'MOON',   target: 'PARTY',   best: 3, par: 4 },
-      { start: 'RAIN',   target: 'CRACKER', best: 4, par: 5 },
+      { start: 'RAIN',   target: 'SCREEN',  best: 4, par: 5 },
       { start: 'BOOK',   target: 'TIME',    best: 3, par: 5, long: true }
     ]},
     { name: 'Seaside Links', holes: [
@@ -532,7 +532,7 @@
     { name: 'Championship', holes: [
       { start: 'GREEN',  target: 'WALK',    best: 3, par: 4 },
       { start: 'WHITE',  target: 'DRILL',   best: 4, par: 5 },
-      { start: 'FOOT',   target: 'CAR',     best: 4, par: 6, long: true }
+      { start: 'FOOT',   target: 'STAND',   best: 4, par: 6, long: true }
     ]}
   ];
 
