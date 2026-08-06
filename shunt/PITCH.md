@@ -89,9 +89,9 @@ anyone who'd rather tap than drag.
 
 ## The daily hook
 
-One grid a day, rotating by local date. Under three minutes. Par is 6 pushes
-on every shipped puzzle; the hard cap is par + 8, so you have room to flail and
-still finish — and flailing is the fun part, not the failure state.
+One grid a day, rotating by local date. Under three minutes. Par is 5 or 6
+pushes on the shipped grids; the hard cap is par + 8, so you have room to flail
+and still finish — and flailing is the fun part, not the failure state.
 
 The retention argument is not the puzzle, it's the **object**. The board is
 draggable at all times. Letters follow your thumb continuously, light up mid-
@@ -124,6 +124,12 @@ says **"the rare one"** and your friends can check their own block against it.
 That is a genuinely new social object: not "did you get it" but "did you get
 the *same* one". Two people who both shot par have something to argue about.
 Wordle can never manufacture that.
+
+And the twist writes itself. On the par-5 exam grid, the two solutions are
+`QUIT / EXAM / ZEST / DRAG` (75% of shortest routes) and
+`QUIZ / EXAM / TEST / GRAD` (25%). The *themed* answer — the one the setter
+authored, the one you'd swear is the intended solution — is the rare one. Most
+players will never see it. The ones who do have a story.
 
 **2. Three rows lit is the cruellest near-miss in the category.**
 
@@ -227,7 +233,7 @@ rather than sampling:
 |---|---|---|
 | Solution count | 2 ≤ N ≤ 8 | 1 kills the share hook; >8 makes "solution 6 of 11" meaningless. |
 | Distinct word sets | ≥ 2 different *sets* of words among the solutions | Four row-orderings of the same four words is not four solutions. The search tool already sorts candidates by this. |
-| Par band | 5–7, distributed 6/6/6/5/7 across a week | Under 5 is over before the fidget starts; over 7 breaks the 3-minute rule. |
+| Par band | 5–7, mixed across a week (the nine shipped grids run 5, 5 and 6) | Under 5 is over before the fidget starts; over 7 breaks the 3-minute rule. Note the verifier's bidirectional bound gets expensive at par 7 — the forward half goes to depth 6 — so par-7 grids need a longer offline run. |
 | Clean start | zero lit rows at move 0 | See above. |
 | Word quality | every word in the *shipped* solutions hand-checked | This is the one that must stay manual. |
 | Theme | the authored quartet shares a category | `swim/dive/surf/raft`, `hawk/dove/crow/wren`, `quiz/exam/test/grad`. Gives the reveal a payoff beyond "four words". |
@@ -242,7 +248,14 @@ Every shipped grid's full solution list is printed by the verifier and read by
 a human. At roughly 30 seconds of reading per grid, 365 grids is a
 two-afternoon job, done once, and re-runnable if the lexicon ever changes.
 
-Seven grids ship here, all verified. The pipeline is not a plan; it's the
+**Cost note from actually running it:** the enumeration is cheap when the
+letters are unusual and brutal when they're common. `wolf/lynx/hawk/crow`
+yields 96 candidate solved boards and searches in seconds; `jury/oath/case/plea`
+yields 316,440 and is effectively unsearchable at 40 tries. In practice you
+pick themes with a `j/k/q/v/w/x/z` in them and the pipeline runs fast. That is
+a real constraint on theme selection, not a footnote.
+
+Nine grids ship here, all verified. The pipeline is not a plan; it's the
 script that produced them.
 
 ## Open risks
@@ -290,8 +303,20 @@ the least intuitive rule in the game and the one most likely to generate
 complaints. It's currently behind a confirmation sheet that states the cost
 plainly. It may still need to go.
 
-**5. Seven grids is a demo, not a year.**
+**5. A perfect solve produces a boring share block.**
+
+On an optimal line nothing lights up until the last push, so par often prints
+`⬜⬜⬜⬜⬜🟩`. The trail is honest — it says "surgical, never a row lit until
+they all lit" — but the artifact is at its flattest exactly when the result is
+at its most impressive, which is backwards. The rarity line on row 3 carries
+the brag instead. I considered adding a second art row encoding row-vs-column
+pushes; it reads well but a `↔↕↔↔↕↕` sequence next to a known par is real
+information about the solution, and the brief says no leakage, so it's out.
+Open problem.
+
+**6. Nine grids is a demo, not a year.**
 
 The pipeline above is real and runs, but 365 grids with hand-checked word
 quality is a genuine content commitment before launch, and the themed-quartet
-requirement makes it harder than it sounds. Assume a week of authoring.
+requirement plus the cheap-letters constraint makes it harder than it sounds.
+Assume a week of authoring.
