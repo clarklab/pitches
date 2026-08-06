@@ -1,0 +1,579 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SEED — Superfun Daily</title>
+<link rel="stylesheet" href="../shared/kit.css">
+<style>
+  :root { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --accent:#e4638a; --accent-soft:#3a1424; --accent-ink:#200c14; }
+  }
+  :root[data-theme="dark"]  { --accent:#e4638a; --accent-soft:#3a1424; --accent-ink:#200c14; }
+  :root[data-theme="light"] { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; }
+
+  .stage { justify-content: flex-start; gap: 12px; }
+
+  /* ---------- growth staircase ---------- */
+  .stair {
+    flex: 1 1 auto; min-height: 76px; max-height: 34dvh; overflow-y: auto;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    gap: 2px; padding: 4px 2px; scrollbar-width: thin;
+  }
+  .step {
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: var(--font-tile); font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; font-size: 15px; color: var(--ink-2);
+    animation: step-in .3s cubic-bezier(.2,.9,.3,1);
+    white-space: nowrap;
+  }
+  @keyframes step-in { from { opacity: 0; transform: translate(-8px, 8px) } }
+  .step .rail { color: var(--line-2); font-weight: 400; letter-spacing: 0; }
+  .step .len {
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+    color: var(--ink-3); letter-spacing: 0;
+  }
+  .step:last-child { color: var(--accent); font-size: 17px; }
+  .step:last-child .len { color: var(--accent); }
+
+  /* ---------- the public queue (a conveyor you can read ahead on) ---------- */
+  .qwrap {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--r); padding: 9px 10px 10px; box-shadow: var(--shadow-1);
+  }
+  .qhead {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 10px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 7px;
+  }
+  .qhead .rem { color: var(--ink-3); letter-spacing: .06em; font-weight: 600; }
+  .queue { position: relative; padding-top: 11px; }
+  .qrow { display: flex; gap: 5px; justify-content: space-between; }
+  .qt {
+    flex: 1 1 0; min-width: 0; height: 34px;
+    display: grid; place-items: center;
+    border: 1.5px solid var(--line-2); border-radius: 7px;
+    font-family: var(--font-tile); font-weight: 700; font-size: 15px;
+    background: var(--paper); color: var(--ink); position: relative;
+    transition: background .25s, color .25s, border-color .25s, opacity .25s, transform .25s;
+  }
+  .qt.next {
+    background: var(--accent); color: var(--accent-ink); border-color: transparent;
+    transform: translateY(1px) scale(1.06); box-shadow: var(--shadow-1);
+  }
+  .qt.done { opacity: .32; background: transparent; border-style: dashed; }
+  .qt.skipped { opacity: .32; background: transparent; border-style: dashed; color: var(--ink-3); }
+  .qt.skipped::after {
+    content: '⏭'; position: absolute; font-size: 9px; bottom: -1px; right: 2px; opacity: .9;
+  }
+  .qt.done::after {
+    content: ''; position: absolute; left: 15%; right: 15%; top: 50%;
+    height: 1.5px; background: var(--ink-3);
+  }
+  .caret {
+    position: absolute; top: 0; left: 0; width: 10px; height: 9px;
+    transition: transform .32s cubic-bezier(.2,.9,.3,1);
+    will-change: transform;
+  }
+  .caret::before {
+    content: ''; display: block; width: 0; height: 0; margin: 0 auto;
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid var(--accent);
+    animation: nudge 1.4s ease-in-out infinite;
+  }
+  @keyframes nudge { 0%,100% { transform: translateY(-2px) } 50% { transform: translateY(1px) } }
+
+  /* ---------- word slot ---------- */
+  .slotwrap { display: flex; align-items: center; gap: 8px; min-height: 52px; }
+  .slot {
+    flex: 1; display: flex; flex-wrap: wrap; gap: 5px; align-content: center;
+    min-height: 52px; padding: 4px 6px;
+    border: 1.5px dashed var(--line-2); border-radius: var(--r);
+    background: var(--paper-2);
+  }
+  .slot.full { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+  .slot .ph { color: var(--ink-3); font-size: 13px; padding: 8px 4px; }
+
+  /* ---------- tiles ---------- */
+  .rack { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; min-height: 50px; }
+  .lt {
+    width: 42px; height: 46px; padding: 0; cursor: pointer;
+    background: var(--white); border: 1.5px solid var(--line-2);
+    border-radius: var(--r-sm); font-family: var(--font-tile);
+    font-weight: 700; font-size: 21px; text-transform: uppercase;
+    color: var(--ink); box-shadow: 0 1.5px 0 var(--line-2);
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    transition: transform .1s, box-shadow .12s, background .2s, border-color .2s;
+    display: grid; place-items: center; user-select: none;
+  }
+  .lt:active { transform: translateY(1.5px); box-shadow: none; }
+  .lt.fresh {
+    border-color: var(--accent); color: var(--accent);
+    animation: drop .38s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes drop {
+    0%   { transform: translateY(-34px) scale(.6); opacity: 0 }
+    60%  { transform: translateY(3px) scale(1.06); opacity: 1 }
+    100% { transform: none }
+  }
+  .slot .lt { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: none; }
+  .slot .lt.fresh { color: var(--accent-ink); }
+  .lt.ghost { opacity: .22; pointer-events: none; box-shadow: none; }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; gap: 7px; }
+  .controls .btn { flex: 1; padding: 13px 6px; font-size: 14px; min-height: 46px; }
+  .controls .btn.enter { flex: 1.5; }
+  .skipdots { letter-spacing: -.06em; }
+  .bottom { margin-top: auto; display: flex; flex-direction: column; gap: 9px; padding-top: 6px; }
+  .stuckrow { text-align: center; }
+  .stuck {
+    background: none; border: 0; color: var(--ink-3); font-size: 12.5px;
+    text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+    padding: 6px 12px; min-height: 32px;
+  }
+  .stuck.hot { color: var(--bad); font-weight: 700; text-decoration: none; }
+
+  /* ---------- result ---------- */
+  .finalword {
+    font-family: var(--font-tile); font-weight: 700; font-size: 24px;
+    letter-spacing: .12em; text-align: center; text-transform: uppercase;
+    color: var(--accent); margin: 2px 0 0; word-break: break-all;
+  }
+  .gapline {
+    text-align: center; font-size: 14.5px; color: var(--ink-2); margin: 10px 0 0;
+  }
+  .gapline b { color: var(--ink); }
+  .recap {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 10px 12px; margin: 12px 0 0; max-height: 30dvh; overflow-y: auto;
+  }
+  .reveal {
+    margin-top: 10px; border: 1px dashed var(--line-2); border-radius: var(--r);
+    padding: 10px 12px; background: var(--paper-2);
+  }
+  .reveal summary {
+    cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--accent);
+    list-style: none; text-align: center;
+  }
+  .reveal summary::-webkit-details-marker { display: none; }
+  .reveal .par {
+    margin-top: 9px; font-family: var(--font-tile); font-weight: 700;
+    font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-2); line-height: 1.9; text-align: center;
+  }
+  .reveal .par i { color: var(--accent); font-style: normal; }
+  .countdown { text-align: center; font-size: 12.5px; color: var(--ink-3); margin-top: 12px; }
+  .countdown b { font-family: var(--font-mono); color: var(--ink-2); }
+  kbd {
+    font-family: var(--font-mono); font-size: 11px; background: var(--paper-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+  }
+  @media (max-height: 700px) {
+    .stair { max-height: 22dvh; min-height: 54px; }
+    .lt { height: 42px; }
+  }
+</style>
+
+<div class="app">
+  <div class="bar">
+    <span class="puzz-no" id="pno"></span>
+    <h1>Seed</h1>
+    <button class="iconbtn" id="helpbtn" aria-label="How to play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.9 2.9 0 1 1 3.6 3.1c-.6.2-.8.7-.8 1.3v.4"/><circle cx="12" cy="17.4" r=".9" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="prompt">
+    <span class="k">Grow one word</span>
+    <span class="v" id="objective"></span>
+  </div>
+
+  <div class="stage">
+    <div class="stair" id="stair" aria-label="Your growth so far"></div>
+
+    <div class="qwrap">
+      <div class="qhead"><span>The queue — same for everyone today</span><span class="rem" id="qrem"></span></div>
+      <div class="queue" id="queue">
+        <div class="caret" id="caret"></div>
+        <div class="qrow" id="qrow"></div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="slotwrap"><div class="slot" id="slot"></div></div>
+      <div class="rack" id="rack"></div>
+      <div class="controls">
+        <button class="btn ghost" id="shuffle" aria-label="Shuffle rack">⇄</button>
+        <button class="btn" id="skip"></button>
+        <button class="btn primary enter" id="enter">Enter</button>
+      </div>
+      <div class="stuckrow"><button class="stuck" id="stuck">I'm stuck…</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/kit.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var DAY   = Kit.dayNumber();
+  var PUZ   = Kit.pick(window.SEED_PUZZLES);
+  var Q     = PUZ.queue.split('');
+  var SEED  = PUZ.seed;
+  var MAXSK = 2;
+  var STORE = Kit.store('seed');
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---- state ---------------------------------------------------------- */
+  // qi        : how many queue letters have been resolved (taken or skipped)
+  // rack      : letters in hand, INCLUDING the pending letter Q[qi]
+  // slot      : indices into rack, in the order the player tapped them
+  // hist      : words played, starting with the seed
+  // timeline  : 'take' | 'skip' per resolved queue letter
+  var S;
+
+  function fresh() {
+    return {
+      day: DAY, qi: 0, rack: SEED.split('').concat([Q[0]]), slot: [],
+      hist: [SEED], timeline: [], skips: 0, over: false, ending: null, seen: false
+    };
+  }
+
+  function load() {
+    var saved = STORE.get();
+    if (saved && saved.day === DAY && saved.v === 2) return saved;
+    return fresh();
+  }
+  function save() { S.v = 2; STORE.set(S); }
+
+  /* ---- lookup --------------------------------------------------------- */
+  function key(arr) { return arr.slice().sort().join(''); }
+  function wordsFor(arr) { return PUZ.words[key(arr)] || null; }
+  function rackHasWord() { return !!wordsFor(S.rack); }
+
+  /* ---- rendering ------------------------------------------------------ */
+  function renderStair() {
+    var el = $('stair');
+    el.innerHTML = '';
+    S.hist.forEach(function (w, i) {
+      var d = document.createElement('div');
+      d.className = 'step';
+      var rail = i === 0 ? '' : '│ '.repeat(0) + '↳';
+      d.innerHTML = '<span class="rail" style="padding-left:' + (i * 9) + 'px">' +
+        (i === 0 ? '●' : '↳') + '</span>' +
+        '<span>' + Kit.esc(w) + '</span>' +
+        '<span class="len">' + w.length + '</span>';
+      el.appendChild(d);
+    });
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function renderQueue() {
+    var row = $('qrow');
+    row.innerHTML = '';
+    Q.forEach(function (ch, i) {
+      var t = document.createElement('div');
+      t.className = 'qt';
+      t.textContent = ch;
+      if (i < S.qi) t.className += (S.timeline[i] === 'skip' ? ' skipped' : ' done');
+      else if (i === S.qi && !S.over) t.className += ' next';
+      row.appendChild(t);
+    });
+    // slide the caret onto the letter that is landing right now
+    var caret = $('caret');
+    if (S.qi >= Q.length || S.over) { caret.style.opacity = '0'; return; }
+    caret.style.opacity = '1';
+    var tile = row.children[S.qi];
+    var x = tile.offsetLeft + tile.offsetWidth / 2 - 5;
+    caret.style.transform = 'translateX(' + x + 'px)';
+
+    var left = Q.length - S.qi;
+    $('qrem').textContent = left + ' to come';
+  }
+
+  function renderTiles(justDropped) {
+    var rackEl = $('rack'), slotEl = $('slot');
+    rackEl.innerHTML = ''; slotEl.innerHTML = '';
+    var inSlot = {};
+    S.slot.forEach(function (idx) { inSlot[idx] = true; });
+
+    S.rack.forEach(function (ch, idx) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'lt' + (inSlot[idx] ? ' ghost' : '');
+      b.textContent = ch;
+      b.setAttribute('aria-label', 'Letter ' + ch);
+      if (justDropped && idx === S.rack.length - 1) b.className += ' fresh';
+      b.addEventListener('click', function () { toSlot(idx); });
+      rackEl.appendChild(b);
+    });
+
+    if (!S.slot.length) {
+      slotEl.className = 'slot';
+      slotEl.innerHTML = '<span class="ph">Tap letters — the word must use all ' + S.rack.length + '</span>';
+    } else {
+      slotEl.className = 'slot' + (S.slot.length === S.rack.length ? ' full' : '');
+      S.slot.forEach(function (idx, pos) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'lt';
+        b.textContent = S.rack[idx];
+        b.setAttribute('aria-label', 'Remove ' + S.rack[idx]);
+        b.addEventListener('click', function () { fromSlot(pos); });
+        slotEl.appendChild(b);
+      });
+    }
+  }
+
+  function renderControls() {
+    var sk = $('skip');
+    var left = MAXSK - S.skips;
+    sk.innerHTML = 'Skip <span class="skipdots">' + (left ? '⏭'.repeat(left) : '—') + '</span>';
+    sk.disabled = left === 0 || S.over || S.qi >= Q.length;
+    $('enter').disabled = S.over;
+    $('shuffle').disabled = S.over;
+    var st = $('stuck');
+    st.disabled = S.over;
+    st.textContent = rackHasWord() ? "I'm stuck…" : "Nothing fits…";
+    st.className = 'stuck' + (rackHasWord() ? '' : ' hot');
+  }
+
+  function render(justDropped) {
+    renderStair(); renderQueue(); renderTiles(justDropped); renderControls();
+  }
+
+  /* ---- interaction ---------------------------------------------------- */
+  function toSlot(idx) {
+    if (S.over) return;
+    if (S.slot.indexOf(idx) !== -1) return;
+    S.slot.push(idx);
+    Kit.haptic(6);
+    renderTiles(); renderControls(); save();
+  }
+  function fromSlot(pos) {
+    if (S.over) return;
+    S.slot.splice(pos, 1);
+    Kit.haptic(6);
+    renderTiles(); renderControls(); save();
+  }
+  function typeLetter(ch) {
+    for (var i = 0; i < S.rack.length; i++) {
+      if (S.rack[i] === ch && S.slot.indexOf(i) === -1) { toSlot(i); return true; }
+    }
+    Kit.flash($('slot'), 'shake');
+    return false;
+  }
+  function backspace() { if (S.slot.length) fromSlot(S.slot.length - 1); }
+
+  function shuffleRack() {
+    if (S.over) return;
+    // shuffle only the letters not currently committed to the slot
+    var free = [], freeIdx = [];
+    S.rack.forEach(function (ch, i) { if (S.slot.indexOf(i) === -1) { free.push(ch); freeIdx.push(i); } });
+    for (var i = free.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = free[i]; free[i] = free[j]; free[j] = t;
+    }
+    freeIdx.forEach(function (idx, n) { S.rack[idx] = free[n]; });
+    Kit.haptic(8);
+    renderTiles(); save();
+  }
+
+  function advance() {
+    S.slot = [];
+    S.qi++;
+    if (S.qi >= Q.length) { finish('survived'); return; }
+    S.rack.push(Q[S.qi]);
+    save();
+    render(true);
+  }
+
+  function submit() {
+    if (S.over) return;
+    if (S.slot.length < S.rack.length) {
+      Kit.flash($('slot'), 'shake');
+      Kit.toast('Use every letter — all ' + S.rack.length);
+      return;
+    }
+    var word = S.slot.map(function (i) { return S.rack[i]; }).join('');
+    var ok = wordsFor(S.rack);
+    if (!ok || ok.indexOf(word) === -1) {
+      Kit.flash($('slot'), 'shake');
+      Kit.haptic(24);
+      Kit.toast(ok ? 'Not a word — but something fits' : 'Not a word');
+      return;
+    }
+    S.hist.push(word);
+    S.timeline.push('take');
+    Kit.haptic(14);
+    Kit.toast(word.length + ' letters');
+    advance();
+  }
+
+  function doSkip() {
+    if (S.over || S.skips >= MAXSK || S.qi >= Q.length) return;
+    var ch = Q[S.qi];
+    var at = S.rack.lastIndexOf(ch);
+    if (at !== -1) S.rack.splice(at, 1);
+    S.slot = [];
+    S.skips++;
+    S.timeline.push('skip');
+    Kit.haptic(10);
+    Kit.toast('Skipped ' + ch);
+    S.qi++;
+    if (S.qi >= Q.length) { finish('survived'); return; }
+    S.rack.push(Q[S.qi]);
+    save();
+    render(true);
+  }
+
+  /* ---- stuck / end ---------------------------------------------------- */
+  function confirmStuck() {
+    if (S.over) return;
+    var alive = rackHasWord();
+    var reached = S.hist[S.hist.length - 1].length;
+    var html = alive
+      ? '<h2>Sure?</h2><p class="sub">There <b>is</b> a word hiding in these ' +
+        S.rack.length + ' letters. Shuffle. Say them out loud. ' +
+        (S.skips < MAXSK ? 'You still have a skip.' : 'You are out of skips.') + '</p>'
+      : '<h2>Nothing fits.</h2><p class="sub">No word uses all ' + S.rack.length +
+        ' of these letters. ' + (S.skips < MAXSK
+          ? 'Spend a skip and this letter goes away.'
+          : 'And you are out of skips. This is where the run ends.') + '</p>';
+    html += '<div style="display:flex;gap:8px;margin-top:16px">' +
+      '<button class="btn ghost" style="flex:1" data-close>Keep going</button>' +
+      '<button class="btn primary" style="flex:1" id="reallyend">End at ' + reached + '</button></div>';
+    var sh = Kit.sheet(html);
+    sh.el.querySelector('#reallyend').addEventListener('click', function () {
+      sh.close(); finish('stuck');
+    });
+  }
+
+  function finish(how) {
+    S.over = true;
+    S.ending = how;
+    S.slot = [];
+    save();
+    render();
+    setTimeout(showResult, 320);
+  }
+
+  /* ---- share ---------------------------------------------------------- */
+  function shareText() {
+    var bar = '';
+    for (var i = 0; i < Q.length; i++) {
+      if (i >= S.timeline.length) bar += '⬜';
+      else bar += (S.timeline[i] === 'skip' ? '⏭️' : '🟪');
+    }
+    var reached = S.hist[S.hist.length - 1].length;
+    var tail = reached >= PUZ.max
+      ? reached + ' letters · MAXED IT 🏆'
+      : reached + ' letters · best possible ' + PUZ.max;
+    return 'SEED #' + DAY + ' · ' + SEED + '\n' + bar + '\n' + tail + '\nsfun.games/seed';
+  }
+
+  /* ---- result --------------------------------------------------------- */
+  function showResult() {
+    var reached = S.hist[S.hist.length - 1].length;
+    var gap = PUZ.max - reached;
+    var maxed = gap <= 0;
+    var verdict, sub;
+    if (maxed)                     { verdict = 'Maxed it.';   sub = 'Nobody grew a longer word today. Nobody could.'; }
+    else if (gap === 1)            { verdict = 'One short.';  sub = 'There was a ' + PUZ.max + ' in there. One letter more.'; }
+    else if (gap === 2)            { verdict = 'So close.';   sub = 'There was a ' + PUZ.max + ' in there.'; }
+    else if (S.ending === 'stuck') { verdict = 'Stuck at ' + reached + '.'; sub = 'The queue had a ' + PUZ.max + ' in it.'; }
+    else                           { verdict = reached + ' letters.'; sub = 'The queue had a ' + PUZ.max + ' in it.'; }
+
+    var steps = S.hist.map(function (w, i) {
+      return '<div class="step"><span class="rail" style="padding-left:' + (i * 9) + 'px">' +
+        (i === 0 ? '●' : '↳') + '</span><span>' + Kit.esc(w) + '</span>' +
+        '<span class="len">' + w.length + '</span></div>';
+    }).join('');
+
+    var par = PUZ.par.map(function (w, i) {
+      return (i ? ' <span style="opacity:.4">↳</span> ' : '') +
+        (i === PUZ.par.length - 1 ? '<i>' + Kit.esc(w) + '</i>' : Kit.esc(w));
+    }).join('');
+
+    var html =
+      '<h2 class="verdict" style="margin-bottom:6px">' + verdict + '</h2>' +
+      '<p class="sub">' + sub + '</p>' +
+      '<div class="finalword">' + Kit.esc(S.hist[S.hist.length - 1]) + '</div>' +
+      '<div class="statrow">' +
+        '<div class="stat"><span class="n">' + reached + '</span><span class="l">Letters</span></div>' +
+        '<div class="stat"><span class="n">' + S.skips + '</span><span class="l">Skips used</span></div>' +
+        '<div class="stat"><span class="n">' + PUZ.max + '</span><span class="l">Best possible</span></div>' +
+      '</div>' +
+      '<div class="sharegrid" id="sg">' + Kit.esc(shareText()) + '</div>' +
+      '<button class="btn primary wide" id="sharebtn">Share result</button>' +
+      '<div class="recap">' + steps + '</div>' +
+      (maxed ? '' :
+        '<details class="reveal"><summary>Show me the ' + PUZ.max + ' ▾</summary>' +
+        '<div class="par">' + par + '</div>' +
+        '<div class="hint" style="margin-top:8px">' +
+        (PUZ.maxSkips ? 'Skipping ' + PUZ.maxSkips + ' letter' + (PUZ.maxSkips > 1 ? 's' : '') + ' along the way.'
+                      : 'Taking every single letter.') + '</div></details>') +
+      '<div class="countdown">Next seed in <b id="cd">--:--:--</b></div>' +
+      '<button class="btn ghost wide" style="margin-top:12px" data-close>Look at the board</button>';
+
+    var sh = Kit.sheet(html);
+    sh.el.querySelector('#sharebtn').addEventListener('click', function (e) {
+      Kit.share(shareText(), e.currentTarget);
+    });
+    var cd = sh.el.querySelector('#cd');
+    var t = Kit.countdown(cd);
+    var obs = setInterval(function () {
+      if (!document.body.contains(cd)) { clearInterval(t); clearInterval(obs); }
+    }, 1000);
+  }
+
+  /* ---- help ----------------------------------------------------------- */
+  var HELP =
+    '<ul style="padding-left:18px;margin:0 0 4px">' +
+    '<li>You start with a <b>3-letter word</b>. One letter from the queue drops into your rack each turn.</li>' +
+    '<li>Play a word that uses <b>every letter in your rack</b>, in any order. Then the next letter drops. Your word grows 3 → 4 → 5 →…</li>' +
+    '<li><b>The queue is public and in order.</b> Everyone in the world gets the same nine letters, in the same sequence. You can see what is coming — so plan for it.</li>' +
+    '<li>You get <b>2 skips</b>. A skip throws the incoming letter away and your rack does not grow. Spend them on the letters you cannot absorb.</li>' +
+    '<li>Your score is the <b>longest word you reach</b>. You survive until you cannot make a word.</li>' +
+    '<li>On a keyboard: type letters, <kbd>⌫</kbd> to take one back, <kbd>space</kbd> to shuffle, <kbd>enter</kbd> to play.</li>' +
+    '</ul>' +
+    '<p style="font-size:13.5px;color:var(--ink-3);margin:12px 0 0">A greedy player grabs every letter and finds any word. ' +
+    'A good player looks three letters down the queue and keeps their hand flexible.</p>';
+
+  var openHelp = Kit.helpButton(HELP, 'How SEED works');
+  $('helpbtn').addEventListener('click', openHelp);
+
+  /* ---- keyboard ------------------------------------------------------- */
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (document.querySelector('.scrim')) return;
+    var tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'Enter') { submit(); e.preventDefault(); }
+    else if (e.key === 'Backspace') { backspace(); e.preventDefault(); }
+    else if (e.key === ' ') { shuffleRack(); e.preventDefault(); }
+    else if (/^[a-zA-Z]$/.test(e.key)) { typeLetter(e.key.toUpperCase()); e.preventDefault(); }
+  });
+
+  /* ---- boot ----------------------------------------------------------- */
+  S = load();
+  $('pno').textContent = '#' + DAY;
+  $('objective').textContent =
+    'Start from ' + SEED + '. Every turn the next queue letter joins your rack and you must ' +
+    'spend the whole rack on one word. Two skips. Longest word wins.';
+  $('shuffle').addEventListener('click', shuffleRack);
+  $('skip').addEventListener('click', doSkip);
+  $('enter').addEventListener('click', submit);
+  $('stuck').addEventListener('click', confirmStuck);
+  window.addEventListener('resize', renderQueue);
+
+  render();
+  requestAnimationFrame(renderQueue); // caret needs a laid-out row
+
+  if (S.over) setTimeout(showResult, 260);
+  else if (!S.seen) { S.seen = true; save(); setTimeout(openHelp, 380); }
+})();
+</script>
