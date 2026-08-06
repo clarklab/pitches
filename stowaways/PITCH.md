@@ -76,10 +76,21 @@ they make a noise. Nobody has to explain the rules.
    costs you a clean sweep, and it shows in your share as 🟡.
 
 **Both input paths work, everywhere.** Drag across the letters, or tap the
-first letter and then the last. The tap path is the primary one on a phone —
-44px-equivalent targets with 90px of nearest-neighbour slop, so a fat thumb
-between two lines still snaps to the letter you meant. On desktop, arrows move
-a caret and Enter marks each end.
+first letter and then the last. Tap-tap is the primary path on a phone. An
+individual letter is only ~10px wide, so it cannot be a 44px target — instead
+every tap runs a nearest-letter hit test with ~90px of slop, weighted 2.6×
+against vertical distance so a thumb landing between two lines snaps to the
+line you meant rather than the one above it. On desktop, arrow keys move a
+caret and Enter marks each end.
+
+**The passage never moves.** Every character is an individually targetable
+span, which is normally a recipe for text that looks like a ransom note. Each
+cell pads outward and pulls back in by the same amount, so its advance width is
+exactly the natural glyph width and highlighting can never reflow the
+paragraph — while the painted boxes overlap enough that a find washes across
+the gaps it was hiding in as one unbroken ribbon. It is a small piece of
+engineering and it is the whole difference between prose you enjoy reading and
+a grid of letters pretending to be a sentence.
 
 ---
 
@@ -345,12 +356,13 @@ lever is dropping to two hints, and that is a number I would tune on data
 rather than on instinct.
 
 **Drag-select on a phone is genuinely fiddly and I don't fully trust it.**
-Dragging across 9pt text with a thumb over the letters you're trying to see is
-an awkward gesture, and it fights the browser's own text selection and scroll.
+Dragging your thumb across the very letters you are trying to read is an
+awkward gesture, and it fights the browser's own text selection and scrolling.
 The mitigations shipped — tap-first-letter-then-last as a fully equal path,
 nearest-neighbour hit testing with generous slop, `touch-action: none` on the
-passage plus an autofit that guarantees the page never needs to scroll — and in
-testing tap-tap is the faster input even for people who started out dragging. But
+passage plus an autofit that guarantees the page never needs to scroll — and
+both paths are driven end-to-end by an automated playtest across all seven
+puzzles, so neither is a second-class citizen in the code. But
 "we built a second input because the first one is uncomfortable" is a real
 finding, and I'd want to watch whether anyone actually drags after day three. If
 they don't, drag should probably go.
