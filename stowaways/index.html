@@ -525,23 +525,37 @@
     anchor = -1;
     if (exact && exact.found) { clearSel(); setReadout(-1); Kit.toast('Already aboard.'); return; }
 
-    // wrong — free, but tell them when they were achingly close
+    // wrong — free, but tell them when they were achingly close.
+    // The range itself flashes red; shaking the whole passage would jolt
+    // the thing you are trying to read.
     var msg = 'Nothing there.';
     if (sameStart) msg = 'Right first letter — wrong length.';
     else if (sameEnd) msg = 'Right last letter — wrong length.';
     Kit.haptic(14);
-    Kit.flash(passEl, 'shake');
-    setTimeout(function () { clearSel(); setReadout(-1); }, 240);
+    clearWrong();
+    var r = cellRange(lo, hi);
+    for (var i = r[0]; i <= r[1]; i++) cells[i].el.classList.add('no');
+    Kit.flash(readEl, 'shake');
+    wrongT = setTimeout(function () { clearWrong(); clearSel(); setReadout(-1); }, 400);
     Kit.toast(msg);
     say(msg);
+  }
+
+  var wrongT = null;
+  function clearWrong() {
+    if (wrongT) { clearTimeout(wrongT); wrongT = null; }
+    var els = passEl.querySelectorAll('.no');
+    for (var i = 0; i < els.length; i++) els[i].classList.remove('no');
   }
 
   function land(t) {
     t.found = true;
     anchor = -1;
+    clearWrong();
     clearSel();
     st.order.push(t.w);
     paintFound(t, true);
+    relight();
     fillChips(t.w);
     save();
     Kit.haptic(t.key ? 26 : 10);
@@ -560,6 +574,7 @@
     if (st.over) return;
     e.preventDefault();
     passEl.focus({ preventScroll: true });
+    clearWrong();
     measure();
     var i = nearest(e.clientX, e.clientY);
     if (i < 0) return;
