@@ -204,6 +204,7 @@ function main() {
 
   const seenQueues = new Set();
   let trapCount = 0;
+  const branchings = [];
 
   for (const p of puzzles) {
     scope = `[#${p.n} ${p.seed}/${p.queue}] `;
@@ -328,14 +329,26 @@ function main() {
     }
     if (ok(!!fork, 'there is a fork where the greedy take is strictly worse')) trapCount++;
 
+    /* -- branching: how much choice the player actually has --------------
+       Spare words across all reachable racks. A puzzle with branching 0 is a
+       single-file rail: everyone who survives plays the identical chain, and
+       the "everybody's share is different" claim dies with it. Also: every
+       puzzle must offer a real choice somewhere on its own optimal line. */
+    const wordTotal = Object.values(p.words).reduce((a, l) => a + l.length, 0);
+    const branching = wordTotal - shippedKeys.length;
+    branchings.push(branching);
+    const choiceOnLine = takes.some(w => (p.words[sortKey(w)] || []).length > 1);
+    ok(choiceOnLine, 'the optimal line passes through at least one rack with a real choice');
+
     /* -- report ---------------------------------------------------------- */
     const line = p.path.map(s => s[0] === 'S' ? '⨯' + s.slice(1) : s.slice(1)).join(' → ');
     console.log(`#${p.n}  ${p.seed}   queue ${queue.join(' ')}`);
     console.log(`     max ${p.max} (${p.maxSkips} skip${p.maxSkips === 1 ? '' : 's'})   ` +
-                `${shippedKeys.length} racks, ${Object.values(p.words).reduce((a, l) => a + l.length, 0)} words`);
+                `${shippedKeys.length} racks, ${wordTotal} words, branching ${branching}`);
     console.log(`     line   ${line}`);
-    console.log(`     greedy dies at ${g.len} letters — chokes on queue[${g.deadAt}] ` +
-                `"${g.deadLetter}" with 0 skips left`);
+    console.log(g.dead
+      ? `     greedy dies at ${g.len} letters — chokes on queue[${g.deadAt}] "${g.deadLetter}" with 0 skips left`
+      : `     greedy SURVIVES to ${g.len} letters — this puzzle does not punish greed`);
     if (fork) {
       console.log(`     trap   at queue[${fork.i}] "${fork.letter}": taking it (${fork.word}) ` +
                   `caps you at ${fork.takeVal}; skipping it keeps ${fork.skipVal} alive`);
@@ -346,6 +359,14 @@ function main() {
   scope = '[global] ';
   ok(trapCount === puzzles.length, 'every puzzle demonstrates the planning trap',
      `${trapCount}/${puzzles.length}`);
+
+  // The rotation as a whole must not be dominated by rails. A couple of thin,
+  // gentle puzzles are fine — they make good Mondays — but the majority have
+  // to give players room to diverge.
+  const rich = branchings.filter(b => b >= 10).length;
+  ok(rich >= Math.ceil(puzzles.length / 2),
+     'at least half the rotation has real branching (>=10 spare words)',
+     `${rich}/${puzzles.length} — branchings ${branchings.join(' ')}`);
 
   console.log('='.repeat(66));
   if (failures.length) {

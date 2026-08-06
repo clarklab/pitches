@@ -34,8 +34,8 @@
     display: flex; flex-direction: column; justify-content: flex-end;
     gap: 1px; padding: 10px 4px 2px;
     scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(180deg, transparent, #000 22px);
-            mask-image: linear-gradient(180deg, transparent, #000 22px);
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 30px);
+            mask-image: linear-gradient(180deg, transparent, #000 30px);
   }
   .stair::-webkit-scrollbar { width: 0; height: 0; }
 
@@ -63,10 +63,9 @@
     border-bottom-left-radius: 6px;
   }
   .step.seed .w::before {
-    border: 0; height: 0; margin: 0 7px 0 1px;
-    flex-basis: 6px; width: 6px;
-    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
-    align-self: center;
+    border: 0; border-radius: 50%; align-self: center;
+    flex: 0 0 7px; width: 7px; height: 7px; margin: 0 8px 0 1px;
+    background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
   }
   .step .len {
     font-family: var(--font-mono); font-size: 11px; font-weight: 600;
@@ -83,9 +82,13 @@
      nothing about the true maximum leaks. */
   .step.ghost { animation: none; }
   .step.ghost .w { color: var(--ink-3); opacity: .34; letter-spacing: .34em; font-size: 13px; }
-  .step.ghost .w::before { border-style: dashed; border-color: var(--line-2); }
-  .step.ghost.now .w { opacity: .8; color: var(--accent); }
-  .step.ghost.now .w::before { border-color: var(--accent); border-style: dashed; }
+  /* a plain dashed lead-in, not an elbow — elbows on empty rungs read as glitches */
+  .step.ghost .w::before {
+    border: 0; border-top: 1.5px dashed var(--line-2); border-radius: 0;
+    height: 0; margin: 0 8px 0 0; flex-basis: 11px; width: 11px; align-self: center;
+  }
+  .step.ghost.now .w { opacity: .85; color: var(--accent); }
+  .step.ghost.now .w::before { border-top-color: var(--accent); }
 
   /* ==========================================================================
      THE CONVEYOR — public, ordered, same for everyone. Readable three letters
@@ -119,6 +122,10 @@
     background: var(--accent); color: var(--accent-ink); border-color: transparent;
     transform: scale(1.1); box-shadow: var(--shadow-2); z-index: 2;
   }
+  /* on deck — the two letters after the one landing now. The whole pitch rests
+     on players reading ahead, so the eye gets a hairline invitation to travel
+     right instead of stopping at the highlighted tile. */
+  .qt.soon { border-color: var(--accent); color: var(--accent); }
   /* taken — absorbed into your word */
   .qt.done {
     background: var(--accent-soft); color: var(--accent);
@@ -184,8 +191,12 @@
   .del:active { transform: scale(.93); }
   .del[hidden] { display: none; }
 
-  /* ---------- tiles ---------- */
-  .rack { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; min-height: 52px; }
+  /* ---------- tiles ----------
+     The rack is laid out in explicit balanced rows (JS decides how many) so a
+     9-letter hand never leaves one orphan tile on its own line, and so tiles
+     never shrink below a thumb. */
+  .rack { display: flex; flex-direction: column; gap: 5px; align-items: center; min-height: 52px; }
+  .rackrow { display: flex; gap: 5px; justify-content: center; }
   .lt {
     width: 44px; height: 48px; padding: 0; cursor: pointer;
     background: var(--white); border: 1.5px solid var(--line-2);
@@ -197,7 +208,6 @@
     display: grid; place-items: center; user-select: none;
   }
   .lt:active { transform: translateY(2px) scale(.96); }
-  .rack.big .lt { width: 39px; height: 45px; font-size: 19px; }
   .lt.fresh {
     border-color: var(--accent); color: var(--accent);
     animation: drop .4s cubic-bezier(.2,.9,.3,1);
@@ -209,7 +219,7 @@
   }
   .slot .lt {
     background: var(--accent); color: var(--accent-ink); border-color: transparent;
-    box-shadow: none; width: 38px; height: 44px; font-size: 19px;
+    box-shadow: none; width: 34px; height: 40px; font-size: 18px; border-radius: 8px;
   }
   .slot .lt.fresh { color: var(--accent-ink); border-color: transparent; }
   .lt.ghost { opacity: .2; pointer-events: none; box-shadow: none; }
@@ -288,10 +298,28 @@
     font-family: var(--font-mono); font-size: 11px; background: var(--paper-2);
     border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
   }
-  @media (max-height: 700px) {
-    .stair { max-height: 21dvh; min-height: 60px; }
-    .lt { height: 44px; }
-    .rack.big .lt { height: 41px; }
+  /* the shipped share block has to survive a 390px phone without side-scrolling */
+  .sharegrid { font-size: 15px; letter-spacing: .04em; }
+
+  /* short phones (SE-class, and anything with browser chrome eating the view):
+     everything gives up a few pixels so the whole loop still fits without
+     scrolling — the rack, the tray and Enter must never be below the fold. */
+  @media (max-height: 720px) {
+    .stage { gap: 9px; }
+    .bottom { gap: 7px; }
+    .prompt { padding: 9px 12px; }
+    .prompt .v { font-size: 13px; }
+    .qt { height: 32px; font-size: 14px; }
+    .stair { min-height: 46px; padding-top: 6px; }
+    .step .w { font-size: 14px; }
+    .step.cur .w { font-size: 16px; }
+    .lt { width: 41px; height: 43px; font-size: 19px; }
+    .slot { min-height: 46px; }
+    .slot .lt { width: 31px; height: 35px; font-size: 16px; }
+    .del { flex: 0 0 42px; width: 42px; }
+    .controls .btn { min-height: 45px; padding: 11px 6px; }
+    .stuckrow { min-height: 28px; }
+    .stuck { min-height: 28px; padding: 3px 12px; }
   }
 </style>
 
@@ -334,7 +362,7 @@
         <button class="btn" id="skip"></button>
         <button class="btn primary enter" id="enter">Enter</button>
       </div>
-      <div class="stuckrow"><button class="stuck" id="stuck">I'm stuck…</button></div>
+      <div class="stuckrow" id="stuckrow"><button class="stuck" id="stuck">I'm stuck…</button></div>
     </div>
   </div>
 </div>
@@ -425,6 +453,7 @@
       if (S.killer !== null && i === S.killer) t.className += ' killer';
       else if (i < S.qi) t.className += (S.timeline[i] === 'skip' ? ' skipped' : ' done');
       else if (i === S.qi && !S.over) t.className += ' next';
+      else if (!S.over && (i === S.qi + 1 || i === S.qi + 2)) t.className += ' soon';
       t.setAttribute('aria-label', ch + (i < S.qi ? ' (' + (S.timeline[i] || 'taken') + ')' : ''));
       row.appendChild(t);
     });
@@ -442,19 +471,28 @@
   function renderTiles(justDropped) {
     var rackEl = $('rack'), slotEl = $('slot');
     rackEl.innerHTML = ''; slotEl.innerHTML = '';
-    rackEl.className = 'rack' + (S.rack.length >= 8 ? ' big' : '');
     var inSlot = {};
     S.slot.forEach(function (idx) { inSlot[idx] = true; });
 
+    // Balanced rows: 8 tiles at full size overflow a 390px phone, so from 8 up
+    // we split into two even rows rather than letting flex-wrap orphan one.
+    var n = S.rack.length;
+    var perRow = n <= 7 ? n : Math.ceil(n / 2);
+    var row = null;
     S.rack.forEach(function (ch, idx) {
+      if (idx % perRow === 0) {
+        row = document.createElement('div');
+        row.className = 'rackrow';
+        rackEl.appendChild(row);
+      }
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'lt' + (inSlot[idx] ? ' ghost' : '');
       b.textContent = ch;
       b.setAttribute('aria-label', 'Letter ' + ch);
-      if (justDropped && idx === S.rack.length - 1) b.className += ' fresh';
+      if (justDropped && idx === n - 1) b.className += ' fresh';
       b.addEventListener('click', function () { toSlot(idx); });
-      rackEl.appendChild(b);
+      row.appendChild(b);
     });
 
     if (!S.slot.length) {
@@ -485,7 +523,7 @@
     sk.className = 'btn' + (stranded ? ' hot' : '');
     $('enter').disabled = S.over;
     $('shuffle').disabled = S.over;
-    $('stuck').disabled = S.over;
+    $('stuckrow').hidden = S.over;
     $('stuck').textContent = stranded ? 'Nothing fits — spend a skip' : "I'm stuck…";
   }
 
@@ -577,35 +615,61 @@
   // Auto dead-end. The rack cannot be played and there is no skip left, so the
   // run is over whether the player accepts it or not — but it gets a beat, a
   // red letter and a banner before the sheet, so it lands as an event.
-  function doom() {
-    if (S.over) return;
-    S.over = true; S.ending = 'dead'; S.killer = S.qi; S.slot = [];
-    save();
-    render();
-    Kit.flash($('rack'), 'shake');
-    Kit.haptic(70);
+  function deadBanner() {
+    if ($('bottom').querySelector('.deadbanner')) return;
     var b = document.createElement('div');
     b.className = 'deadbanner';
     b.innerHTML = '<b>Dead end.</b> Nothing in English uses all ' + S.rack.length +
       ' of those letters — and you are out of skips.';
     $('bottom').appendChild(b);
+  }
+
+  function doom() {
+    if (S.over) return;
+    S.over = true; S.ending = 'dead'; S.killer = S.qi; S.slot = [];
+    save();
+    // deliberately NOT re-rendering the tiles: the letter that just landed keeps
+    // its highlight, so the thing that killed you is still glowing in your hand.
+    renderStair(); renderQueue(); renderControls();
+    Kit.flash($('rack'), 'shake');
+    Kit.haptic(70);
+    deadBanner();
     setTimeout(showResult, 1300);
   }
 
+  // The stuck sheet is the game's whole floor. A player who cannot see the
+  // anagram gets three escalating outs — a count, a first letter, and only then
+  // the door — so a wall of letters never ends someone's run by itself.
   function confirmStuck() {
     if (S.over) return;
-    var alive = rackHasWord();
+    var words = wordsFor(S.rack);
     var reached = S.hist[S.hist.length - 1].length;
-    var html = alive
-      ? '<h2>Sure?</h2><p class="sub">There <b>is</b> a word hiding in these ' +
-        S.rack.length + ' letters. Shuffle them. Say them out loud. ' +
+    var html = words
+      ? '<h2>Sure?</h2><p class="sub">There ' + (words.length > 1 ? 'are <b>' + words.length +
+          '</b> words' : 'is <b>a</b> word') + ' hiding in these ' + S.rack.length +
+        ' letters. Shuffle them. Say them out loud. ' +
         (S.skips < MAXSK ? 'And you still have a skip.' : 'You are out of skips.') + '</p>'
       : '<h2>Nothing fits.</h2><p class="sub">No word uses all ' + S.rack.length +
         ' of these letters. Spend a skip and this letter goes away.</p>';
-    html += '<div style="display:flex;gap:8px;margin-top:18px">' +
+    if (words) {
+      html += '<button class="btn wide" id="hintbtn" style="margin-bottom:8px">' +
+        'Give me the first letter</button>' +
+        '<div class="hint" id="hintout" style="min-height:0"></div>';
+    }
+    html += '<div style="display:flex;gap:8px;margin-top:14px">' +
       '<button class="btn ghost" style="flex:1" data-close>Keep going</button>' +
       '<button class="btn primary" style="flex:1" id="reallyend">End at ' + reached + '</button></div>';
     var sh = Kit.sheet(html);
+    var hb = sh.el.querySelector('#hintbtn');
+    if (hb) hb.addEventListener('click', function () {
+      var firsts = {};
+      words.forEach(function (w) { firsts[w[0]] = 1; });
+      var list = Object.keys(firsts).sort();
+      sh.el.querySelector('#hintout').innerHTML = 'It starts with <b style="color:var(--accent)">' +
+        list.join('</b> or <b style="color:var(--accent)">') + '</b>.';
+      hb.disabled = true;
+      S.hinted = true; save();
+    });
     sh.el.querySelector('#reallyend').addEventListener('click', function () {
       sh.close(); finish('stuck');
     });
@@ -634,7 +698,7 @@
     var reached = S.hist[S.hist.length - 1].length;
     var tail = reached >= PUZ.max
       ? SEED.length + '→' + reached + ' · MAXED IT 🏆'
-      : SEED.length + '→' + reached + ' · there was ' + an(PUZ.max) + ' in there';
+      : SEED.length + '→' + reached + ' · ' + an(PUZ.max) + ' was in there';
     return 'SEED #' + DAY + ' · ' + SEED + '\n' + bar + '\n' + tail + '\nsfun.games/seed';
   }
 
@@ -653,6 +717,15 @@
     else if (S.ending === 'dead')  { verdict = 'Dead end at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
     else if (S.ending === 'stuck') { verdict = 'Stuck at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
     else                           { verdict = reached + ' letters.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
+
+    // Naming the resource you didn't spend is the single strongest teacher this
+    // screen has — it points at the decision, not at the vocabulary.
+    if (!maxed) {
+      var unspent = MAXSK - S.skips;
+      if (unspent === MAXSK) sub += ' You never spent a skip.';
+      else if (unspent > 0)  sub += ' You finished with ' + unspent + ' skip in your pocket.';
+      else if (S.skips > PUZ.maxSkips) sub += ' You spent both skips; the line needed ' + PUZ.maxSkips + '.';
+    }
 
     var steps = S.hist.map(function (w, i) {
       return rung(i === 0 ? 'seed' : (i === S.hist.length - 1 ? 'cur' : ''), i, Kit.esc(w), w.length);
@@ -676,6 +749,9 @@
         '<div class="stat"><span class="n">' + S.skips + '</span><span class="l">Skips used</span></div>' +
         '<div class="stat"><span class="n">' + PUZ.max + '</span><span class="l">Best possible</span></div>' +
       '</div>' +
+      // Using a hint is recorded for you and only you — it never reaches the
+      // share text, because nobody wants an asterisk in a group chat.
+      (S.hinted ? '<div class="hint" style="margin:-6px 0 4px">You took a first letter along the way.</div>' : '') +
       '<div class="sharegrid" id="sg">' + Kit.esc(shareText()) + '</div>' +
       '<button class="btn primary wide" id="sharebtn">Share result</button>' +
       '<div class="recap">' + steps + '</div>' +
@@ -731,7 +807,7 @@
   S = load();
   $('pno').textContent = '#' + DAY;
   $('objective').textContent =
-    'Every turn one queue letter joins your rack. Spend the whole rack on one word. ' +
+    'A queue letter joins your rack each turn. Spend the whole rack on one word. ' +
     'Two skips. Longest word wins.';
   $('shuffle').addEventListener('click', shuffleRack);
   $('skip').addEventListener('click', doSkip);
@@ -743,7 +819,10 @@
   render();
   requestAnimationFrame(renderQueue); // caret needs a laid-out row
 
-  if (S.over) setTimeout(showResult, 280);
+  if (S.over) {
+    if (S.ending === 'dead') deadBanner();   // reloading a lost day keeps the explanation
+    setTimeout(showResult, 280);
+  }
   else if (doomed()) setTimeout(doom, 400);   // reloaded into a dead position
   else if (!S.seen) { S.seen = true; save(); setTimeout(openHelp, 420); }
 })();

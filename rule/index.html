@@ -112,8 +112,11 @@
   animation:none; color:var(--ink-3);
 }
 .entry.ghost .dots{ flex:1; border-bottom:1px dotted var(--line-2); height:0; opacity:.7; }
-.nb-empty{ font-size:12.5px; color:var(--ink-3); text-align:center; padding:2px 0 0; line-height:1.5; }
-.nb-empty b{ color:var(--ink-2); font-family:var(--font-mono); font-weight:600; letter-spacing:.03em; }
+.entry.ghost .eg{
+  font-family:var(--font-mono); font-size:11.5px; font-weight:500;
+  letter-spacing:.04em; color:var(--ink-3); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap;
+}
 
 /* ---------- tray ---------- */
 .tray{
@@ -240,6 +243,16 @@
   font-family:var(--font-display); font-size:clamp(22px,6.3vw,27px); line-height:1.16;
   margin:8px 0 8px; font-weight:800; letter-spacing:-.028em; text-wrap:balance;
 }
+/* rules that name a letter set read better as a headline + a key strip */
+.reveal .rulekeys{
+  display:flex; flex-wrap:wrap; gap:4px; margin:0 0 10px;
+}
+.reveal .rulekeys span{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:700; letter-spacing:.06em;
+  color:var(--accent); background:var(--accent-soft); border-radius:6px;
+  min-width:22px; text-align:center; padding:3px 5px;
+}
+.reveal .rulekeys span.sep{ background:transparent; color:var(--ink-3); min-width:0; padding:3px 0; }
 .reveal .detail{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin:0; }
 .reveal .detail em{ font-style:normal; color:var(--ink); font-weight:700; }
 
@@ -300,6 +313,13 @@
 
 @media (min-width:620px){
   .stage{ overflow:visible; }
+  /* auto margins centre the column when it fits and collapse to zero when it
+     does not, so a long reveal never gets its top scrolled out of reach */
+  .stage > *:first-child{ margin-top:auto; }
+  .stage > *:last-child{ margin-bottom:auto; }
+  /* nothing to stick to on desktop — the keyboard is hidden */
+  .tray, .callbar{ position:static; }
+  .tray::before, .callbar::before{ display:none; }
   .col .w{ font-size:15px; }
 }
 </style>
@@ -462,7 +482,7 @@
   }
 
   /* ---- probe screen ---- */
-  var slotEl, noteEl, pipsEl, callBtn, nbHead, nbLeft, nbHint;
+  var slotEl, noteEl, pipsEl, callBtn, nbHead, nbLeft;
 
   function renderProbe() {
     document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · ' + Kit.dateLabel();
@@ -491,11 +511,6 @@
     noteEl = el('div', 'note');
     stage.appendChild(noteEl);
     renderNote();
-
-    nbHint = el('div', 'nb-empty');
-    nbHint.innerHTML = 'Test any string you like — <b>CRATE</b>, <b>AAAA</b>, <b>ZZTOP</b>. ' +
-                       'The lab answers anything.';
-    stage.appendChild(nbHint);
 
     // tray
     var tray = el('div', 'tray');
@@ -548,7 +563,9 @@
       if (!p) {
         var g = el('div', 'entry ghost');
         g.appendChild(el('span', 'n', pad2(i + 1)));
-        g.appendChild(el('span', 'dots'));
+        // the first blank line doubles as the teaching prompt
+        if (i === 0 && !S.probes.length) g.appendChild(el('span', 'eg', 'CRATE · AAAA · ZZTOP · anything'));
+        else g.appendChild(el('span', 'dots'));
         noteEl.appendChild(g);
         continue;
       }
@@ -561,7 +578,6 @@
       row.appendChild(res);
       noteEl.appendChild(row);
     }
-    if (nbHint) nbHint.style.display = S.probes.length ? 'none' : '';
   }
 
   function renderTray() {
@@ -724,6 +740,24 @@
   }
 
   /* ---- result + reveal ---- */
+  /* A bare "3 probes" means nothing to someone who has not played. The tier
+     word is what makes the number legible in a feed — and on a loss it is
+     the joke. Short forms, because it rides in the share line. */
+  function shareTier(used, won) {
+    if (!won) {
+      if (used === 0) return 'PURE HUBRIS';
+      if (used <= 2) return 'TOO SOON';
+      if (used <= 5) return 'NOT ENOUGH';
+      return 'ALL SIX, STILL WRONG';
+    }
+    if (used === 0) return 'LEGENDARY';
+    if (used === 1) return 'SURGICAL';
+    if (used <= 3) return 'CLEAN';
+    if (used === 4) return 'SOLID';
+    if (used === 5) return 'CLOSE ONE';
+    return 'SQUEAKER';
+  }
+
   function tierFor(used, won) {
     if (!won) {
       if (used === 0) return 'Pure hubris';
@@ -823,8 +857,8 @@
       d.innerHTML = 'You saw <span class="hi">' + tagOf(shown[0]) + '</span> inside ' +
                     mono(shown[0]) + '. That is the whole game.';
     } else {
-      d.innerHTML = 'Three for three off <b>' + S.calledAt + '</b> probe' +
-                    (S.calledAt === 1 ? '' : 's') + '. No luck involved.';
+      d.innerHTML = 'You had it: <span class="hi">' + tagOf(S.picks[0]) +
+                    '</span>. Three for three, no luck involved.';
     }
     return d;
   }
@@ -877,7 +911,18 @@
     // ---- THE REVEAL ----
     var rev = el('div', 'reveal');
     rev.appendChild(el('div', 'kick', 'Today’s rule was'));
-    rev.appendChild(el('div', 'rule', P.rule));
+    // "…: Q W E R T / A S D F G" reads far better as a headline plus a key strip
+    var m = /^(.*?):\s*([A-Z][A-Z\s/]*)\.?$/.exec(P.rule);
+    if (m) {
+      rev.appendChild(el('div', 'rule', m[1] + '.'));
+      var keys = el('div', 'rulekeys');
+      m[2].trim().split(/\s+/).forEach(function (k) {
+        keys.appendChild(el('span', k === '/' ? 'sep' : null, k));
+      });
+      rev.appendChild(keys);
+    } else {
+      rev.appendChild(el('div', 'rule', P.rule));
+    }
     rev.appendChild(el('p', 'detail', P.detail));
 
     var seen = {};
@@ -925,11 +970,16 @@
       var story = S.probes.map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
       lines.push('🔬 ' + story);
     }
+    var tier = shareTier(used, S.won);
     if (S.won) {
-      lines.push(used === 0 ? '👑 CRACKED IT COLD · 0 probes'
-                            : '🧠 CRACKED IT · ' + used + ' probe' + (used === 1 ? '' : 's'));
+      // the 👑 line already says everything; anywhere else the tier word is
+      // what tells a non-player whether the number was good
+      lines.push(used === 0
+        ? '👑 CRACKED IT COLD · 0 probes'
+        : '🧠 CRACKED IT · ' + used + ' probe' + (used === 1 ? '' : 's') + ' · ' + tier);
     } else {
-      lines.push('💀 BUSTED · ' + S.hits + '/3 on ' + used + ' probe' + (used === 1 ? '' : 's'));
+      lines.push('💀 BUSTED · ' + S.hits + '/3 on ' + used +
+                 ' probe' + (used === 1 ? '' : 's') + ' · ' + tier);
     }
     lines.push('sfun.games/rule');
     return lines.join('\n');
@@ -942,7 +992,7 @@
     '<li><b>Probe it.</b> Type any string of letters — a real word, or deliberate nonsense — and get an instant ✅ or ❌. ' +
     'Testing <code>AAAA</code> to check for double letters is not cheating, it is good science.</li>' +
     '<li>You get <b>6 probes</b>.</li>' +
-    '<li><b>Call it</b> whenever you like. You will see 8 fresh words and must tap the exactly 3 that follow the rule.</li>' +
+    '<li><b>Call it</b> whenever you like. You will see 8 fresh words and must tap the <b>three</b> that follow the rule — exactly three.</li>' +
     '<li>You get <b>one call</b>. Three right and you cracked it. Anything else and you are busted.</li>' +
     '<li>Your score is <b>how many probes you spent</b>. Calling on 0 is legendary. Calling on 6 is a squeaker.</li>' +
     '</ul>';

@@ -6,10 +6,14 @@
 <title>CHAINS — compound-word golf</title>
 <link rel="stylesheet" href="../shared/kit.css">
 <style>
+  /* NB: setting --accent-soft on :root here would out-cascade the kit's own
+     dark-mode value (both land on :root, ours is later), which lit the pin and
+     the entry box up like mint paint on a black page. Every dark branch below
+     has to restate it. */
   :root { --accent:#1f7a63; --accent-soft:#d9ece5; --accent-ink:#fff; --accent-hi:#1f7a63; }
-  @media (prefers-color-scheme: dark) { :root { --accent-hi:#6cc4a8; } }
-  :root[data-theme="dark"]  { --accent-hi:#6cc4a8; }
-  :root[data-theme="light"] { --accent-hi:#1f7a63; }
+  @media (prefers-color-scheme: dark) { :root { --accent-hi:#6cc4a8; --accent-soft:#17342c; } }
+  :root[data-theme="dark"]  { --accent-hi:#6cc4a8; --accent-soft:#17342c; }
+  :root[data-theme="light"] { --accent-hi:#1f7a63; --accent-soft:#d9ece5; }
 
   /* ------------------------------------------------------------------
      TYPE. Google Sans Flex is a sans, not the serif this was first cut
@@ -86,13 +90,17 @@
   .caddie[disabled] { opacity:.38; cursor:default; box-shadow:none; }
 
   /* ---------- the course ---------- */
+  /* margin-top:auto on the chain (not justify-content) bottom-aligns a short
+     chain so the entry box always sits just above the pin — no dead gap on the
+     opening screen — while still scrolling correctly once the chain overflows. */
   .course {
     flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
-    padding: 4px 0 2px; scrollbar-width:thin;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 12px), transparent 100%);
-            mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 12px), transparent 100%);
+    display:flex; flex-direction:column;
+    padding: 0 0 2px; scrollbar-width:thin;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
   }
-  .chain { display:flex; flex-direction:column; align-items:center; }
+  .chain { display:flex; flex-direction:column; align-items:center; margin-top:auto; }
 
   .node {
     position:relative; width:100%; max-width:290px;
@@ -103,9 +111,20 @@
     font-family: var(--font-tile); font-weight:700; font-size:20px;
     letter-spacing:.05em; text-transform:uppercase; user-select:none;
   }
+  /* The tee word is the one piece of context you must never lose. On a long
+     hole the chain outgrows the course and scrolls it away, so it pins to the
+     top of the scroller and the rest of the line runs underneath it. */
   .node.tee {
-    background: transparent; border:1.5px dashed var(--line-2);
+    position: sticky; top:0; z-index:2; margin-bottom:1px;
+    background: var(--paper); border:1.5px dashed var(--line-2);
     box-shadow:none; color:var(--ink-2); font-weight:600;
+    min-height:42px; padding:9px 46px; font-size:17.5px;   /* reference, not a stroke */
+  }
+  /* a soft edge under the pinned tee so scrolled links read as passing behind
+     it rather than as linking directly to it */
+  .node.tee::after {
+    content:''; position:absolute; left:-20px; right:-20px; top:100%; height:11px;
+    background: linear-gradient(var(--paper), rgba(0,0,0,0)); pointer-events:none;
   }
   .node .tag {
     position:absolute; left:11px; top:50%; transform:translateY(-50%);
@@ -232,6 +251,12 @@
     font-family:var(--font-mono); font-size:12.5px; line-height:1.75; letter-spacing:.09em;
     color:var(--ink); font-weight:600; word-break:break-word;
   }
+  .lineout.missed {
+    margin-top:9px; background:var(--accent-soft);
+    border-color:var(--accent-hi);
+    border-color:color-mix(in srgb, var(--accent-hi) 45%, transparent);
+  }
+  .lineout.missed .cap { color:var(--accent-hi); }
 
   .badge { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.16em;
     text-transform:uppercase; padding:5px 12px; border-radius:var(--r-pill); }
@@ -254,29 +279,33 @@
   .demo {
     display:flex; flex-direction:column; align-items:center;
     background:var(--paper-2); border:1px solid var(--line);
-    border-radius:var(--r); padding:15px 12px; margin:4px 0 4px;
+    border-radius:var(--r); padding:11px 12px; margin:2px 0 0;
   }
   .demo .w {
-    font-family:var(--font-tile); font-weight:700; font-size:15px; letter-spacing:.06em;
-    background:var(--white); border:1px solid var(--line); border-radius:9px;
-    padding:5px 16px; min-width:108px; text-align:center; color:var(--ink);
+    font-family:var(--font-tile); font-weight:700; font-size:14px; letter-spacing:.06em;
+    background:var(--white); border:1px solid var(--line); border-radius:8px;
+    padding:3px 15px; min-width:104px; text-align:center; color:var(--ink);
   }
   .demo .w.tee  { background:transparent; border-style:dashed; color:var(--ink-2); }
   .demo .w.pinw { color:var(--accent-hi); border-color:var(--accent-hi); background:var(--accent-soft); }
   .demo .l {
-    display:flex; align-items:center; gap:8px; padding:6px 0;
-    font-family:var(--font-mono); font-size:9.5px; font-weight:600;
+    display:flex; align-items:center; gap:8px; padding:3px 0;
+    font-family:var(--font-mono); font-size:9px; font-weight:600;
     letter-spacing:.15em; text-transform:uppercase; color:var(--ink-3);
   }
   .demo .l::before, .demo .l::after { content:''; width:12px; height:1px; background:var(--line-2); }
   .demolbl {
-    text-align:center; font-size:10px; font-weight:800; letter-spacing:.15em;
-    text-transform:uppercase; color:var(--ink-3); margin:10px 0 16px;
+    text-align:center; font-size:9.5px; font-weight:800; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--ink-3); margin:8px 0 11px;
   }
   .demolbl b { color:var(--accent-hi); }
+  .sheet { padding-top:20px; }
+  .sheet h2 { letter-spacing:-.025em; }
+  .sheet .rules { font-size:14px; line-height:1.55; }
+  .sheet .rules li { margin-bottom:5px; }
   .fineprint {
-    margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
-    font-size:12.5px; line-height:1.7; color:var(--ink-2);
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--line);
+    font-size:12px; line-height:1.65; color:var(--ink-2);
   }
   .fineprint b { color:var(--ink); }
 
@@ -289,8 +318,13 @@
 
   @media (max-height: 700px) {
     .node { min-height:46px; padding:9px 44px; font-size:19px; }
+    .node.tee { min-height:38px; padding:7px 44px; font-size:16px; }
     .prompt .v { display:none; }
+    .prompt { padding:9px 15px; }
     .tally .n { font-size:24px; }
+    .pin { padding:9px 15px; }
+    .pin .word { font-size:20px; }
+    .stage { gap:10px; }
   }
 </style>
 </head>
@@ -349,6 +383,7 @@
 
   <div id="kbd"></div>
   <div class="deskhint">Type a word · Enter plays it · Backspace edits</div>
+  <p class="sr" id="live" role="status" aria-live="polite"></p>
 </div>
 
 <script src="../shared/kit.js"></script>
@@ -385,6 +420,30 @@
       frontier = next;
     }
     return Infinity;
+  }
+
+  /* one full shortest line from tee to pin — shown only after a hole is over,
+     so it can never help you and can only sting */
+  function bestLine(from, to) {
+    if (from === to) return [from];
+    const prev = new Map([[from, null]]);
+    let frontier = [from];
+    while (frontier.length) {
+      const next = [];
+      for (const w of frontier) for (const b of (LINKS[w] || [])) {
+        if (prev.has(b)) continue;
+        prev.set(b, w);
+        if (b === to) {
+          const out = [];
+          let c = b;
+          while (c !== null) { out.unshift(c); c = prev.get(c); }
+          return out;
+        }
+        next.push(b);
+      }
+      frontier = next;
+    }
+    return null;
   }
 
   function stepToward(from, to) {          // first word on a shortest path
@@ -459,8 +518,8 @@
     /* the tee card and the pin already say WHERE — this line only has to say
        what a stroke is, and (on the closer) what a good score looks like */
     el('objective').textContent = h.long
-      ? `The long one. Two under par here is an eagle.`
-      : `Each word must make a compound with the one above it.`;
+      ? `The long hole. A perfect line here is an eagle.`
+      : `Make a compound with the word above.`;
     /* once the round is signed the caddie has nothing left to do — the button
        becomes the way back into your card, so the last screen is never a wall */
     if (S.done) {
@@ -481,7 +540,7 @@
     const h = hole(), left = maxStrokes() - S.strokes;
     const need = S.done ? 0 : distTo(head(), h.target.toLowerCase());
     el('strokeN').textContent = S.strokes;
-    el('strokeL').textContent = `strokes · par ${h.par}`;
+    el('strokeL').textContent = S.strokes === 1 ? 'stroke' : 'strokes';
     let tail = '';
     if (!S.done) {
       if (left === 1) tail = 'Last swing';
@@ -546,11 +605,21 @@
     if (/^[A-Z]$/.test(k) && typed.length < 12) { typed += k.toLowerCase(); renderEntry(); }
   }
 
+  let misses = 0;   // rejections on this hole — enough of them and we point
+                    // at the caddie, because silent frustration is how a
+                    // player decides the dictionary is the enemy
   function bounce(msg) {
     Kit.toast(msg, 2300);
     Kit.haptic(24);
     const e = el('entry');
     if (e) Kit.flash(e, 'shake');
+    el('live').textContent = msg;
+    if (++misses === 3 && !S.caddie && !S.done) {
+      setTimeout(() => {
+        if (S.done || S.caddie || document.querySelector('.scrim')) return;
+        Kit.toast('Stuck? The caddie is one tap away', 2600);
+      }, 2400);
+    }
   }
 
   function submit() {
@@ -577,6 +646,8 @@
     }
     save.set(S);
     Kit.haptic(10);
+    el('live').textContent =
+      `${S.chain[S.chain.length - 2]} ${w} — stroke ${S.strokes} of ${maxStrokes()}.`;
     render(true);
     if (!settle()) busy = false;
   }
@@ -609,7 +680,7 @@
       Kit.toast('No time for a caddie — you need every swing', 2400);
       return;
     }
-    Kit.sheet(`
+    openSheet(`
       <h2>Call the caddie?</h2>
       <p class="sub">She'll name one word that keeps you alive from <b>${Kit.esc(head().toUpperCase())}</b>.</p>
       <div class="legend" style="text-align:center">
@@ -672,12 +743,13 @@
     } else {
       body = `<p class="sub">${S.strokes} stroke${S.strokes === 1 ? '' : 's'} on a par ${h.par}.</p>`;
     }
-    Kit.sheet(`
+    openSheet(`
       <h2>${title}</h2>
       ${body}
       <div style="text-align:center"><span class="badge ${v.tone}">${pickedUp ? 'no return' : toPar(v.diff)}</span></div>
       <div class="lineout"><span class="cap">${pickedUp ? 'your line ran out at' : 'your line'}</span>
         <b>${Kit.esc(line)}${pickedUp ? ' …' : ''}</b></div>
+      ${missedHTML(pickedUp)}
       ${cardHTML(true)}
       <button class="btn primary wide" id="nextBtn" style="margin-top:16px">
         ${last ? 'Sign the card' : 'Next hole →'}
@@ -692,10 +764,26 @@
         S.caddieAt = -1;
         typed = '';
         busy = false;
+        misses = 0;
         save.set(S);
         render(false);
       });
     }});
+  }
+
+  /* The hole is over — now show what was there. Not when they already found a
+     tightest line (nothing to teach, and it would flatten the win), only when
+     they didn't. This is where the day's "oh, COME ON" lives, and it's also how
+     a player learns the dictionary without ever being helped mid-hole. */
+  function missedHTML(pickedUp) {
+    const h = hole();
+    if (!pickedUp && S.strokes <= h.best) return '';
+    const bl = bestLine(h.start.toLowerCase(), h.target.toLowerCase());
+    if (!bl) return '';
+    const short = bl.length - 1;
+    const kind = h.long ? 'eagle' : 'birdie';
+    return `<div class="lineout missed"><span class="cap">there was a ${short}-stroke line — ${kind}</span>
+      <b>${Kit.esc(bl.map(w => w.toUpperCase()).join(' · '))}</b></div>`;
   }
 
   function cardHTML(partial) {
@@ -778,7 +866,7 @@
     const headline =
       d <= -2 ? 'A card to frame' : d === -1 ? 'Under par' : d === 0 ? 'Level par' :
       d <= 2 ? 'One over here or there' : 'Rough day on the course';
-    Kit.sheet(`
+    openSheet(`
       <h2>${headline}</h2>
       <p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
       ${cardHTML(false)}
@@ -817,25 +905,36 @@
     </div>
     <p class="demolbl">Fire to car in <b>four strokes</b></p>
     <ul class="rules">
-      <li>Every word must make a <b>compound word</b> — or a very common two-word
-          phrase — with the word directly above it.</li>
-      <li><b>There is no undo.</b> A word that doesn't link just bounces. A word
-          that links is <i>played</i>, and you carry on from there.</li>
-      <li>Par is one stroke more than the tightest line anyone has found, so the
-          perfect route is a <b>birdie</b> — an <b>eagle</b> on the long hole.</li>
+      <li>Each word makes a <b>compound</b> — or a very common two-word phrase —
+          with the word above it.</li>
+      <li><b>No undo.</b> A word that doesn't link bounces. A word that links is
+          <i>played</i>, and you carry on from there.</li>
+      <li>Par is one over the tightest line known: a perfect route is a
+          <b>birdie</b>, or an <b>eagle</b> on the long hole.</li>
     </ul>
     <div class="fineprint">
-      <b>Out of swings</b> short of the pin? You pick up for par + 4.
-      <b>One caddie a round</b> (not per hole) names a word that keeps you alive,
-      for the price of a stroke.
+      <b>Out of swings</b> short of the pin? Pick up for par + 4.
+      <b>One caddie a round</b> names a word that keeps you alive, for a stroke.
     </div>
-    <div class="keymap" style="margin-top:13px">
+    <div class="keymap" style="margin-top:12px">
       <span>TYPE — a word</span><span>ENTER — play it</span><span>⌫ — edit</span>
     </div>`;
-  el('helpBtn').addEventListener('click', Kit.helpButton(HELP, 'Compound-word golf'));
+
+  /* Kit.sheet focuses the first button, which on a tall sheet scrolls the title
+     and the diagram off the top before you ever see them. Always start at 0. */
+  function openSheet(html, opts) {
+    opts = Object.assign({}, opts);
+    const inner = opts.onOpen;
+    opts.onOpen = (root, close) => { root.scrollTop = 0; if (inner) inner(root, close); };
+    return Kit.sheet(html, opts);
+  }
+  const openHelp = () => openSheet(
+    `<h2>Compound-word golf</h2><div class="rules">${HELP}</div>
+     <button class="btn primary wide" data-close style="margin-top:16px">Got it</button>`);
+  el('helpBtn').addEventListener('click', openHelp);
   el('statsBtn').addEventListener('click', () => {
     if (S.done) { resultSheet(); return; }
-    Kit.sheet(`<h2>Your card</h2><p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
+    openSheet(`<h2>Your card</h2><p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
       ${cardHTML(true)}
       <div class="legend" style="margin-top:10px">
         🟦 eagle &nbsp; 🟩 birdie &nbsp; 🟨 par &nbsp; 🟧 bogey &nbsp; 🟥 worse &nbsp; ⬛ picked up
@@ -851,7 +950,7 @@
     setTimeout(resultSheet, 260);
   } else if (!seen.get()) {
     seen.set(1);
-    setTimeout(Kit.helpButton(HELP, 'Compound-word golf'), 260);
+    setTimeout(openHelp, 260);
   }
 })();
 </script>

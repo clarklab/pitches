@@ -57,14 +57,23 @@ body{ overscroll-behavior:none; }
 /* ---------- grid + edge arrows ---------- */
 .gridwrap{
   --arr: 30px;
-  width:100%; max-width:392px; margin:0 auto;
+  width:100%; margin:0 auto;
+  /* the board takes whatever height is left after the chrome, so an SE and a
+     Pro Max both play without scrolling */
+  max-width:clamp(190px, calc(100dvh - 372px), 392px);
   display:grid;
   grid-template-columns:var(--arr) minmax(0,1fr) var(--arr);
   grid-template-rows:var(--arr) auto var(--arr);
   align-items:center; justify-items:center;
   user-select:none; -webkit-user-select:none;
 }
-@media (min-width:620px){ .gridwrap{ --arr:38px; max-width:440px; } }
+@media (min-width:620px){
+  .gridwrap{ --arr:38px; max-width:clamp(220px, calc(100dvh - 350px), 440px); }
+  /* keep the whole game inside one desktop window, no scrolling */
+  .stage{ gap:13px; }
+  .prompt{ padding:10px 14px; }
+  .bar{ padding:10px 0 8px; margin-bottom:10px; }
+}
 
 .strip{ display:grid; gap:var(--gap,6px); width:100%; height:100%; }
 .strip.h{ grid-template-columns:repeat(4,1fr); padding:0 calc(var(--gap,6px)/2); }
@@ -105,24 +114,22 @@ body{ overscroll-behavior:none; }
   cursor:grab;
   transition:box-shadow .2s;
 }
-:root[data-theme="dark"] .board{ box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), inset 0 2px 8px rgba(0,0,0,.5), inset 0 -2px 8px rgba(0,0,0,.35); }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .board{ box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), inset 0 2px 8px rgba(0,0,0,.5), inset 0 -2px 8px rgba(0,0,0,.35); } }
+:root[data-theme="dark"] .board{ background-color:#100f14; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), inset 0 2px 8px rgba(0,0,0,.6), inset 0 -2px 8px rgba(0,0,0,.4); }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .board{ background-color:#100f14; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), inset 0 2px 8px rgba(0,0,0,.6), inset 0 -2px 8px rgba(0,0,0,.4); } }
 .board.dragging{ cursor:grabbing; }
 
 /* the wrap gutters: the two edges of the lane you are currently sliding.
    They light up together so the tile leaving one is visibly the one arriving
    at the other. */
 .gut{
-  position:absolute; pointer-events:none; opacity:0; z-index:4;
+  position:absolute; pointer-events:none; opacity:0; z-index:5;
   transition:opacity .14s;
 }
-.gut.on{ opacity:1; }
-.gut.l{ left:0; top:0; bottom:0; width:16px; background:linear-gradient(90deg, var(--accent) , transparent); }
-.gut.r{ right:0; top:0; bottom:0; width:16px; background:linear-gradient(270deg, var(--accent), transparent); }
-.gut.t{ top:0; left:0; right:0; height:16px; background:linear-gradient(180deg, var(--accent), transparent); }
-.gut.b{ bottom:0; left:0; right:0; height:16px; background:linear-gradient(0deg, var(--accent), transparent); }
-.gut{ mix-blend-mode:normal; }
-.gut.on{ opacity:.20; }
+.gut.on{ opacity:.55; }
+.gut.l{ left:0; width:14px; background:linear-gradient(90deg, var(--accent), transparent); }
+.gut.r{ right:0; width:14px; background:linear-gradient(270deg, var(--accent), transparent); }
+.gut.t{ top:0; height:14px; background:linear-gradient(180deg, var(--accent), transparent); }
+.gut.b{ bottom:0; height:14px; background:linear-gradient(0deg, var(--accent), transparent); }
 
 /* row highlight band */
 .band{
@@ -173,18 +180,17 @@ body{ overscroll-behavior:none; }
     inset 0 2px 6px rgba(23,22,26,.07),
     0 0 0 3px var(--accent-soft); }
 
-/* first-run swipe cue */
+/* first-run cue — lives under the board so it never covers a letter */
 .swipehint{
-  position:absolute; z-index:5; pointer-events:none;
-  display:flex; align-items:center; gap:5px;
-  padding:4px 11px 4px 8px; border-radius:var(--r-pill);
+  display:inline-flex; align-items:center; gap:6px; vertical-align:middle;
+  padding:3px 11px 3px 9px; border-radius:var(--r-pill);
   background:var(--accent); color:var(--accent-ink);
-  font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
-  box-shadow:var(--shadow-2);
-  animation:sw 2.4s cubic-bezier(.5,0,.5,1) infinite;
+  font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  box-shadow:var(--shadow-1);
+  animation:sw 2.2s cubic-bezier(.45,0,.55,1) infinite;
 }
-.swipehint svg{ width:13px; height:13px; }
-@keyframes sw{ 0%,100%{transform:translateX(-16px);opacity:.35} 45%,55%{transform:translateX(18px);opacity:1} }
+.swipehint svg{ width:12px; height:12px; }
+@keyframes sw{ 0%,100%{transform:translateX(-11px);opacity:.45} 45%,60%{transform:translateX(11px);opacity:1} }
 
 /* ---------- footer ---------- */
 .hintline{ text-align:center; font-size:12.5px; color:var(--ink-3); min-height:19px; }
@@ -211,6 +217,9 @@ body{ overscroll-behavior:none; }
 .solrow .nm{ width:74px; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.04em; }
 .seclbl{ margin:16px 0 6px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-weight:800; }
 
+/* the share block has a long third line — let it wrap rather than scroll */
+.sharegrid{ font-size:13px; letter-spacing:.01em; white-space:pre-wrap; line-height:1.5; padding:13px 12px; }
+
 .demo{ font-family:var(--font-mono); font-size:12.5px; line-height:1.55; background:var(--paper-2);
   border:1px solid var(--line); border-radius:var(--r-sm); padding:11px 13px; white-space:pre; overflow-x:auto; }
 .demo b{ color:var(--accent); font-weight:700; }
@@ -233,7 +242,7 @@ body{ overscroll-behavior:none; }
 
   <div class="prompt">
     <span class="k">Objective</span>
-    <span class="v" id="obj">Slide rows and columns until <b>all four rows</b> spell words. Everything wraps.</span>
+    <span class="v" id="obj">Push rows and columns until <b>all four rows</b> spell words. Letters wrap round the edges.</span>
   </div>
 
   <div class="stage">
@@ -453,7 +462,7 @@ function render(){
       t.classList.toggle('on', on);
       t.classList.toggle('live', !!live && inLane);
       t.classList.toggle('cursor', k===0 && kbMode && cursor.r===r && cursor.c===c && !drag);
-      t.style.transform = `translate(${tx}px,${ty}px)`;
+      t.style.transform = `translate(${tx}px,${ty}px)` + (live && inLane ? ' scale(1.035)' : '');
     }
     /* the bead straddling the seam: one of its bodies is on the board and
        another is visible too — mark them so the eye pairs them up */
@@ -470,11 +479,18 @@ function render(){
   prevMask = mask;
   carms.forEach((a,c)=> a.classList.toggle('on', kbMode && !drag && cursor.c===c));
 
-  const gOn = live && drag.off!==0;
-  guts.l.classList.toggle('on', !!gOn && drag.isRow);
-  guts.r.classList.toggle('on', !!gOn && drag.isRow);
-  guts.t.classList.toggle('on', !!gOn && !drag.isRow);
-  guts.b.classList.toggle('on', !!gOn && !drag.isRow);
+  /* the two ends of the lane you're pushing light together: what is about to
+     leave one edge is what is about to arrive at the other */
+  const gOn = !!(live && drag.off!==0);
+  if(gOn){
+    const a = drag.idx*STEP, len = STEP;
+    if(drag.isRow){ guts.l.style.top=guts.r.style.top=a+'px'; guts.l.style.height=guts.r.style.height=len+'px'; }
+    else { guts.t.style.left=guts.b.style.left=a+'px'; guts.t.style.width=guts.b.style.width=len+'px'; }
+  }
+  guts.l.classList.toggle('on', gOn && drag.isRow);
+  guts.r.classList.toggle('on', gOn && drag.isRow);
+  guts.t.classList.toggle('on', gOn && !drag.isRow);
+  guts.b.classList.toggle('on', gOn && !drag.isRow);
 
   document.getElementById('pMoves').textContent = S.moves;
   const n = popcount(mask);
@@ -535,7 +551,12 @@ function tilesInLane(isRow, idx){
 function checkEnd(){
   if(S.done) return;
   if(solved(S.grid)){ S.done={win:true, moves:S.moves, best:0}; save(); setTimeout(()=>endScreen(),420); return; }
-  if(S.moves>=CAP){ S.done={win:false, moves:S.moves, best:closestApproach()}; save(); setTimeout(()=>endScreen(),420); }
+  if(S.moves>=CAP){
+    S.done={win:false, moves:S.moves, best:null}; save(); updateHint();
+    /* the closest-approach search is the one expensive thing in the game.
+       Run it after the final board has painted, never in front of it. */
+    setTimeout(()=>{ S.done.best=closestApproach(); save(); endScreen(); },420);
+  }
 }
 
 /* ======================================================================
@@ -773,23 +794,27 @@ function endScreen(){
    help
    ====================================================================== */
 const HELP = `
-<ul style="padding-left:18px;margin:0 0 14px">
-  <li><b>Every row must spell a 4-letter word.</b> All four at once.</li>
-  <li><b>Push a row</b> sideways or <b>a column</b> up and down. Letters wrap round the edge — what leaves the right comes back on the left.</li>
-  <li>A row that spells a word <b>lights up</b> — live, while your thumb is still moving.</li>
-  <li>The catch: fixing row 3 with a column push will break row 1.</li>
-  <li><b>No undo.</b> Pushing back is just another move. That is the whole cost.</li>
-  <li>Score is <b>moves used against par</b>. Par is the true minimum — proven by exhaustive search, not a guess.</li>
-  <li>There is usually <b>more than one solution</b>. The endgame tells you which one you found and how rare it is.</li>
+<ul style="padding-left:18px;margin:0 0 12px">
+  <li><b>Get all four rows spelling words at once.</b></li>
+  <li><b>Push a row</b> sideways, <b>a column</b> up or down. Letters wrap — what leaves the right comes back on the left.</li>
+  <li>A row that spells a word <b>lights up</b> while your thumb is still moving.</li>
+  <li>The catch: a column push reaches into <b>all four rows</b>. Fixing row 3 will break row 1.</li>
+  <li><b>No undo</b> — pushing back is just another move. Score is moves against <b>par</b>, the true minimum.</li>
 </ul>
 <div class="demo">push row 2 right →
 
- P L U M          P L U M
- A T E D    →    <b>D A T E</b>  ✓ lit
- R I C E          R I C E  ✓ lit
- N O S E          N O S E  ✓ lit</div>
-<div class="hint" style="margin-top:10px;text-align:left">Desktop: drag with the mouse, or tap a tile and use the arrow keys. The chevrons round the grid work too. Shift+arrows moves the lane cursor without spending a move.</div>`;
-document.getElementById('help').addEventListener('click', Kit.helpButton(HELP,'How to play'));
+ P L U M ✓       P L U M ✓
+ A T E D   →    <b>D A T E</b> ✓
+ R I C E ✓       R I C E ✓
+ N O S E ✓       N O S E ✓
+                 all four — solved</div>
+<div class="hint" style="margin-top:10px;text-align:left">Desktop: drag with the mouse, or tap a tile and use the arrow keys. Shift+arrows moves the lane cursor for free.</div>`;
+function openHelp(){
+  Kit.sheet(`<h2>How to play</h2><div class="rules">${HELP}</div>
+    <button class="btn primary wide" data-close style="margin-top:18px">Got it</button>`,
+    { onOpen(el){ el.scrollTop=0; requestAnimationFrame(()=>{ el.scrollTop=0; }); } });
+}
+document.getElementById('help').addEventListener('click', openHelp);
 
 /* ======================================================================
    chrome
@@ -832,33 +857,27 @@ function updateHint(){
   const n=popcount(litMask(S.grid));
   if(n===3) h.innerHTML = `<b>Three rows lit.</b> One row between you and it.`;
   else if(left<=3) h.innerHTML = `<b>${left} move${left===1?'':'s'} left.</b>`;
-  else if(S.moves===0) h.innerHTML = `Push any row or column · ${left} moves`;
+  else if(S.moves===0) h.innerHTML = cueOn ? CUE : `Push any row or column · ${left} moves`;
   else h.innerHTML = `${left} moves left`;
 }
 const _render=render;
 render=function(){ _render(); updateHint(); };
 
 /* ---- first-move cue: a self-explanatory game still needs one nudge ---- */
-let cue=null;
-function showCue(){
-  if(cue || S.moves>0 || S.done) return;
-  cue=document.createElement('div');
-  cue.className='swipehint';
-  cue.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 7l5 5-5 5"/></svg>push';
-  board.appendChild(cue);
-  const pos=()=>{ if(cue){ cue.style.left='50%'; cue.style.marginLeft='-30px'; cue.style.top=(1.5*STEP - 12)+'px'; } };
-  pos();
-}
-function killCue(){ if(cue){ cue.remove(); cue=null; } }
+const CUE = '<span class="swipehint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M12 7l5 5-5 5"/></svg>push a row</span>';
+let cueOn=false;
+function showCue(){ if(S.moves>0||S.done) return; cueOn=true; updateHint(); }
+function killCue(){ if(cueOn){ cueOn=false; updateHint(); } }
 
 /* first-visit help */
-if(!seenStore.get()){ seenStore.set(1); setTimeout(()=>Kit.helpButton(HELP,'How to play')(),260); }
+if(!seenStore.get() && !S.done){ seenStore.set(1); setTimeout(openHelp,260); }
 
 /* boot */
 document.getElementById('pno').textContent = 'No. '+DAY;
 new ResizeObserver(measure).observe(board);
 measure();
 if(S.done){
+  if(!S.done.win && (S.done.best===null||S.done.best===undefined)){ S.done.best=closestApproach(); save(); }
   document.getElementById('showres').style.display='';
   document.getElementById('restart').style.display='none';
   setTimeout(endScreen, 340);           // a finished day reopens its card

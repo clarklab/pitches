@@ -25,26 +25,33 @@
   /* the live region is absolutely positioned; pin it so it cannot add a
      stray pixel of page height and defeat the no-scroll layout */
   #live { position: fixed; top: 0; left: 0; }
-  /* toasts sit low, in the gap above the controls — never over the passage
-     or the theme strip, which are the two things you are reading */
-  #toast-layer { top: auto; bottom: calc(78px + var(--safe-b)); }
+  /* Toasts sit low, in the gap above the controls — never over the passage or
+     the theme strip, which are the two things you are reading. #afterwards is
+     empty until the reveal, so while playing it holds that gap open and the
+     autofit grower is forced to respect it. */
+  #toast-layer { top: auto; bottom: calc(80px + var(--safe-b)); }
+  #afterwards:empty { min-height: 58px; }
   .bar .iconbtn { text-decoration: none; }
 
-  /* ---------- progress chips ---------- */
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  /* ---------- progress chips ----------
+     NB the keystone modifier is `.ks`, not `.key` — kit.css already owns
+     `.key` for the on-screen keyboard and it would flex-grow the chip. */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
   .chip {
-    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em;
-    text-transform: uppercase; font-weight: 700;
-    padding: 5px 9px; min-width: 34px; text-align: center;
+    flex: 0 0 auto;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .06em;
+    line-height: 1.2; text-transform: uppercase; font-weight: 700;
+    padding: 5px 10px; min-width: 34px; height: 26px; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center;
     border: 1px dashed var(--line-2); border-radius: var(--r-pill);
     color: var(--ink-3); background: transparent;
     transition: background .25s, color .25s, border-color .25s, transform .2s;
   }
   .chip.on { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
-  .chip.key { border-color: var(--key); color: var(--key); }
-  .chip.key.on { background: var(--key-soft); color: var(--key); border-color: var(--key); }
+  .chip.ks { border-color: var(--key); color: var(--key); }
+  .chip.ks.on { background: var(--key-soft); color: var(--key); border-color: var(--key); }
   .chip.miss { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad); }
-  .chip.just { transform: scale(1.14); }
+  .chip.just { transform: scale(1.16); }
 
   /* ---------- readout ---------- */
   .readout {
@@ -53,15 +60,15 @@
     color: var(--accent); font-weight: 700; text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-align: center;
   }
-  .readout.idle { font-family: var(--font-ui); font-size: 12.5px; letter-spacing: 0;
+  .readout.idle { font-family: var(--font-ui); font-size: 13px; letter-spacing: 0;
     color: var(--ink-3); font-weight: 400; text-transform: none;
-    white-space: normal; line-height: 1.25; }
+    white-space: normal; line-height: 1.3; }
 
   /* ============================================================
      THE PASSAGE — the hero.
 
      Every character is its own targetable span, which is normally a
-     recipe for text that looks like a ransom note. Two things keep it
+     recipe for text that looks like a ransom note. Three rules keep it
      reading as prose:
 
        1. Each cell pads outward by --bleed and pulls back in by the
@@ -70,11 +77,20 @@
           painted boxes of neighbouring cells OVERLAP, so a highlight
           runs as one unbroken ribbon straight through the spaces it
           hides in. No gaps, no fragmentation, no reflow.
-       2. Nothing that highlights may touch the box model. Ever. If the
+       2. EVERY cell is an inline-block with the same --band line-height
+          and no vertical padding. That is what makes the ribbon flush:
+          letters, commas and spaces all paint a box of identical height
+          on an identical baseline. Leave a space as `display:inline` and
+          its background is sized by font metrics instead, which notches
+          the ribbon at every gap. The <wbr> the renderer emits after
+          each space is what keeps the paragraph wrapping once the
+          spaces stop being breakable text.
+       3. Nothing that highlights may touch the box model. Ever. If the
           letter you are aiming at moves, the game is broken.
      ============================================================ */
   .passage {
-    --bleed: .09em;
+    --bleed: .085em;
+    --band: 1.5;
     --rest-op: 1;
     background: var(--white);
     border: 1px solid var(--line);
@@ -82,11 +98,10 @@
     box-shadow: var(--shadow-2);
     padding: 18px 16px 20px;
     font-family: var(--font-display);
-    font-size: clamp(17px, 4.5vw, 19.5px);
+    font-size: clamp(17px, 4.9vw, 20px);
     font-weight: 400;
-    line-height: 1.95;
+    line-height: 2.05;
     letter-spacing: 0;
-    word-spacing: .02em;
     color: var(--ink);
     text-wrap: pretty;
     user-select: none; -webkit-user-select: none;
@@ -94,15 +109,20 @@
     touch-action: none; cursor: crosshair;
     hyphens: none;
   }
+  /* The passage takes focus on pointerdown so the keyboard path keeps working
+     after a tap — but a tap must not paint a focus ring round the whole card.
+     .pf marks "focus came from a pointer" and is dropped on the first keypress. */
   .passage:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .passage.pf:focus-visible { outline: none; }
   .wd { display: inline-block; }
   .ch {
     display: inline-block;
-    padding: .21em var(--bleed);
+    line-height: var(--band);
+    padding: 0 var(--bleed);
     margin: 0 calc(-1 * var(--bleed));
     transition: background .2s ease, color .2s ease, opacity .45s ease;
   }
-  .ch.sp { display: inline; white-space: pre; }
+  .ch.sp { white-space: pre; }
 
   /* progressive lighting-up: as stowaways come aboard, the carrier prose
      recedes a step at a time so the finds read as the lit part of the page.
@@ -161,7 +181,11 @@
     .chips { gap: 5px; }
     .chip { font-size: 10.5px; padding: 4px 7px; min-width: 28px; }
     .readout { height: 24px; }
-    .passage { line-height: 1.82; padding: 14px 13px 16px; }
+    .passage { line-height: 1.85; padding: 14px 13px 16px; }
+    /* short screens cannot spare 58px of clear air; tighten the toast well
+       and bring the toasts down to match so the passage keeps its size */
+    #afterwards:empty { min-height: 46px; }
+    #toast-layer { bottom: calc(66px + var(--safe-b)); }
     .stage { gap: 8px; }
     .controls { padding-top: 8px; }
     .controls .btn { min-height: 44px; padding: 10px 14px; }
@@ -239,7 +263,7 @@
 
   <div class="stage">
     <div class="chips" id="chips" aria-label="Progress"></div>
-    <div class="readout idle" id="readout">Drag across the letters — or tap the first letter, then the last.</div>
+    <div class="readout idle" id="readout">Tap the first letter, then the last. Or drag.</div>
     <div class="passage" id="passage" tabindex="0" role="application"
          aria-label="Hidden word passage. Use arrow keys to move, Enter to mark the start and end of a word."></div>
     <div id="afterwards"></div>
@@ -287,30 +311,41 @@
   var letters = [];  // letters only: {ci (char index), cell (cell index)}
   var S = '';        // letters-only, uppercase
 
+  /* Grouping matters more than it looks. A word and the space that follows it
+     go in the SAME .wd inline-block, and the only soft-wrap opportunity is the
+     <wbr> after it. That means (a) a word can never be split across lines, and
+     (b) the space at a line break stays parked at the end of the line it
+     belongs to instead of indenting the next one — which is what a loose space
+     span does, and it looks like a typo. */
   (function render() {
     var frag = document.createDocumentFragment();
     var wd = null;
+    function openWord() {
+      wd = document.createElement('span');
+      wd.className = 'wd';
+      frag.appendChild(wd);
+    }
     for (var i = 0; i < text.length; i++) {
       var c = text[i];
       var sp = document.createElement('span');
       sp.textContent = c;
+      if (!wd) openWord();
       if (c === ' ') {
-        wd = null;
         sp.className = 'ch sp';
-        frag.appendChild(sp);
         cells.push({ el: sp, li: -1 });
+        wd.appendChild(sp);
+        frag.appendChild(document.createElement('wbr'));
+        wd = null;
+      } else if (/[A-Za-z]/.test(c)) {
+        sp.className = 'ch ltr';
+        sp.dataset.li = letters.length;
+        letters.push({ ci: i, cell: cells.length });
+        cells.push({ el: sp, li: letters.length - 1 });
+        S += c.toUpperCase();
+        wd.appendChild(sp);
       } else {
-        if (!wd) { wd = document.createElement('span'); wd.className = 'wd'; frag.appendChild(wd); }
-        if (/[A-Za-z]/.test(c)) {
-          sp.className = 'ch ltr';
-          sp.dataset.li = letters.length;
-          letters.push({ ci: i, cell: cells.length });
-          cells.push({ el: sp, li: letters.length - 1 });
-          S += c.toUpperCase();
-        } else {
-          sp.className = 'ch pun';
-          cells.push({ el: sp, li: -1 });
-        }
+        sp.className = 'ch pun';
+        cells.push({ el: sp, li: -1 });
         wd.appendChild(sp);
       }
     }
@@ -421,14 +456,14 @@
       chipsEl.appendChild(c);
     }
     var k = document.createElement('span');
-    k.className = 'chip key'; k.textContent = '★';
+    k.className = 'chip ks'; k.textContent = '★';
     k.dataset.slot = 'k';
     k.title = 'The keystone — the longest word, and it names the theme';
     chipsEl.appendChild(k);
   }
 
   function fillChips(justWord) {
-    var slots = chipsEl.querySelectorAll('.chip:not(.key)');
+    var slots = chipsEl.querySelectorAll('.chip:not(.ks)');
     var n = 0;
     st.order.forEach(function (w) {
       var t = byWord(w);
@@ -439,7 +474,7 @@
       el.classList.add('on');
       el.classList.toggle('just', w === justWord);
     });
-    var kEl = chipsEl.querySelector('.chip.key');
+    var kEl = chipsEl.querySelector('.chip.ks');
     if (keystone.found) {
       kEl.textContent = keystone.w;
       kEl.classList.add('on');
@@ -494,8 +529,8 @@
       readEl.className = 'readout idle';
       readEl.textContent = st.over
         ? 'That is the day. The words were hiding in plain sight.'
-        : (anchor >= 0 ? 'Start set — now tap the last letter.'
-                       : 'Drag across the letters — or tap the first letter, then the last.');
+        : (anchor >= 0 ? 'Start set — now pick the last letter of the word.'
+                       : 'Tap the first letter, then the last. Or drag.');
       return;
     }
     var lo = Math.min(a, b), hi = Math.max(a, b);
@@ -561,6 +596,7 @@
     Kit.toast(t.key ? '★ ' + t.w + ' — the keystone!' : t.w, t.key ? 2400 : 1600);
     say(t.w + ' found. ' + remaining().length + ' left.');
     setReadout(-1);
+    refit();
     if (remaining().length === 0) setTimeout(function () { finish(false); }, 780);
   }
 
@@ -572,6 +608,7 @@
   passEl.addEventListener('pointerdown', function (e) {
     if (st.over) return;
     e.preventDefault();
+    passEl.classList.add('pf');
     passEl.focus({ preventScroll: true });
     clearWrong();
     measure();
@@ -634,6 +671,7 @@
 
   passEl.addEventListener('keydown', function (e) {
     if (st.over) return;
+    passEl.classList.remove('pf');   // they are driving with the keyboard now
     var k = e.key;
     if (k === 'ArrowRight' || k === 'ArrowLeft') {
       cursor = Math.max(0, Math.min(letters.length - 1, cursor + (k === 'ArrowRight' ? 1 : -1)));
@@ -657,7 +695,9 @@
 
   function showCursor() {
     passEl.querySelectorAll('.cur').forEach(function (e) { e.classList.remove('cur'); });
-    if (st.over) return;
+    // the caret belongs to the keyboard path only — a thumb tap should never
+    // leave a stray outlined letter behind
+    if (st.over || passEl.classList.contains('pf')) return;
     var el = cells[letters[cursor].cell].el;
     el.classList.add('cur');
   }
@@ -674,6 +714,10 @@
     if (st.hints >= HINTS_MAX) { Kit.toast('No hints left.'); return; }
     var pool = remaining().filter(function (t) { return !t.hinted; });
     if (!pool.length) { Kit.toast('Every remaining word is already marked.'); return; }
+    // Sweep left to right through the passage, and never surrender the keystone
+    // while a plain word is still available — the keystone is the flex, so it
+    // has to be the last thing a hint will give you.
+    pool.sort(function (a, b) { return a.s - b.s; });
     var t = pool.filter(function (x) { return !x.key; })[0] || pool[0];
     t.hinted = true;
     st.hinted.push(t.w);
@@ -747,7 +791,11 @@
     var kAt = st.order.indexOf(P.keystone);
     var kLine = kAt < 0 ? 'keystone missed' : 'keystone found ' + ordinal(kAt + 1);
     var h = st.hints === 0 ? 'no hints' : (st.hints === 1 ? '1 hint' : st.hints + ' hints');
-    return 'STOWAWAYS #' + DAY + '\n' + row.join('') + '\n' + kLine + ' · ' + h + '\nsfun.games/stowaways';
+    // The clue goes in. It is the prompt every player sees BEFORE they start,
+    // so it leaks nothing — and it is the one line that makes each day's share
+    // read differently, which is the whole voice argument for this format.
+    return 'STOWAWAYS #' + DAY + '\n“' + P.clue + '”\n' +
+           row.join('') + '\n' + kLine + ' · ' + h + '\nsfun.games/stowaways';
   }
 
   function finish(gaveUp) {
@@ -824,12 +872,12 @@
      Help
      --------------------------------------------------------------- */
   var HELP =
-    '<p>Two or three ordinary sentences. Hiding inside them, <b>six words on one ' +
-    'theme</b> — spelled straight through, but ignoring every space and comma.</p>' +
-    '<div class="demo">a sam<b>ba con</b>test</div>' +
+    '<p>A few ordinary sentences. Hiding inside them, <b>six words on one theme</b> — ' +
+    'spelled straight through, but ignoring every space, comma and capital.</p>' +
+    '<div class="demo">the sam<b>ba con</b>test</div>' +
     '<ul class="rules" style="padding-left:18px">' +
-      '<li><b>Drag</b> across the letters, or <b>tap the first letter, then the last</b>. ' +
-        'Either works. Tap the same letter twice to cancel.</li>' +
+      '<li><b>Tap the first letter, then the last.</b> Or drag across them — either ' +
+        'works. Tap the same letter twice to cancel.</li>' +
       '<li>Every hidden word <b>straddles a gap</b> between real words. None of them ' +
         'sit inside a single word — that would be too easy.</li>' +
       '<li>One find is the <b>keystone ★</b>: the longest, and it names the theme. ' +
@@ -851,22 +899,43 @@
      scrolls the page out from under you. That is only safe if the
      page never needs to scroll, so shrink the type until it fits.
      --------------------------------------------------------------- */
-  var BASE_FS = null;
+  var BASE_FS = null, MAX_FS = 23;
   function autofit() {
     if (st.over) return;
     if (BASE_FS === null) { passEl.style.fontSize = ''; BASE_FS = parseFloat(getComputedStyle(passEl).fontSize); }
     var size = BASE_FS, guard = 0;
     passEl.style.fontSize = '';
     var doc = document.documentElement;
-    while (doc.scrollHeight > doc.clientHeight + 1 && size > 15 && guard++ < 40) {
-      size -= 0.5;
-      passEl.style.fontSize = size + 'px';
+    var over = function () { return doc.scrollHeight > doc.clientHeight + 1; };
+    if (over()) {
+      while (over() && size > 15 && guard++ < 40) { size -= 0.5; passEl.style.fontSize = size + 'px'; }
+    } else {
+      // slack left over: the passage is the hero, so let it take the room
+      // rather than leaving a dead gap under it
+      while (!over() && size < MAX_FS && guard++ < 40) { size += 0.5; passEl.style.fontSize = size + 'px'; }
+      if (over()) { size -= 0.5; passEl.style.fontSize = size + 'px'; }
     }
     // If it still will not fit (very short screen), stop trapping vertical
     // gestures — the page must stay scrollable. Tap-tap is unaffected.
     passEl.style.touchAction = doc.scrollHeight > doc.clientHeight + 1 ? 'pan-y' : 'none';
     rects = null;
   }
+  /* Filling a chip with a long word (BREAKFAST, ORCHESTRA) can wrap the chip
+     row and cost a line of height mid-game. Only ever shrink here — re-running
+     the full autofit would snap the type back up and jolt the page. */
+  function refit() {
+    if (st.over) return;
+    var doc = document.documentElement;
+    if (doc.scrollHeight <= doc.clientHeight + 1) return;
+    var size = parseFloat(getComputedStyle(passEl).fontSize), guard = 0;
+    while (doc.scrollHeight > doc.clientHeight + 1 && size > 15 && guard++ < 30) {
+      size -= 0.5;
+      passEl.style.fontSize = size + 'px';
+    }
+    passEl.style.touchAction = doc.scrollHeight > doc.clientHeight + 1 ? 'pan-y' : 'none';
+    rects = null;
+  }
+
   var fitT;
   window.addEventListener('resize', function () {
     BASE_FS = null;

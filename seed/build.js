@@ -48,9 +48,30 @@ const PUZZLES = [
   { seed: 'NET', queue: 'RDYEPSERS' },
   { seed: 'CAR', queue: 'MEPLIPTSE' },
   { seed: 'RED', queue: 'AGDNEETGE' },
-  { seed: 'DIG', queue: 'JRENHESSP' },
-  { seed: 'ONE', queue: 'PSDRXCENU' },
+  // Found by search.js (see PITCH.md) and then hand-read rack by rack. These
+  // three replaced thin, single-file puzzles: ACE/APE/DIE offer 17-27 spare
+  // words across their reachable racks, so two players who both reach a 9
+  // almost certainly walked different roads to get there.
+  { seed: 'SIR', queue: 'AENGAUNTS' },
+  { seed: 'APE', queue: 'CRSISTATS' },
+  { seed: 'DIE', queue: 'ANRSCIGPS' },
 ];
+
+/* Rejected by hand review, kept here so nobody re-proposes them. Every one of
+   these looked excellent on the search.js scoreboard:
+     TIE / DCSREONPP -> PERCEPTIONS (11).  Rich and clean everywhere except the
+       one place it matters: the only route to the 11 runs through the rack
+       CEIRST, whose sole answer is STERIC. A daily puzzle may not gate its
+       maximum behind a chemistry adjective.
+     ACE / DPRSDTIDH -> DISPATCHER (10).  Same failure, different word: the
+       rack ACEIPRST resolves only to PRACTISE, the Commonwealth spelling.
+     ACE / DNRSAIOTN -> CONTAINERS (10).  Scored branch 18 before curation, but
+       once CADE/CARNE/CESAR/SARACEN/CAESAR were struck the greedy player
+       stopped dying — verify.js caught it. A puzzle whose difficulty came from
+       junk words has no difficulty.
+     MAN / AEILDNILL -> MILLENNIAL (10).  Half its racks are proper-noun mush
+       (MNA, NAAM, IMAN, MIAN, NAIM, LIMAN, MELINDA); blocklisting honestly
+       leaves it thinner than what it would have replaced. */
 
 /* The par chain is shown to the player on the death screen ("show me the 11"),
    so every word on it is hand-picked from the rack's word list rather than
@@ -76,8 +97,11 @@ const PAR_PICKS = new Set(`
    the ones a reasonable English speaker would reject.
    -------------------------------------------------------------------------*/
 const BLOCKLIST = new Set(`
-aer der est rea tra neo
+aer der est rea tra neo dei ide epa
 carte seater
+cade carne cesar saracen caesar cartesian picea persia casper
+enid reid diane sadie denis darien snider
+irs sri rais reis ries seri raines aries
 
 amin amine amines amit amrita andre andries angeles ansel anton
 acer arte artie ariel arles arne asher boden
