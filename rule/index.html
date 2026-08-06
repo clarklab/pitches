@@ -478,6 +478,11 @@
     stage.appendChild(noteEl);
     renderNote();
 
+    nbHint = el('div', 'nb-empty');
+    nbHint.innerHTML = 'Test any string you like — <b>CRATE</b>, <b>AAAA</b>, <b>ZZTOP</b>. ' +
+                       'The lab answers anything.';
+    stage.appendChild(nbHint);
+
     // tray
     var tray = el('div', 'tray');
     slotEl = el('div', 'slot');
@@ -516,39 +521,49 @@
     }
   }
 
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  /* The bench log. Six numbered lines, ruled and waiting; each probe fills
+     one in and the ✅/❌ chip lands after a beat. The unwritten lines stay
+     visible so the cost of a probe is always on screen. */
   function renderNote() {
     if (!noteEl) return;
     noteEl.innerHTML = '';
-    if (!S.probes.length) {
-      var e = el('div', 'nb-empty');
-      e.innerHTML = 'No probes yet. Test any string you like — <b>CRATE</b>, <b>AAAA</b>, ' +
-                    '<b>ZZTOP</b> — and the lab answers instantly.<br>Or call it right now on zero.';
-      noteEl.appendChild(e);
-      return;
-    }
-    S.probes.forEach(function (p, i) {
-      var cls = 'entry ' + (p.ok === null ? 'pending' : (p.ok ? 'yes' : 'no'));
-      var row = el('div', cls);
-      row.appendChild(el('span', 'n', String(S.probes.length - i)));
-      row.appendChild(document.createTextNode(p.w));
-      row.appendChild(el('span', 'res', p.ok === null ? '• • •' : (p.ok ? '✅' : '❌')));
+    for (var i = 0; i < MAX_PROBES; i++) {
+      var p = S.probes[i];
+      if (!p) {
+        var g = el('div', 'entry ghost');
+        g.appendChild(el('span', 'n', pad2(i + 1)));
+        g.appendChild(el('span', 'dots'));
+        noteEl.appendChild(g);
+        continue;
+      }
+      var row = el('div', 'entry ' + (p.ok === null ? 'pending' : (p.ok ? 'yes' : 'no')));
+      row.appendChild(el('span', 'n', pad2(i + 1)));
+      row.appendChild(el('span', 'w', p.w));
+      var res = el('span', 'res');
+      if (p.ok === null) { res.innerHTML = '<span></span><span></span><span></span>'; }
+      else { res.textContent = p.ok ? '✅' : '❌'; }
+      row.appendChild(res);
       noteEl.appendChild(row);
-    });
+    }
+    if (nbHint) nbHint.style.display = S.probes.length ? 'none' : '';
   }
 
   function renderTray() {
     if (!pipsEl) return;
+    var used = S.probes.length, left = MAX_PROBES - used;
     pipsEl.innerHTML = '';
+    // filled pips are what you have LEFT — the meter drains rightward
     for (var i = 0; i < MAX_PROBES; i++) {
-      var d = el('div', 'pip' + (i < S.probes.length ? ' spent' : ''));
-      pipsEl.appendChild(d);
+      pipsEl.appendChild(el('div', 'pip' + (i >= left ? ' spent' : '')));
     }
-    var left = MAX_PROBES - S.probes.length;
+    if (nbLeft) nbLeft.textContent = left + ' left';
     if (callBtn) callBtn.classList.toggle('urge', left === 0);
     if (left === 0 && slotEl) {
       slotEl.innerHTML = '';
       slotEl.classList.remove('filled');
-      slotEl.appendChild(el('span', 'ph', 'OUT OF PROBES — TIME TO CALL IT'));
+      slotEl.appendChild(el('span', 'ph', 'Out of probes — time to call it'));
     }
   }
 
