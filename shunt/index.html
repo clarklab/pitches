@@ -422,7 +422,14 @@ const slotX=c=>c*STEP+GAP/2, slotY=r=>r*STEP+GAP/2;
    ====================================================================== */
 let drag=null;      // {isRow, idx, off, preview, steps}
 let cursor={r:0,c:0}, kbMode=false;
-let prevMask=null;
+let prevMask=null, lastLit=-1;
+const el = {
+  moves: document.getElementById('pMoves'),
+  lit: document.getElementById('pLit'),
+  litWrap: document.getElementById('pLitWrap'),
+  movePip: document.querySelector('.status .pip')
+};
+let arrows=[];      // filled once the edge chevrons exist
 
 function render(){
   const base = S.grid;
@@ -492,29 +499,34 @@ function render(){
   guts.t.classList.toggle('on', gOn && !drag.isRow);
   guts.b.classList.toggle('on', gOn && !drag.isRow);
 
-  document.getElementById('pMoves').textContent = S.moves;
-  const n = popcount(mask);
-  document.getElementById('pLit').innerHTML = n+'<span class="sub">/4</span>';
-  document.getElementById('pLitWrap').classList.toggle('hot', n>=3);
-  const left = CAP - S.moves;
-  const mp = document.querySelector('.status .pip');
-  mp.classList.toggle('danger', !S.done && left<=3);
-  live_.textContent = S.done ? '' : `${n} of 4 rows spell words. ${left} moves left.`;
+  const n = popcount(mask), left = CAP - S.moves;
+  if(el.moves.textContent!=String(S.moves)) el.moves.textContent = S.moves;
+  if(lastLit!==n){ el.lit.innerHTML = n+'<span class="sub">/4</span>'; lastLit=n; }
+  el.litWrap.classList.toggle('hot', n>=3);
+  el.movePip.classList.toggle('danger', !S.done && left<=3);
+  /* announce only settled positions — narrating every frame of a drag would
+     make a screen reader unusable */
+  if(!drag && !S.done){
+    const say = `${n} of 4 rows spell words, ${left} moves left`;
+    if(live_.textContent!==say) live_.textContent = say;
+  }
 
-  document.querySelectorAll('.arr').forEach(a=>{
+  for(const a of arrows){
     a.classList.toggle('armed', kbMode && !drag && (
       (a.dataset.kind==='row' && +a.dataset.idx===cursor.r) ||
       (a.dataset.kind==='col' && +a.dataset.idx===cursor.c)));
-  });
+  }
 }
 
 /* ======================================================================
    committing a move
    ====================================================================== */
 let busy=false;
+const queue=[];          // a snap takes 175ms; fast fingers must not be dropped
 function doSlide(isRow, idx, k){
-  if(busy || S.done) return;
+  if(S.done) return;
   k = ((k%4)+4)%4; if(k===0) return;
+  if(busy){ if(queue.length<2) queue.push([isRow,idx,k]); return; }
   killCue();
   const cost = Math.min(k, 4-k);            // 3 steps one way == 1 the other
   const signed = k<=2 ? k : k-4;
@@ -540,6 +552,8 @@ function doSlide(isRow, idx, k){
     if(popcount(m)>popcount(before)) Kit.haptic(18);
     save();
     checkEnd();
+    if(queue.length && !S.done){ const q=queue.shift(); doSlide(q[0],q[1],q[2]); }
+    else queue.length=0;
   }, 175);
 }
 function tilesInLane(isRow, idx){
@@ -617,7 +631,10 @@ function endDrag(e){
     drag={ isRow:d.isRow, idx:d.idx, off:0, steps:0, preview:S.grid, settled:true };
     render();
     busy=true;
-    setTimeout(()=>{ lane.forEach(t=>t.classList.remove('snapping')); drag=null; busy=false; render(); },190);
+    setTimeout(()=>{
+      lane.forEach(t=>t.classList.remove('snapping')); drag=null; busy=false; render();
+      if(queue.length){ const q=queue.shift(); doSlide(q[0],q[1],q[2]); }
+    },190);
     return;
   }
   doSlide(d.isRow, d.idx, k);
@@ -652,6 +669,7 @@ mkArrows(document.getElementById('sUp'),'up','col');
 mkArrows(document.getElementById('sDown'),'down','col');
 mkArrows(document.getElementById('sLeft'),'left','row');
 mkArrows(document.getElementById('sRight'),'right','row');
+arrows = [...document.querySelectorAll('.arr')];
 
 /* ======================================================================
    keyboard
