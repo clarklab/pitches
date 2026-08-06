@@ -63,16 +63,22 @@ const PAR_PICKS = new Set(`
    Junk filter.
 
    lexgen is frequency-filtered but still carries abbreviations, proper-noun
-   residue and morphological accidents. Length 3 needs no filtering — the only
-   3-letter rack in the game is the authored seed itself. From length 4 up,
-   a junk word can silently prop up a rack the player would never guess, or
-   worse, carry a "best possible: 11" claim the player can't believe.
+   residue and morphological accidents. A junk word can silently prop up a rack
+   the player would never guess, or worse, carry a "best possible: 11" claim
+   the player can't believe. It also looks terrible on the death screen when we
+   list "words you could have played" and one of them is `TRA`.
 
-   This list is HAND-CURATED: it was built by running `node build.js --report`,
-   reading every word the solver emitted for these eight puzzles, and striking
+   Applies at EVERY length, including 3 — the seed rack is displayed, and
+   shipping `EST` / `TRA` / `AER` next to the seed word reads as a bug.
+
+   This list is HAND-CURATED: it was built by running `node build.js --dump`,
+   reading every word the solver emitted for all nine puzzles, and striking
    the ones a reasonable English speaker would reject.
    -------------------------------------------------------------------------*/
 const BLOCKLIST = new Set(`
+aer der est rea tra neo
+carte seater
+
 aeolians alcide amin amine amines amit amrita andre andries angeles ansel anton
 acer arte artie ariel arles arne asher aurea boden
 carle cate ceres cetera claire clare crimea cristina corse crosse
@@ -103,7 +109,7 @@ function loadIndex() {
   const index = new Map();
   for (const w of raw) {
     if (!/^[a-z]{3,12}$/.test(w)) continue;
-    if (w.length >= 4 && BLOCKLIST.has(w)) continue;
+    if (BLOCKLIST.has(w)) continue;
     const k = key(w);
     let bucket = index.get(k);
     if (!bucket) index.set(k, (bucket = []));
@@ -181,6 +187,7 @@ function solve(puz, index) {
   // word (PAR_PICKS) when one is available, else the first alphabetically.
   const chain = [];
   const skipAt = [];
+  const path = [];   // the full optimal line, takes AND skips, in queue order
   let cur = best;
   while (cur) {
     const st = cur.st;
@@ -193,13 +200,18 @@ function solve(puz, index) {
         throw new Error(`par pick "${pick}" is not legal for rack ${st.rack}`);
       }
       chain.push({ word: pick, len: st.rack.length, rack: st.rack, all: words });
+      path.push({ act: 'take', word: pick, letter: st.via ? st.via.letter : null });
     }
-    if (st.via && st.via.act === 'skip') skipAt.push(st.via.letter);
+    if (st.via && st.via.act === 'skip') {
+      skipAt.push(st.via.letter);
+      path.push({ act: 'skip', letter: st.via.letter, word: null });
+    }
     const prevId = st.prev;
     cur = prevId ? { id: prevId, st: alive.get(prevId) } : null;
   }
   chain.reverse();
   skipAt.reverse();
+  path.reverse();
 
   // Greedy baseline: always take when a word exists; skip only when forced.
   let gRack = seed.split('').sort().join('');
@@ -228,7 +240,7 @@ function solve(puz, index) {
     seed, queue: queue.join(''),
     max: best.st.rack.length,
     maxSkips: best.st.skips,
-    chain, skipAt,
+    chain, skipAt, path,
     greedy: gRack.length, greedySkips: gSkips, greedyDead: gDead,
     words, keyCount: Object.keys(words).length, wordCount,
     aliveStates: alive.size,
