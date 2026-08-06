@@ -79,11 +79,11 @@ const BLOCKLIST = new Set(`
 aer der est rea tra neo
 carte seater
 
-aeolians alcide amin amine amines amit amrita andre andries angeles ansel anton
-acer arte artie ariel arles arne asher aurea boden
+amin amine amines amit amrita andre andries angeles ansel anton
+acer arte artie ariel arles arne asher boden
 carle cate ceres cetera claire clare crimea cristina corse crosse
-dante darin dorset
-edgar ela elia elsa electra elvira enos entre eros esta eton
+dante darin
+edgar ela elia elsa electra elvira enos entre eros eton
 garde gare grande greta gunter
 irena israelite israelites
 lanier lear

@@ -10,69 +10,110 @@
   @media (prefers-color-scheme: dark) { :root { --accent-hi:#6cc4a8; } }
   :root[data-theme="dark"]  { --accent-hi:#6cc4a8; }
   :root[data-theme="light"] { --accent-hi:#1f7a63; }
-  .prompt .k { color: var(--accent-hi); }
 
-  /* ---------- layout overrides ---------- */
-  .stage { justify-content: flex-start; gap: 10px; min-height: 0; }
-  .prompt { padding: 10px 14px; }
-  .prompt .k { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:2px; }
-  .prompt .v { font-size: 13.5px; line-height: 1.4; }
-  .prompt .par { color: var(--ink-3); letter-spacing:.1em; }
+  /* ------------------------------------------------------------------
+     TYPE. Google Sans Flex is a sans, not the serif this was first cut
+     for: display sizes want more weight and NEGATIVE tracking, while the
+     little caps labels want the opposite — open tracking, heavy weight,
+     small size. Everything below follows that split.
+     ------------------------------------------------------------------ */
+  .bar { margin-bottom: 12px; padding-bottom: 11px; }
+  .bar h1 { font-size:17.5px; font-weight:800; letter-spacing:.2em; text-indent:.2em; }
+
+  /* ---------- layout ---------- */
+  .app { padding-bottom: calc(10px + var(--safe-b)); }
+  .stage { justify-content: flex-start; gap: 12px; min-height: 0; }
+  .prompt { padding: 11px 15px; }
+  .prompt .k {
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    margin-bottom:4px; font-size:10px; font-weight:800; letter-spacing:.16em;
+    color: var(--accent-hi);
+  }
+  .prompt .v { font-size: 13.5px; line-height: 1.45; }
+  .prompt .par { color: var(--ink-3); letter-spacing:.16em; white-space:nowrap; }
   .prompt .long { color: var(--warn); }
 
   /* ---------- score bar ---------- */
   .scorebar {
     display:flex; align-items:center; gap:10px;
     background: var(--white); border:1px solid var(--line);
-    border-radius: var(--r-pill); padding:6px 6px 6px 14px;
+    border-radius: var(--r-pill); padding:5px 5px 5px 17px;
     box-shadow: var(--shadow-1);
+    transition: background .25s, border-color .25s;
   }
-  .tally { flex:1; display:flex; align-items:baseline; gap:7px; min-width:0; }
+  .tally { flex:1; display:flex; align-items:center; gap:12px; min-width:0; }
   .tally .n {
-    font-family: var(--font-display); font-size:23px; font-weight:600; line-height:1;
+    font-family: var(--font-display); font-size:27px; font-weight:700; line-height:1;
+    letter-spacing:-.03em; font-variant-numeric: tabular-nums lining-nums;
     transition: color .2s;
   }
-  .tally .lbl { font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap; }
+  .tally .meta { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .tally .lbl {
+    font-size:9.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--ink-3); white-space:nowrap;
+  }
+  .tally .warnl {
+    font-size:11.5px; font-weight:700; letter-spacing:-.005em; color:var(--warn);
+    white-space:nowrap; line-height:1.1;
+  }
+  .tally .warnl:empty { display:none; }
   .scorebar.warn { border-color: var(--warn); background: var(--warn-soft); }
   .scorebar.warn .tally .n { color: var(--warn); }
-  .scorebar.alarm { border-color: var(--bad); background: var(--bad-soft); animation: alarm 1.1s ease-in-out infinite; }
-  .scorebar.alarm .tally .n { color: var(--bad); }
-  .scorebar.alarm .lbl { color: var(--bad); font-weight:700; }
-  @keyframes alarm { 50% { box-shadow: 0 0 0 4px rgba(179,64,47,.16); } }
+  .scorebar.alarm { border-color: var(--bad); background: var(--bad-soft); animation: alarm 1.4s ease-in-out infinite; }
+  .scorebar.alarm .tally .n,
+  .scorebar.alarm .tally .warnl { color: var(--bad); }
+  .scorebar.alarm .lbl { color: var(--bad); }
+  @keyframes alarm { 50% { box-shadow: var(--shadow-1), 0 0 0 5px rgba(179,64,47,.14); } }
 
   .caddie {
-    display:flex; align-items:center; gap:6px;
-    border:1px solid var(--line-2); background:var(--paper-2); color:var(--ink);
-    border-radius: var(--r-pill); padding:0 13px; height:38px; min-width:44px;
-    font-size:13px; font-weight:700; letter-spacing:.02em; cursor:pointer;
+    display:flex; align-items:center; gap:7px;
+    border:1px solid var(--line); background:var(--paper-2); color:var(--ink);
+    border-radius: var(--r-pill); padding:0 15px; height:44px; min-width:44px;
+    font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    cursor:pointer; white-space:nowrap;
+    box-shadow: var(--shadow-1);
+    transition: transform .1s, background .15s, border-color .15s, box-shadow .15s;
     touch-action:manipulation; -webkit-tap-highlight-color:transparent;
   }
-  .caddie .g { font-size:15px; }
-  .caddie:active { transform: translateY(1px); }
-  .caddie[disabled] { opacity:.4; cursor:default; }
+  .caddie .g { font-size:15px; letter-spacing:0; }
+  .caddie:hover { border-color: var(--line-2); }
+  .caddie:active { transform: scale(.955); box-shadow:none; }
+  .caddie[disabled] { opacity:.38; cursor:default; box-shadow:none; }
 
   /* ---------- the course ---------- */
   .course {
     flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
-    padding: 6px 0 2px; scrollbar-width:thin;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 10px), transparent 100%);
-            mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 10px), transparent 100%);
+    padding: 4px 0 2px; scrollbar-width:thin;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 12px), transparent 100%);
   }
   .chain { display:flex; flex-direction:column; align-items:center; }
 
   .node {
-    position:relative; width:100%; max-width:300px;
+    position:relative; width:100%; max-width:290px;
     display:flex; align-items:center; justify-content:center;
-    background: var(--white); border:1.5px solid var(--line-2);
-    border-radius: var(--r); box-shadow: var(--shadow-1);
-    padding: 11px 14px; min-height:48px;
-    font-family: var(--font-tile); font-weight:800; font-size:21px;
-    letter-spacing:.07em; text-transform:uppercase; user-select:none;
+    background: var(--white); border:1.5px solid var(--line);
+    border-radius: 13px; box-shadow: var(--shadow-1);
+    padding: 12px 46px; min-height:52px;
+    font-family: var(--font-tile); font-weight:700; font-size:20px;
+    letter-spacing:.05em; text-transform:uppercase; user-select:none;
   }
-  .node.tee { background: var(--paper-2); border-style:dashed; box-shadow:none; color:var(--ink-2); }
-  .node.tee .tag { position:absolute; left:12px; font-family:var(--font-ui); font-size:9.5px; font-weight:700;
-    letter-spacing:.14em; color:var(--ink-3); text-transform:uppercase; }
+  .node.tee {
+    background: transparent; border:1.5px dashed var(--line-2);
+    box-shadow:none; color:var(--ink-2); font-weight:600;
+  }
+  .node .tag {
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    font-family:var(--font-ui); font-size:8.5px; font-weight:800; letter-spacing:.17em;
+    color:var(--ink-3); text-transform:uppercase; line-height:1;
+    border:1px solid var(--line); border-radius:var(--r-pill);
+    padding:3px 7px 3px 8px; background:var(--paper-2);
+  }
   .node.caddied { border-color: var(--warn); background: var(--warn-soft); }
+  .node.caddied::after {
+    content:'🧤'; position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:13px; line-height:1;
+  }
   .node.snap { animation: snap .34s cubic-bezier(.18,1.2,.4,1); }
   @keyframes snap {
     0%   { transform: translateY(-16px) scale(.9); opacity:0; }
@@ -80,15 +121,16 @@
     100% { transform: none; }
   }
 
-  /* connector carrying the compound it formed */
+  /* the spine, carrying the compound each link formed */
   .rung { display:flex; flex-direction:column; align-items:center; width:100%; }
-  .rung i { display:block; width:2px; height:9px; background:var(--line-2); }
+  .rung i { display:block; width:2px; height:11px; background:var(--line-2); border-radius:1px; }
   .made {
-    font-family: var(--font-mono); font-size:10.5px; letter-spacing:.1em;
+    font-family: var(--font-mono); font-size:9.5px; font-weight:600; letter-spacing:.16em;
     text-transform:uppercase; color: var(--ink-3);
-    background: var(--paper-2); border:1px solid var(--line);
-    border-radius: var(--r-pill); padding:1.5px 9px; white-space:nowrap;
+    background: var(--paper); border:1px solid var(--line);
+    border-radius: var(--r-pill); padding:2.5px 11px; white-space:nowrap; line-height:1.25;
   }
+  .rung.fresh i { background: var(--accent-hi); }
   .rung.fresh .made {
     color: var(--accent-ink); background: var(--accent); border-color:transparent;
     animation: madeflash 2.2s ease-out forwards;
@@ -98,72 +140,118 @@
     18%  { transform: scale(1.06); opacity:1; }
     30%  { transform: scale(1); }
     72%  { color: var(--accent-ink); background: var(--accent); border-color:transparent; }
-    100% { color: var(--ink-3); background: var(--paper-2); border-color: var(--line); }
+    100% { color: var(--ink-3); background: var(--paper); border-color: var(--line); }
   }
 
   /* the word being typed */
   .node.entry {
-    border-style:dashed; border-color:var(--accent-hi); background:var(--accent-soft);
+    border:1.5px dashed var(--accent-hi); background:var(--accent-soft);
     box-shadow:none; color:var(--ink);
   }
-  .node.entry.empty { color: var(--ink-3); font-size:13px; font-family:var(--font-ui);
-    font-weight:600; letter-spacing:.09em; }
+  .node.entry.empty {
+    color: var(--ink-3); font-size:10px; font-family:var(--font-ui);
+    font-weight:800; letter-spacing:.17em;
+  }
   .caret { display:inline-block; width:2px; height:19px; background:var(--accent-hi);
     margin-left:3px; vertical-align:-3px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity:0 } }
 
   /* ---------- the pin ---------- */
+  .tothepin { display:flex; justify-content:center; margin:-4px 0 -2px; }
+  .tothepin::before { content:''; width:0; height:15px; border-left:2px dashed var(--line-2); }
+
   .pin {
-    display:flex; align-items:center; gap:12px;
-    border:2px solid var(--accent-hi); background:var(--accent-soft);
-    border-radius: var(--r); padding:9px 14px; position:relative;
+    display:flex; align-items:center; gap:14px;
+    border:1.5px solid var(--accent-hi);
+    background: var(--accent-soft);
+    border-radius: var(--r); padding:11px 16px; position:relative;
+    box-shadow: var(--shadow-1);
+    transition: background .3s, border-color .3s;
   }
-  .pin .flagpole { font-size:22px; line-height:1; }
+  .pin .flag { flex:0 0 28px; height:28px; color:var(--accent-hi); display:grid; place-items:center; }
+  .pin .flag svg { width:28px; height:28px; display:block; }
+  .pin .body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .pin .lbl {
+    font-size:8.5px; font-weight:800; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink-3); line-height:1;
+  }
   .pin .word {
-    flex:1; font-family:var(--font-tile); font-weight:800; font-size:21px;
-    letter-spacing:.07em; text-transform:uppercase; color:var(--accent-hi);
+    font-family:var(--font-tile); font-weight:800; font-size:22px; line-height:1.1;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--accent-hi);
+    overflow:hidden; text-overflow:ellipsis;
   }
-  .pin .lbl { font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }
+  .pin.done { background: var(--good-soft); border-color: var(--good); }
+  .pin.done .flag, .pin.done .word { color: var(--good); }
   .pin.holed { animation: holed .5s ease-out; }
-  @keyframes holed { 0%{transform:none} 40%{transform:scale(1.05)} 100%{transform:none} }
+  @keyframes holed { 0%{transform:none} 40%{transform:scale(1.045)} 100%{transform:none} }
+
+  .deskhint { display:none; }
+  @media (min-width:620px) {
+    .deskhint {
+      display:block; text-align:center; padding-top:14px; margin-top:auto;
+      font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
+      color:var(--ink-3);
+    }
+  }
 
   /* ---------- scorecard ---------- */
-  .card { width:100%; border-collapse:collapse; font-size:14px; margin:2px 0 4px; }
-  .card th { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
-    font-weight:700; text-align:left; padding:4px 6px; border-bottom:1px solid var(--line); }
+  .card {
+    width:100%; border-collapse:collapse; font-size:14px; margin:6px 0 2px;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .card th {
+    font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
+    font-weight:800; text-align:left; padding:0 6px 7px; border-bottom:1px solid var(--line);
+  }
   .card th.num, .card td.num { text-align:right; }
-  .card td { padding:8px 6px; border-bottom:1px solid var(--line); }
-  .card td.hole { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); letter-spacing:.06em; }
-  .card td.res { font-weight:700; }
-  .card tr.tot td { border-bottom:none; font-weight:800; padding-top:11px; }
+  .card td { padding:10px 6px; border-bottom:1px solid var(--line); }
+  .card td.hole { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); letter-spacing:.04em; width:16px; }
+  .card td.leg { font-weight:600; letter-spacing:-.005em; }
+  .card td.res { font-weight:800; letter-spacing:-.01em; }
+  .card tr.pending td { color: var(--ink-3); }
+  .card tr.tot td { border-bottom:none; font-weight:800; padding-top:13px; font-size:15px; letter-spacing:-.01em; }
   .res.under { color: var(--good); }
   .res.even  { color: var(--ink); }
   .res.over  { color: var(--warn); }
   .res.blown { color: var(--bad); }
 
-  .lineout { font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--ink-2);
-    background:var(--paper-2); border:1px solid var(--line); border-radius:var(--r-sm);
-    padding:10px 12px; margin:12px 0 4px; word-break:break-word; text-align:center; }
-  .lineout b { color: var(--ink); }
+  .lineout {
+    background:var(--paper-2); border:1px solid var(--line); border-radius:var(--r);
+    padding:12px 14px; margin:16px 0 2px; text-align:center;
+  }
+  .lineout .cap {
+    display:block; font-size:9px; font-weight:800; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--ink-3); margin-bottom:7px;
+  }
+  .lineout b {
+    font-family:var(--font-mono); font-size:12.5px; line-height:1.75; letter-spacing:.09em;
+    color:var(--ink); font-weight:600; word-break:break-word;
+  }
 
-  .badge { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.12em;
-    text-transform:uppercase; padding:3px 9px; border-radius:var(--r-pill); }
+  .badge { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.16em;
+    text-transform:uppercase; padding:5px 12px; border-radius:var(--r-pill); }
   .badge.under { background:var(--good-soft); color:var(--good); }
   .badge.even  { background:var(--accent-soft); color:var(--accent-hi); }
   .badge.over  { background:var(--warn-soft); color:var(--warn); }
   .badge.blown { background:var(--bad-soft); color:var(--bad); }
 
   .foot { display:flex; align-items:center; justify-content:center; gap:8px;
-    font-size:12px; color:var(--ink-3); margin-top:12px; }
-  .foot b { font-family:var(--font-mono); color:var(--ink-2); }
+    font-size:10px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--ink-3); margin-top:16px; }
+  .foot b { font-family:var(--font-mono); font-weight:600; letter-spacing:.06em;
+    text-transform:none; font-size:11.5px; color:var(--ink-2); }
 
-  .legend { font-size:12.5px; color:var(--ink-2); line-height:1.7; }
+  .legend { font-size:13px; color:var(--ink-2); line-height:1.75; }
   .legend code { font-family:var(--font-mono); font-size:11.5px; background:var(--paper-2);
-    border:1px solid var(--line); border-radius:5px; padding:1px 5px; }
+    border:1px solid var(--line); border-radius:5px; padding:1.5px 5px; letter-spacing:.04em; }
+  .keymap { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px;
+    font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-2); }
+  .keymap span { white-space:nowrap; }
 
   @media (max-height: 700px) {
-    .node { min-height:42px; padding:8px 14px; font-size:19px; }
+    .node { min-height:46px; padding:9px 44px; font-size:19px; }
     .prompt .v { display:none; }
+    .tally .n { font-size:24px; }
   }
 </style>
 </head>
@@ -173,7 +261,7 @@
   <div class="bar">
     <button class="iconbtn" id="statsBtn" aria-label="Scorecard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 21V3"/><path d="M6 4h11l-2.2 3.5L17 11H6"/>
+        <rect x="4" y="3" width="16" height="18" rx="2.6"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/>
       </svg>
     </button>
     <h1>Chains</h1>
@@ -191,20 +279,37 @@
 
   <div class="stage">
     <div class="scorebar" id="scorebar">
-      <div class="tally"><span class="n" id="strokeN">0</span><span class="lbl" id="strokeL">strokes · par 4</span></div>
-      <button class="caddie" id="caddieBtn"><span class="g">🧤</span><span id="caddieLbl">Caddie</span></button>
+      <div class="tally" role="status" aria-live="polite">
+        <span class="n" id="strokeN">0</span>
+        <span class="meta">
+          <span class="lbl" id="strokeL">strokes · par 4</span>
+          <span class="warnl" id="strokeW"></span>
+        </span>
+      </div>
+      <button class="caddie" id="caddieBtn"><span class="g" id="caddieIcon">🧤</span><span id="caddieLbl">Caddie</span></button>
     </div>
 
     <div class="course" id="course"><div class="chain" id="chain"></div></div>
 
+    <div class="tothepin" aria-hidden="true"></div>
+
     <div class="pin" id="pin">
-      <span class="flagpole">⛳</span>
-      <span class="word" id="pinWord">WORK</span>
-      <span class="lbl">the pin</span>
+      <span class="flag" aria-hidden="true">
+        <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 24.5V4"/>
+          <path d="M9 4.8h11.5l-3.1 4.3 3.1 4.3H9" fill="currentColor" stroke-linejoin="round"/>
+          <path d="M4 24.5h10" opacity=".45"/>
+        </svg>
+      </span>
+      <span class="body">
+        <span class="lbl" id="pinLbl">The pin</span>
+        <span class="word" id="pinWord">WORK</span>
+      </span>
     </div>
   </div>
 
   <div id="kbd"></div>
+  <div class="deskhint">Type a word · Enter plays it · Backspace edits</div>
 </div>
 
 <script src="../shared/kit.js"></script>
@@ -292,7 +397,8 @@
   let S = save.get();
   if (!S || S.d !== DAY) {
     S = { d: DAY, hole: 0, chain: [HOLES[0].start.toLowerCase()], strokes: 0,
-          caddie: false, caddieAt: -1, scores: [], done: false };
+          caddie: false, caddieAt: -1, caddieHole: -1, caddieWord: null,
+          scores: [], done: false };
     save.set(S);
   }
   let typed = '';
@@ -314,19 +420,34 @@
     el('objective').textContent = h.long
       ? `The long one. ${h.start} to ${h.target} — the perfect line is an eagle.`
       : `${h.start} to ${h.target}. Each word must make a compound with the one above it.`;
-    el('caddieLbl').textContent = S.caddie ? 'Used' : 'Caddie';
-    el('caddieBtn').disabled = S.caddie || S.done;
+    /* once the round is signed the caddie has nothing left to do — the button
+       becomes the way back into your card, so the last screen is never a wall */
+    if (S.done) {
+      el('caddieIcon').textContent = '⛳';
+      el('caddieLbl').textContent = 'Card';
+      el('caddieBtn').disabled = false;
+    } else {
+      el('caddieIcon').textContent = '🧤';
+      el('caddieLbl').textContent = S.caddie ? 'Used' : 'Caddie';
+      el('caddieBtn').disabled = S.caddie;
+    }
+    const holed = S.done || head() === h.target.toLowerCase();
+    pinEl.classList.toggle('done', holed);
+    el('pinLbl').textContent = holed ? 'Holed out' : 'The pin';
   }
 
   function renderScore() {
     const h = hole(), left = maxStrokes() - S.strokes;
     const need = S.done ? 0 : distTo(head(), h.target.toLowerCase());
     el('strokeN').textContent = S.strokes;
+    el('strokeL').textContent = `strokes · par ${h.par}`;
     let tail = '';
-    if (!S.done && left === 1) tail = ' · last swing';
-    else if (!S.done && need === left) tail = ' · needs a perfect line';
-    else if (!S.done && left === 2) tail = ' · two swings left';
-    el('strokeL').textContent = `strokes · par ${h.par}${tail}`;
+    if (!S.done) {
+      if (left === 1) tail = 'Last swing';
+      else if (need === left) tail = 'Needs a perfect line';
+      else if (left === 2) tail = 'Two swings left';
+    }
+    el('strokeW').textContent = tail;
     const bar = el('scorebar');
     bar.classList.toggle('alarm', !S.done && (left <= 1 || need === left));
     bar.classList.toggle('warn', !S.done && left === 2 && need !== left);
@@ -375,6 +496,9 @@
 
   /* ---------- play ----------------------------------------------------- */
   function onKey(k) {
+    /* a sheet is open — the physical keyboard belongs to the sheet, not the
+       board behind it, or typing during the help screen silently loads a word */
+    if (document.querySelector('.scrim')) return;
     if (busy || S.done) return;
     if (k === 'BACK') { typed = typed.slice(0, -1); renderEntry(); return; }
     if (k === 'ENTER') { submit(); return; }
@@ -397,15 +521,19 @@
       bounce(`${from.toUpperCase()} · ${w.toUpperCase()} isn't in today's dictionary`);
       return;
     }
-    commit(w, false);
+    commit(w);
   }
 
-  function commit(w, viaCaddie) {
+  function commit(w) {
     busy = true;
     typed = '';
     S.chain.push(w);
     S.strokes++;
-    if (viaCaddie) S.caddieAt = S.chain.length - 1;
+    /* mark the node the caddie actually handed you — not just the hole she was
+       spent on, so the card shows where the help landed */
+    if (S.caddieHole === S.hole && w === S.caddieWord && S.caddieAt < 0) {
+      S.caddieAt = S.chain.length - 1;
+    }
     save.set(S);
     Kit.haptic(10);
     render(true);
@@ -432,7 +560,8 @@
 
   /* ---------- caddie --------------------------------------------------- */
   el('caddieBtn').addEventListener('click', () => {
-    if (S.caddie || S.done || busy) return;
+    if (S.done) { resultSheet(); return; }
+    if (S.caddie || busy) return;
     const h = hole();
     const t = h.target.toLowerCase();
     if (distTo(head(), t) >= maxStrokes() - S.strokes) {
@@ -453,8 +582,10 @@
       root.querySelector('#cadYes').addEventListener('click', () => {
         close();
         S.caddie = true;
+        S.caddieHole = S.hole;
         S.strokes++;                       // the penalty stroke
         const next = stepToward(head(), t);
+        S.caddieWord = next;
         save.set(S);
         if (!next) { render(false); Kit.toast('Even the caddie is stumped', 2400); settle(); return; }
         Kit.toast(`Caddie says: ${next.toUpperCase()}`, 3200);
@@ -471,7 +602,7 @@
     const v = verdict(S.strokes, h.par, pickedUp);
     const score = pickedUp ? h.par + 4 : S.strokes;
     S.scores.push({ strokes: score, swings: S.strokes, par: h.par, pickedUp,
-                    caddie: S.caddieAt >= 0, chain: S.chain.slice() });
+                    caddie: S.caddieHole === S.hole, chain: S.chain.slice() });
     const last = S.hole >= HOLES.length - 1;
     save.set(S);
     holeSheet(v, pickedUp, last, why, need);
@@ -504,7 +635,8 @@
       <h2>${title}</h2>
       ${body}
       <div style="text-align:center"><span class="badge ${v.tone}">${pickedUp ? 'no return' : toPar(v.diff)}</span></div>
-      <div class="lineout">${pickedUp ? 'your line ran out at' : 'your line'}<br><b>${Kit.esc(line)}</b>${pickedUp ? ' …' : ''}</div>
+      <div class="lineout"><span class="cap">${pickedUp ? 'your line ran out at' : 'your line'}</span>
+        <b>${Kit.esc(line)}${pickedUp ? ' …' : ''}</b></div>
       ${cardHTML(true)}
       <button class="btn primary wide" id="nextBtn" style="margin-top:16px">
         ${last ? 'Sign the card' : 'Next hole →'}

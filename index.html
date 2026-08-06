@@ -15,10 +15,11 @@
   .card {
     display: block; text-decoration: none; color: inherit;
     background: var(--white); border: 1px solid var(--line);
-    border-left: 5px solid var(--c); border-radius: var(--r);
+    border-radius: var(--r);
     padding: 16px 18px; box-shadow: var(--shadow-1);
-    transition: transform .14s, box-shadow .18s;
+    transition: transform .14s, box-shadow .18s, border-color .18s;
   }
+  .card:hover { border-color: var(--c); }
   .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
   .card .top { display: flex; align-items: baseline; gap: 10px; }
   .card h2 { font-family: var(--font-display); font-size: 23px; margin: 0; font-weight: 600; letter-spacing: .02em; }
