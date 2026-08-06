@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Rule — Superfun Daily</title>
+<meta name="description" content="One hidden rule. Six clues. Six probes. Crack it in as few as you dare.">
+<link rel="stylesheet" href="../shared/kit.css">
+<style>
+:root{
+  --accent:#5b46c9;
+  --accent-soft:#e2ddf7;
+  --accent-ink:#fff;
+}
+@media (prefers-color-scheme: dark){ :root{ --accent:#9585ec; --accent-soft:#282146; } }
+:root[data-theme="dark"]{ --accent:#9585ec; --accent-soft:#282146; }
+:root[data-theme="light"]{ --accent:#5b46c9; --accent-soft:#e2ddf7; }
+
+/* ---------- layout tweaks ---------- */
+.app{ padding-bottom: calc(8px + var(--safe-b)); }
+.stage{ justify-content:flex-start; gap:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.prompt{ padding:9px 13px; }
+.prompt .v{ font-size:13.5px; }
+.bar{ margin-bottom:10px; }
+
+/* ---------- evidence board ---------- */
+.board{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.col{
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r);
+  padding:9px 10px 10px; box-shadow:var(--shadow-1);
+  border-top:3px solid var(--good);
+}
+.col.no{ border-top-color:var(--bad); }
+.col h3{
+  margin:0 0 6px; font-size:9.5px; font-weight:800; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--good); display:flex; gap:5px; align-items:center;
+}
+.col.no h3{ color:var(--bad); }
+.col .w{
+  font-family:var(--font-mono); font-size:13.5px; letter-spacing:.05em;
+  padding:2.5px 0; color:var(--ink); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ---------- lab notebook ---------- */
+.nb-head{
+  display:flex; align-items:center; gap:8px; margin-top:2px;
+  font-size:9.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3);
+}
+.nb-head::after{ content:''; flex:1; height:1px; background:var(--line); }
+.note{ display:flex; flex-direction:column; gap:6px; }
+.entry{
+  display:flex; align-items:center; gap:10px;
+  background:var(--white); border:1px solid var(--line); border-left:3px solid var(--line-2);
+  border-radius:10px; padding:8px 12px;
+  font-family:var(--font-mono); font-size:15px; letter-spacing:.07em;
+  animation:drop .22s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes drop{ from{ opacity:0; transform:translateY(-8px) } }
+.entry .n{ font-size:10px; color:var(--ink-3); letter-spacing:.04em; font-weight:700; min-width:14px; }
+.entry .res{ margin-left:auto; font-size:15px; font-family:var(--font-ui); }
+.entry.yes{ border-left-color:var(--good); }
+.entry.no{ border-left-color:var(--bad); }
+.entry.yes .res, .entry.no .res{ animation:pop .28s ease-out; }
+.entry.pending .res{ color:var(--ink-3); letter-spacing:.1em; animation:think .9s steps(4,end) infinite; }
+@keyframes think{ 0%{opacity:.3} 50%{opacity:1} 100%{opacity:.3} }
+.nb-empty{ font-size:13px; color:var(--ink-3); text-align:center; padding:6px 0 2px; line-height:1.5; }
+.nb-empty b{ color:var(--ink-2); font-family:var(--font-mono); letter-spacing:.05em; }
+
+/* ---------- tray ---------- */
+.tray{ display:flex; flex-direction:column; gap:9px; padding-top:10px; }
+.slot{
+  height:50px; border:2px dashed var(--line-2); border-radius:12px;
+  display:grid; place-items:center; background:transparent;
+  font-family:var(--font-mono); font-size:20px; letter-spacing:.16em; font-weight:700;
+  transition:border-color .15s, background .15s;
+}
+.slot.filled{ border-style:solid; border-color:var(--accent); background:var(--white); }
+.slot .ph{ font-size:11.5px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:600; }
+.slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; }
+@keyframes blink{ 50%{opacity:0} }
+.trayrow{ display:flex; align-items:center; gap:10px; }
+.pips{ display:flex; gap:5px; align-items:center; }
+.pip{ width:9px; height:9px; border-radius:50%; background:var(--accent); transition:background .3s, transform .3s; }
+.pip.spent{ background:transparent; box-shadow:inset 0 0 0 1.5px var(--line-2); transform:scale(.8); }
+.plab{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:700; }
+.callit{
+  margin-left:auto; background:var(--white); color:var(--accent);
+  border:1.5px solid var(--accent); font-weight:800; letter-spacing:.09em;
+  padding:10px 16px; font-size:13px; text-transform:uppercase;
+  box-shadow:0 0 0 0 var(--accent-soft);
+}
+.callit:active{ background:var(--accent); color:var(--accent-ink); }
+.callit.urge{ animation:danger 1.6s ease-in-out infinite; }
+@keyframes danger{ 50%{ box-shadow:0 0 0 6px var(--accent-soft) } }
+
+/* ---------- call screen ---------- */
+.callhead{ text-align:center; }
+.callhead .t{ font-family:var(--font-display); font-size:23px; font-weight:600; margin:0; }
+.callhead .s{ font-size:13px; color:var(--ink-2); margin:3px 0 0; }
+.cands{ display:flex; flex-direction:column; gap:7px; }
+.cand{
+  display:flex; align-items:center; gap:12px; width:100%;
+  min-height:50px; padding:0 13px; text-align:left; cursor:pointer;
+  background:var(--white); border:1.5px solid var(--line-2); border-radius:12px;
+  font-family:var(--font-mono); font-weight:700; letter-spacing:.06em;
+  font-size:clamp(13px,4vw,17px); color:var(--ink);
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  transition:background .14s, border-color .14s, transform .1s;
+}
+.cand:active{ transform:scale(.99); }
+.cand .box{
+  width:23px; height:23px; flex:0 0 23px; border-radius:7px;
+  border:2px solid var(--line-2); display:grid; place-items:center;
+  font-size:13px; color:transparent; font-family:var(--font-ui);
+}
+.cand.sel{ border-color:var(--accent); background:var(--accent-soft); }
+.cand.sel .box{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.cand .mk{ margin-left:auto; font-size:11px; letter-spacing:.08em; font-family:var(--font-ui); font-weight:800; text-transform:uppercase; }
+.cand.right{ border-color:var(--good); background:var(--good-soft); }
+.cand.right .box{ background:var(--good); border-color:var(--good); color:#fff; }
+.cand.right .mk{ color:var(--good); }
+.cand.wrong{ border-color:var(--bad); background:var(--bad-soft); }
+.cand.wrong .box{ background:var(--bad); border-color:var(--bad); color:#fff; }
+.cand.wrong .mk{ color:var(--bad); }
+.cand.missed{ border-style:dashed; border-color:var(--good); }
+.cand.missed .mk{ color:var(--good); }
+.cand.dud{ opacity:.5; }
+.counter{ text-align:center; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:700; }
+.counter b{ color:var(--accent); font-size:15px; }
+
+/* ---------- result ---------- */
+.res-wrap{ display:flex; flex-direction:column; gap:12px; }
+.verdict{ margin:0; letter-spacing:.02em; }
+.verdict.win{ color:var(--good); }
+.verdict.lose{ color:var(--bad); }
+.scoreline{ text-align:center; margin:-4px 0 0; font-size:14px; color:var(--ink-2); }
+.scoreline b{ color:var(--ink); }
+.tier{
+  display:inline-block; margin-top:6px; padding:3px 11px; border-radius:var(--r-pill);
+  background:var(--accent); color:var(--accent-ink);
+  font-size:10.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+}
+.tier.lose{ background:var(--bad); }
+
+.reveal{
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:16px 16px 6px; box-shadow:var(--shadow-2); position:relative; overflow:hidden;
+}
+.reveal::before{
+  content:''; position:absolute; inset:0 0 auto 0; height:4px;
+  background:linear-gradient(90deg,var(--accent),var(--good));
+}
+.reveal .kick{ font-size:9.5px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); }
+.reveal .rule{ font-family:var(--font-display); font-size:21px; line-height:1.28; margin:5px 0 7px; font-weight:600; }
+.reveal .detail{ font-size:13.5px; color:var(--ink-2); line-height:1.5; margin:0 0 12px; }
+.evgroup{ margin:0 -16px; padding:0 16px; }
+.evgroup h4{
+  margin:12px 0 4px; font-size:9.5px; font-weight:800; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--good);
+}
+.evgroup.bad h4{ color:var(--bad); }
+.evrow{ display:flex; align-items:center; gap:10px; padding:5px 0; border-top:1px solid var(--line); }
+.evrow .word{ font-family:var(--font-mono); font-size:14.5px; letter-spacing:.09em; font-weight:600; white-space:nowrap; }
+.evrow .word i{ font-style:normal; color:var(--ink-3); }
+.evrow .word em{
+  font-style:normal; color:var(--accent); font-weight:800;
+  background:var(--accent-soft); border-radius:3px; padding:1px 1.5px; margin:0 -.5px;
+}
+.evgroup.bad .evrow .word em{ color:var(--bad); background:var(--bad-soft); }
+.evrow .tag{
+  margin-left:auto; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:700; text-align:right; white-space:nowrap;
+}
+.evrow .src{ font-size:9px; color:var(--ink-3); letter-spacing:.06em; text-transform:uppercase; opacity:.8; }
+.next{ text-align:center; font-size:12px; color:var(--ink-3); }
+.next b{ font-family:var(--font-mono); color:var(--ink-2); letter-spacing:.06em; }
+
+/* ---------- sheets ---------- */
+.rules code{
+  font-family:var(--font-mono); background:var(--paper-2); padding:1px 5px;
+  border-radius:5px; font-size:13px; letter-spacing:.04em;
+}
+.warn-box{
+  background:var(--bad-soft); border:1px solid var(--bad); border-radius:var(--r);
+  padding:11px 13px; font-size:13.5px; color:var(--ink); line-height:1.5; margin:14px 0 4px;
+}
+.sheet .btnrow{ display:flex; gap:9px; margin-top:16px; }
+.sheet .btnrow .btn{ flex:1; }
+.danger{ background:var(--bad); color:#fff; border-color:transparent; }
+
+@media (min-width:620px){
+  .stage{ overflow:visible; }
+  .col .w{ font-size:15px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="bar">
+    <button class="iconbtn" id="statsBtn" aria-label="Statistics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M5 20V10M12 20V4M19 20v-6"/>
+      </svg>
+    </button>
+    <h1>The Rule</h1>
+    <button class="iconbtn" id="helpBtn" aria-label="How to play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.9 2.9 0 1 1 3.4 3.2v1.4"/><circle cx="12" cy="17.4" r=".9" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="prompt">
+    <span class="k" id="caseNo">Case #1</span>
+    <span class="v" id="objective">One hidden rule governs every word. Three obey it, three break it. Work out what it is.</span>
+  </div>
+
+  <div class="stage" id="stage"></div>
+  <div id="kbd"></div>
+</div>
+
+<div class="sr" id="live" aria-live="polite"></div>
+
+<script src="../shared/kit.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var MAX_PROBES = 6;
+  var DAY = Kit.dayNumber();
+  var P = Kit.pick(PUZZLES);
+  var PIDX = (DAY - 1) % PUZZLES.length;
+
+  var stage = document.getElementById('stage');
+  var kbdMount = document.getElementById('kbd');
+  var live = document.getElementById('live');
+
+  /* ---------------- state / persistence ---------------- */
+  var db = Kit.store('rule');
+  var seenDb = Kit.store('rule:seen');
+  var statsDb = Kit.store('rule:stats');
+
+  function loadAll() { return db.get() || {}; }
+  function loadDay() {
+    var all = loadAll();
+    return all['d' + DAY] || { probes: [], picks: [], phase: 'probe', won: null };
+  }
+  function saveDay() {
+    var all = loadAll();
+    all['d' + DAY] = S;
+    // keep the store small — last 12 days only
+    var keys = Object.keys(all).sort(function (a, b) { return (+b.slice(1)) - (+a.slice(1)); });
+    keys.slice(12).forEach(function (k) { delete all[k]; });
+    db.set(all);
+  }
+  var S = loadDay();
+
+  function stats() {
+    return statsDb.get() || { played: 0, cracked: 0, best: null, probeSum: 0, streak: 0, lastDay: null };
+  }
+  function recordResult(won, used) {
+    var st = stats();
+    if (st.lastDay === DAY) return;          // never double-count a day
+    st.played++;
+    if (won) {
+      st.cracked++;
+      st.probeSum += used;
+      if (st.best === null || used < st.best) st.best = used;
+      st.streak = (st.lastDay === DAY - 1) ? st.streak + 1 : 1;
+    } else {
+      st.streak = 0;
+    }
+    st.lastDay = DAY;
+    statsDb.set(st);
+  }
+
+  /* ---------------- deterministic candidate order ---------------- */
+  function shuffled(list, seed) {
+    var r = Kit.rng(seed), a = list.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(r() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  var CANDS = shuffled(P.call, (DAY * 7919) + PIDX * 131 + 17);
+
+  /* ---------------- small helpers ---------------- */
+  function el(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt !== undefined) e.textContent = txt;
+    return e;
+  }
+  function say(msg) { live.textContent = msg; }
+
+  /* ---------------- input ---------------- */
+  var cur = '';
+  var busy = false;
+
+  var kb = Kit.keyboard(kbdMount, onKey, { enterLabel: 'PROBE' });
+
+  function onKey(k) {
+    if (S.phase !== 'probe' || busy) return;
+    if (k === 'ENTER') { submitProbe(); return; }
+    if (k === 'BACK') { cur = cur.slice(0, -1); paintSlot(); return; }
+    if (/^[A-Z]$/.test(k)) {
+      if (cur.length >= 14) return;
+      cur += k;
+      paintSlot();
+    }
+  }
+
+  function submitProbe() {
+    var w = cur;
+    if (w.length < 3) { Kit.toast('Three letters or more'); Kit.flash(slotEl, 'shake'); return; }
+    if (S.probes.length >= MAX_PROBES) { Kit.toast('No probes left — call it'); return; }
+    var dupe = S.probes.some(function (p) { return p.w === w; }) ||
+               P.pass.indexOf(w) >= 0 || P.fail.indexOf(w) >= 0;
+    if (dupe) { Kit.toast('Already on the board'); Kit.flash(slotEl, 'shake'); return; }
+
+    busy = true;
+    S.probes.unshift({ w: w, ok: null });
+    cur = '';
+    paintSlot();
+    renderNote();
+    Kit.haptic(6);
+
+    setTimeout(function () {
+      var res = !!P.pred(w);
+      S.probes[0].ok = res;
+      busy = false;
+      saveDay();
+      renderNote();
+      renderTray();
+      Kit.haptic(res ? 14 : 26);
+      say(w + (res ? ' passes' : ' fails'));
+    }, 680);
+  }
+
+  /* ---------------- screens ---------------- */
+  function render() {
+    stage.innerHTML = '';
+    kbdMount.style.display = (S.phase === 'probe') ? '' : 'none';
+    if (S.phase === 'probe') renderProbe();
+    else if (S.phase === 'call') renderCall();
+    else renderResult();
+  }
+
+  /* ---- probe screen ---- */
+  var slotEl, noteEl, pipsEl, callBtn;
+
+  function renderProbe() {
+    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · ' + Kit.dateLabel();
+
+    var board = el('div', 'board');
+    var yes = el('div', 'col');
+    yes.appendChild(el('h3', null, '✅ Follows the rule'));
+    P.pass.forEach(function (w) { yes.appendChild(el('div', 'w', w)); });
+    var no = el('div', 'col no');
+    no.appendChild(el('h3', null, '❌ Breaks it'));
+    P.fail.forEach(function (w) { no.appendChild(el('div', 'w', w)); });
+    board.appendChild(yes); board.appendChild(no);
+    stage.appendChild(board);
+
+    stage.appendChild(el('div', 'nb-head', 'Notebook'));
+    noteEl = el('div', 'note');
+    stage.appendChild(noteEl);
+    renderNote();
+
+    // tray
+    var tray = el('div', 'tray');
+    slotEl = el('div', 'slot');
+    tray.appendChild(slotEl);
+
+    var row = el('div', 'trayrow');
+    var pw = el('div', 'trayrow');
+    pw.style.gap = '7px';
+    pw.appendChild(el('span', 'plab', 'Probes'));
+    pipsEl = el('div', 'pips');
+    pw.appendChild(pipsEl);
+    row.appendChild(pw);
+
+    callBtn = el('button', 'btn callit', 'Call it');
+    callBtn.type = 'button';
+    callBtn.addEventListener('click', confirmCall);
+    row.appendChild(callBtn);
+    tray.appendChild(row);
+    stage.appendChild(tray);
+
+    paintSlot();
+    renderTray();
+  }
+
+  function paintSlot() {
+    if (!slotEl) return;
+    slotEl.innerHTML = '';
+    if (!cur) {
+      slotEl.classList.remove('filled');
+      slotEl.appendChild(el('span', 'ph', 'TYPE ANYTHING — EVEN NONSENSE'));
+    } else {
+      slotEl.classList.add('filled');
+      slotEl.appendChild(document.createTextNode(cur));
+      slotEl.appendChild(el('span', 'car', '▌'));
+    }
+  }
+
+  function renderNote() {
+    if (!noteEl) return;
+    noteEl.innerHTML = '';
+    if (!S.probes.length) {
+      var e = el('div', 'nb-empty');
+      e.innerHTML = 'No probes yet. Test any string you like — <b>CRATE</b>, <b>AAAA</b>, ' +
+                    '<b>ZZTOP</b> — and the lab answers instantly.<br>Or call it right now on zero.';
+      noteEl.appendChild(e);
+      return;
+    }
+    S.probes.forEach(function (p, i) {
+      var cls = 'entry ' + (p.ok === null ? 'pending' : (p.ok ? 'yes' : 'no'));
+      var row = el('div', cls);
+      row.appendChild(el('span', 'n', String(S.probes.length - i)));
+      row.appendChild(document.createTextNode(p.w));
+      row.appendChild(el('span', 'res', p.ok === null ? '• • •' : (p.ok ? '✅' : '❌')));
+      noteEl.appendChild(row);
+    });
+  }
+
+  function renderTray() {
+    if (!pipsEl) return;
+    pipsEl.innerHTML = '';
+    for (var i = 0; i < MAX_PROBES; i++) {
+      var d = el('div', 'pip' + (i < S.probes.length ? ' spent' : ''));
+      pipsEl.appendChild(d);
+    }
+    var left = MAX_PROBES - S.probes.length;
+    if (callBtn) callBtn.classList.toggle('urge', left === 0);
+    if (left === 0 && slotEl) {
+      slotEl.innerHTML = '';
+      slotEl.classList.remove('filled');
+      slotEl.appendChild(el('span', 'ph', 'OUT OF PROBES — TIME TO CALL IT'));
+    }
+  }
+
+  /* ---- the call ---- */
+  function confirmCall() {
+    var used = S.probes.filter(function (p) { return p.ok !== null; }).length;
+    Kit.sheet(
+      '<h2>Call it?</h2>' +
+      '<p class="sub">You think you know the rule.</p>' +
+      '<div class="rules">You will be shown <b>8 fresh words</b>. Tap the <b>exactly 3</b> that follow the rule.</div>' +
+      '<div class="warn-box"><b>You get one call.</b> No second try, no hints. Miss a single word and you are busted for the day.</div>' +
+      '<div class="rules" style="margin-top:12px;text-align:center">Your score locks in at <b>' + used +
+      ' probe' + (used === 1 ? '' : 's') + '</b>.</div>' +
+      '<div class="btnrow">' +
+      '<button class="btn ghost" data-close type="button">Not yet</button>' +
+      '<button class="btn danger" id="goCall" type="button">Call it</button>' +
+      '</div>',
+      { onOpen: function (sheetEl, close) {
+          sheetEl.querySelector('#goCall').addEventListener('click', function () {
+            close();
+            S.phase = 'call';
+            S.calledAt = used;
+            saveDay();
+            render();
+            window.scrollTo(0, 0);
+          });
+        } }
+    );
+  }
+
+  function renderCall() {
+    var head = el('div', 'callhead');
+    head.appendChild(el('p', 't', 'Name the three.'));
+    var sub = el('p', 's');
+    sub.innerHTML = 'Eight new words. Exactly <b>three</b> follow the hidden rule.';
+    head.appendChild(sub);
+    stage.appendChild(head);
+
+    var list = el('div', 'cands');
+    CANDS.forEach(function (w) {
+      var b = el('button', 'cand');
+      b.type = 'button';
+      b.dataset.w = w;
+      var box = el('span', 'box', '✓');
+      b.appendChild(box);
+      b.appendChild(document.createTextNode(w));
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () { togglePick(w); });
+      list.appendChild(b);
+    });
+    stage.appendChild(list);
+
+    var counter = el('div', 'counter');
+    stage.appendChild(counter);
+
+    var lock = el('button', 'btn primary wide', 'Lock it in');
+    lock.type = 'button';
+    lock.addEventListener('click', lockIn);
+    stage.appendChild(lock);
+
+    function paint() {
+      list.querySelectorAll('.cand').forEach(function (b) {
+        var on = S.picks.indexOf(b.dataset.w) >= 0;
+        b.classList.toggle('sel', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      counter.innerHTML = '<b>' + S.picks.length + '</b> of 3 chosen';
+      lock.disabled = S.picks.length !== 3;
+      lock.textContent = S.picks.length === 3 ? 'Lock it in — no takebacks' : 'Pick ' + (3 - S.picks.length) + ' more';
+    }
+    window.__paintCall = paint;
+    paint();
+  }
+
+  function togglePick(w) {
+    var i = S.picks.indexOf(w);
+    if (i >= 0) S.picks.splice(i, 1);
+    else {
+      if (S.picks.length >= 3) { Kit.toast('Three only — deselect one first'); return; }
+      S.picks.push(w);
+    }
+    Kit.haptic(6);
+    saveDay();
+    window.__paintCall();
+  }
+
+  function lockIn() {
+    if (S.picks.length !== 3) return;
+    var right = S.picks.filter(function (w) { return P.pred(w); });
+    S.won = right.length === 3;
+    S.hits = right.length;
+    S.phase = 'done';
+    saveDay();
+    recordResult(S.won, S.calledAt);
+
+    // resolve the tiles in place before the verdict lands
+    var tiles = Array.prototype.slice.call(stage.querySelectorAll('.cand'));
+    stage.querySelectorAll('.btn').forEach(function (b) { b.disabled = true; });
+    tiles.forEach(function (b, i) {
+      setTimeout(function () {
+        markTile(b);
+        Kit.haptic(8);
+      }, 90 * i);
+    });
+    setTimeout(function () { render(); window.scrollTo(0, 0); }, 90 * tiles.length + 620);
+    say(S.won ? 'Cracked it' : 'Busted — ' + right.length + ' of 3');
+  }
+
+  function markTile(b) {
+    var w = b.dataset.w, picked = S.picks.indexOf(w) >= 0, pass = P.pred(w);
+    b.classList.remove('sel');
+    if (picked && pass) { b.classList.add('right'); b.appendChild(el('span', 'mk', 'correct')); }
+    else if (picked && !pass) { b.classList.add('wrong'); b.appendChild(el('span', 'mk', 'wrong')); }
+    else if (!picked && pass) { b.classList.add('missed'); b.appendChild(el('span', 'mk', 'missed')); }
+    else { b.classList.add('dud'); }
+  }
+
+  /* ---- result + reveal ---- */
+  function tierFor(used, won) {
+    if (!won) return used === 6 ? 'Went the distance' : 'Called it early';
+    if (used === 0) return 'Legendary';
+    if (used === 1) return 'Surgical';
+    if (used <= 3) return 'Clean';
+    if (used === 4) return 'Solid';
+    if (used === 5) return 'Close one';
+    return 'Squeaker';
+  }
+
+  function wordHTML(w, ev) {
+    var hit = {}; (ev.hits || []).forEach(function (i) { hit[i] = 1; });
+    var out = '', open = false;
+    for (var i = 0; i < w.length; i++) {
+      var h = !!hit[i];
+      if (h && !open) { out += '<em>'; open = true; }
+      if (!h && open) { out += '</em>'; open = false; }
+      out += Kit.esc(w[i]);
+    }
+    if (open) out += '</em>';
+    return out;
+  }
+
+  function evRow(w, src) {
+    var ev = P.ev(w);
+    var row = el('div', 'evrow');
+    var word = el('span', 'word');
+    word.innerHTML = wordHTML(w, ev);
+    row.appendChild(word);
+    if (src) row.appendChild(el('span', 'src', src));
+    row.appendChild(el('span', 'tag', ev.tag));
+    return row;
+  }
+
+  function renderResult() {
+    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · solved';
+    document.getElementById('objective').textContent = P.rule;
+
+    var used = S.calledAt || 0;
+    var wrap = el('div', 'res-wrap');
+
+    var v = el('h2', 'verdict ' + (S.won ? 'win' : 'lose'), S.won ? 'CRACKED IT' : 'BUSTED');
+    wrap.appendChild(v);
+
+    var sl = el('p', 'scoreline');
+    sl.innerHTML = S.won
+      ? 'Called it on <b>' + used + ' probe' + (used === 1 ? '' : 's') + '</b>.' +
+        (used === 0 ? ' Cold. No probes at all.' : '')
+      : 'You got <b>' + S.hits + ' of 3</b>. Called on ' + used + ' probe' + (used === 1 ? '' : 's') + '.';
+    wrap.appendChild(sl);
+
+    var tw = el('div'); tw.style.textAlign = 'center';
+    tw.appendChild(el('span', 'tier' + (S.won ? '' : ' lose'), tierFor(used, S.won)));
+    wrap.appendChild(tw);
+
+    // the picks, resolved — the sting or the victory lap
+    var list = el('div', 'cands');
+    CANDS.forEach(function (w) {
+      var b = el('div', 'cand');
+      b.dataset.w = w;
+      b.appendChild(el('span', 'box', '✓'));
+      b.appendChild(document.createTextNode(w));
+      markTile(b);
+      list.appendChild(b);
+    });
+    wrap.appendChild(list);
+
+    // THE REVEAL
+    var rev = el('div', 'reveal');
+    rev.appendChild(el('div', 'kick', 'The rule was'));
+    rev.appendChild(el('div', 'rule', P.rule));
+    rev.appendChild(el('p', 'detail', P.detail));
+
+    var seen = {};
+    var yes = [], no = [];
+    function add(w, src) {
+      if (seen[w]) return;
+      seen[w] = 1;
+      (P.pred(w) ? yes : no).push([w, src]);
+    }
+    P.pass.forEach(function (w) { add(w, 'opener'); });
+    P.fail.forEach(function (w) { add(w, 'opener'); });
+    S.probes.slice().reverse().forEach(function (p) { add(p.w, 'your probe'); });
+    CANDS.forEach(function (w) { add(w, 'the call'); });
+
+    var g1 = el('div', 'evgroup');
+    g1.appendChild(el('h4', null, '✅ Obeys — ' + yes.length + ' words'));
+    yes.forEach(function (r) { g1.appendChild(evRow(r[0], r[1])); });
+    rev.appendChild(g1);
+
+    var g2 = el('div', 'evgroup bad');
+    g2.appendChild(el('h4', null, '❌ Breaks it — ' + no.length + ' words'));
+    no.forEach(function (r) { g2.appendChild(evRow(r[0], r[1])); });
+    rev.appendChild(g2);
+
+    wrap.appendChild(rev);
+
+    var sh = el('button', 'btn primary wide', 'Share result');
+    sh.type = 'button';
+    sh.addEventListener('click', function () { Kit.share(shareText(), sh); });
+    wrap.appendChild(sh);
+
+    var nx = el('div', 'next');
+    nx.innerHTML = 'Next rule in <b id="cd">--:--:--</b>';
+    wrap.appendChild(nx);
+
+    stage.appendChild(wrap);
+    var cd = document.getElementById('cd');
+    if (cdTimer) clearInterval(cdTimer);
+    cdTimer = Kit.countdown(cd);
+  }
+  var cdTimer = null;
+
+  /* ---------------- share ---------------- */
+  function shareText() {
+    var used = S.calledAt || 0;
+    var lines = ['THE RULE #' + DAY];
+    if (used > 0) {
+      var story = S.probes.slice().reverse().map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
+      lines.push('🔬 ' + story);
+    }
+    if (S.won) {
+      lines.push(used === 0 ? '👑 CRACKED IT COLD · 0 probes'
+                            : '🧠 CRACKED IT · ' + used + ' probe' + (used === 1 ? '' : 's'));
+    } else {
+      lines.push('💀 BUSTED · ' + S.hits + '/3 on ' + used + ' probe' + (used === 1 ? '' : 's'));
+    }
+    lines.push('sfun.games/rule');
+    return lines.join('\n');
+  }
+
+  /* ---------------- sheets ---------------- */
+  var HELP =
+    '<ul style="padding-left:18px;margin:0">' +
+    '<li>One <b>hidden rule</b> decides everything. Three words obey it, three break it. That is your whole opening evidence.</li>' +
+    '<li><b>Probe it.</b> Type any string of letters — a real word, or deliberate nonsense — and get an instant ✅ or ❌. ' +
+    'Testing <code>AAAA</code> to check for double letters is not cheating, it is good science.</li>' +
+    '<li>You get <b>6 probes</b>.</li>' +
+    '<li><b>Call it</b> whenever you like. You will see 8 fresh words and must tap the exactly 3 that follow the rule.</li>' +
+    '<li>You get <b>one call</b>. Three right and you cracked it. Anything else and you are busted.</li>' +
+    '<li>Your score is <b>how many probes you spent</b>. Calling on 0 is legendary. Calling on 6 is a squeaker.</li>' +
+    '</ul>';
+
+  document.getElementById('helpBtn').addEventListener('click', Kit.helpButton(HELP, 'How to play'));
+
+  document.getElementById('statsBtn').addEventListener('click', function () {
+    var st = stats();
+    var avg = st.cracked ? (st.probeSum / st.cracked).toFixed(1) : '–';
+    Kit.sheet(
+      '<h2>Lab record</h2><p class="sub">Local to this device.</p>' +
+      '<div class="statrow">' +
+      '<div class="stat"><span class="n">' + st.played + '</span><span class="l">Cases</span></div>' +
+      '<div class="stat"><span class="n">' + st.cracked + '</span><span class="l">Cracked</span></div>' +
+      '<div class="stat"><span class="n">' + (st.best === null ? '–' : st.best) + '</span><span class="l">Fewest probes</span></div>' +
+      '<div class="stat"><span class="n">' + avg + '</span><span class="l">Avg probes</span></div>' +
+      '</div>' +
+      '<button class="btn primary wide" data-close type="button" style="margin-top:14px">Close</button>'
+    );
+  });
+
+  /* ---------------- boot ---------------- */
+  render();
+  if (!seenDb.get()) {
+    seenDb.set(1);
+    Kit.helpButton(HELP, 'How to play')();
+  }
+})();
+</script>
+</body>
+</html>
