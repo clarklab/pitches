@@ -721,7 +721,7 @@ function endScreen(){
 
   let solTable='';
   if(puz.sols.length>1){
-    solTable = `<div style="margin:14px 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Every par-${puz.par} solution</div>` +
+    solTable = `<div class="seclbl">Every par-${puz.par} solution</div>` +
       puz.sols.map((s,n)=>`<div class="solrow ${n===i?'you':''}">
         <span class="nm">${n===i?'YOURS':'#'+(n+1)}</span>
         <span class="bar-"><i style="width:${Math.max(4,s.pct)}%"></i></span>
@@ -738,6 +738,7 @@ function endScreen(){
     sub = d<=0? `${S.moves} moves — nobody could have done it in fewer.`
               : `${S.moves} moves · ${d} over par.`;
     if(i<0) sub += ' And you found a way home that par never touches.';
+    if(S.resets) sub += ` (${S.resets} reset${S.resets>1?'s':''}.)`;
   } else {
     verdict='Out of moves.';
     const b=S.done.best;
@@ -757,7 +758,10 @@ function endScreen(){
   `, { onOpen(el){
       const t=Kit.countdown(el.querySelector('#cd'));
       el.querySelector('#shareBtn').addEventListener('click', ev=> Kit.share(shareText(), ev.currentTarget));
-      el.addEventListener('DOMNodeRemoved', ()=>clearInterval(t));
+      /* stop the clock when the sheet goes away (DOMNodeRemoved is dead) */
+      const scrim=el.parentNode;
+      const mo=new MutationObserver(()=>{ if(!scrim.isConnected){ clearInterval(t); mo.disconnect(); } });
+      mo.observe(document.body,{childList:true});
   }});
   document.getElementById('showres').style.display='';
   document.getElementById('restart').style.display='none';

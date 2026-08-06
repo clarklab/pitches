@@ -19,9 +19,14 @@
      ------------------------------------------------------------------ */
   .bar { margin-bottom: 12px; padding-bottom: 11px; }
   .bar h1 { font-size:17.5px; font-weight:800; letter-spacing:.2em; text-indent:.2em; }
+  .iconbtn { width:44px; height:44px; flex:0 0 44px; }   /* 44px thumb target */
+  .iconbtn svg { width:19px; height:19px; }
 
-  /* ---------- layout ---------- */
-  .app { padding-bottom: calc(10px + var(--safe-b)); }
+  /* ---------- layout ----------
+     .app must be BOUNDED, not just min-height: an unbounded flex column grows
+     past the viewport and pushes the keyboard's bottom row off a 390×844
+     phone. Bounded, the scrolling course absorbs the overflow instead. */
+  .app { height: 100dvh; padding-bottom: calc(10px + var(--safe-b)); }
   .stage { justify-content: flex-start; gap: 12px; min-height: 0; }
   .prompt { padding: 11px 15px; }
   .prompt .k {

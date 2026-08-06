@@ -26,6 +26,9 @@
 
 /* ---------- layout tweaks ---------- */
 .app{ padding-bottom: calc(8px + var(--safe-b)); }
+/* On a phone the shell is exactly one screen and the board scrolls inside it,
+   so the keyboard and CALL IT are never pushed below the fold. */
+@media (max-width:619px){ .app{ height:100dvh; } }
 /* min-height:0 is load-bearing: without it the flex item refuses to shrink
    below its content and the on-screen keyboard gets shoved off the phone. */
 .stage{ justify-content:flex-start; gap:12px; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
