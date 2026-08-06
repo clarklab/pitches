@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CHAINS — compound-word golf</title>
+<link rel="stylesheet" href="../shared/kit.css">
+<style>
+  :root { --accent:#1f7a63; --accent-soft:#d9ece5; --accent-ink:#fff; }
+
+  /* ---------- layout overrides ---------- */
+  .stage { justify-content: flex-start; gap: 10px; min-height: 0; }
+  .prompt { padding: 10px 14px; }
+  .prompt .k { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:2px; }
+  .prompt .v { font-size: 13.5px; line-height: 1.4; }
+  .prompt .par { color: var(--ink-3); letter-spacing:.1em; }
+  .prompt .long { color: var(--warn); }
+
+  /* ---------- score bar ---------- */
+  .scorebar {
+    display:flex; align-items:center; gap:10px;
+    background: var(--white); border:1px solid var(--line);
+    border-radius: var(--r-pill); padding:6px 6px 6px 14px;
+    box-shadow: var(--shadow-1);
+  }
+  .tally { flex:1; display:flex; align-items:baseline; gap:7px; min-width:0; }
+  .tally .n {
+    font-family: var(--font-display); font-size:23px; font-weight:600; line-height:1;
+    transition: color .2s;
+  }
+  .tally .lbl { font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap; }
+  .scorebar.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .scorebar.warn .tally .n { color: var(--warn); }
+  .scorebar.alarm { border-color: var(--bad); background: var(--bad-soft); animation: alarm 1.1s ease-in-out infinite; }
+  .scorebar.alarm .tally .n { color: var(--bad); }
+  .scorebar.alarm .lbl { color: var(--bad); font-weight:700; }
+  @keyframes alarm { 50% { box-shadow: 0 0 0 4px rgba(179,64,47,.16); } }
+
+  .caddie {
+    display:flex; align-items:center; gap:6px;
+    border:1px solid var(--line-2); background:var(--paper-2); color:var(--ink);
+    border-radius: var(--r-pill); padding:0 13px; height:38px; min-width:44px;
+    font-size:13px; font-weight:700; letter-spacing:.02em; cursor:pointer;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  }
+  .caddie .g { font-size:15px; }
+  .caddie:active { transform: translateY(1px); }
+  .caddie[disabled] { opacity:.4; cursor:default; }
+
+  /* ---------- the course ---------- */
+  .course {
+    flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    padding: 6px 0 2px; scrollbar-width:thin;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 10px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 10px), transparent 100%);
+  }
+  .chain { display:flex; flex-direction:column; align-items:center; }
+
+  .node {
+    position:relative; width:100%; max-width:300px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--white); border:1.5px solid var(--line-2);
+    border-radius: var(--r); box-shadow: var(--shadow-1);
+    padding: 11px 14px; min-height:48px;
+    font-family: var(--font-tile); font-weight:800; font-size:21px;
+    letter-spacing:.07em; text-transform:uppercase; user-select:none;
+  }
+  .node.tee { background: var(--paper-2); border-style:dashed; box-shadow:none; color:var(--ink-2); }
+  .node.tee .tag { position:absolute; left:12px; font-family:var(--font-ui); font-size:9.5px; font-weight:700;
+    letter-spacing:.14em; color:var(--ink-3); text-transform:uppercase; }
+  .node.caddied { border-color: var(--warn); background: var(--warn-soft); }
+  .node.snap { animation: snap .34s cubic-bezier(.18,1.2,.4,1); }
+  @keyframes snap {
+    0%   { transform: translateY(-16px) scale(.9); opacity:0; }
+    60%  { transform: translateY(2px) scale(1.03); opacity:1; }
+    100% { transform: none; }
+  }
+
+  /* connector carrying the compound it formed */
+  .rung { display:flex; flex-direction:column; align-items:center; width:100%; }
+  .rung i { display:block; width:2px; height:9px; background:var(--line-2); }
+  .made {
+    font-family: var(--font-mono); font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; color: var(--ink-3);
+    background: var(--paper-2); border:1px solid var(--line);
+    border-radius: var(--r-pill); padding:1.5px 9px; white-space:nowrap;
+  }
+  .rung.fresh .made {
+    color: var(--accent-ink); background: var(--accent); border-color:transparent;
+    animation: madeflash 2.2s ease-out forwards;
+  }
+  @keyframes madeflash {
+    0%   { transform: scale(.7); opacity:0; }
+    18%  { transform: scale(1.06); opacity:1; }
+    30%  { transform: scale(1); }
+    72%  { color: var(--accent-ink); background: var(--accent); border-color:transparent; }
+    100% { color: var(--ink-3); background: var(--paper-2); border-color: var(--line); }
+  }
+
+  /* the word being typed */
+  .node.entry {
+    border-style:dashed; border-color:var(--accent); background:var(--accent-soft);
+    box-shadow:none; color:var(--ink);
+  }
+  .node.entry.empty { color: var(--ink-3); font-size:13px; font-family:var(--font-ui);
+    font-weight:600; letter-spacing:.09em; }
+  .caret { display:inline-block; width:2px; height:19px; background:var(--accent);
+    margin-left:3px; vertical-align:-3px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0 } }
+
+  /* ---------- the pin ---------- */
+  .pin {
+    display:flex; align-items:center; gap:12px;
+    border:2px solid var(--accent); background:var(--accent-soft);
+    border-radius: var(--r); padding:9px 14px; position:relative;
+  }
+  .pin .flagpole { font-size:22px; line-height:1; }
+  .pin .word {
+    flex:1; font-family:var(--font-tile); font-weight:800; font-size:21px;
+    letter-spacing:.07em; text-transform:uppercase; color:var(--accent);
+  }
+  :root[data-theme="dark"] .pin .word, .pin .word { }
+  @media (prefers-color-scheme: dark) { .pin .word { color: #6cc4a8; } }
+  :root[data-theme="dark"] .pin .word { color:#6cc4a8; }
+  :root[data-theme="light"] .pin .word { color: var(--accent); }
+  .pin .lbl { font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }
+  .pin.holed { animation: holed .5s ease-out; }
+  @keyframes holed { 0%{transform:none} 40%{transform:scale(1.05)} 100%{transform:none} }
+
+  /* ---------- scorecard ---------- */
+  .card { width:100%; border-collapse:collapse; font-size:14px; margin:2px 0 4px; }
+  .card th { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
+    font-weight:700; text-align:left; padding:4px 6px; border-bottom:1px solid var(--line); }
+  .card th.num, .card td.num { text-align:right; }
+  .card td { padding:8px 6px; border-bottom:1px solid var(--line); }
+  .card td.hole { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); letter-spacing:.06em; }
+  .card td.res { font-weight:700; }
+  .card tr.tot td { border-bottom:none; font-weight:800; padding-top:11px; }
+  .res.under { color: var(--good); }
+  .res.even  { color: var(--ink); }
+  .res.over  { color: var(--warn); }
+  .res.blown { color: var(--bad); }
+
+  .lineout { font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--ink-2);
+    background:var(--paper-2); border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:10px 12px; margin:12px 0 4px; word-break:break-word; text-align:center; }
+  .lineout b { color: var(--ink); }
+
+  .badge { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.12em;
+    text-transform:uppercase; padding:3px 9px; border-radius:var(--r-pill); }
+  .badge.under { background:var(--good-soft); color:var(--good); }
+  .badge.even  { background:var(--accent-soft); color:var(--accent); }
+  .badge.over  { background:var(--warn-soft); color:var(--warn); }
+  .badge.blown { background:var(--bad-soft); color:var(--bad); }
+
+  .foot { display:flex; align-items:center; justify-content:center; gap:8px;
+    font-size:12px; color:var(--ink-3); margin-top:12px; }
+  .foot b { font-family:var(--font-mono); color:var(--ink-2); }
+
+  .legend { font-size:12.5px; color:var(--ink-2); line-height:1.7; }
+  .legend code { font-family:var(--font-mono); font-size:11.5px; background:var(--paper-2);
+    border:1px solid var(--line); border-radius:5px; padding:1px 5px; }
+
+  @media (max-height: 700px) {
+    .node { min-height:42px; padding:8px 14px; font-size:19px; }
+    .prompt .v { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="bar">
+    <button class="iconbtn" id="statsBtn" aria-label="Scorecard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 21V3"/><path d="M6 4h11l-2.2 3.5L17 11H6"/>
+      </svg>
+    </button>
+    <h1>Chains</h1>
+    <button class="iconbtn" id="helpBtn" aria-label="How to play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.5"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="prompt">
+    <span class="k"><span id="holeNo">Hole 1 of 3</span><span class="par" id="parLbl">Par 4</span></span>
+    <span class="v" id="objective">Play a word that makes a compound with the one above it. Reach the pin.</span>
+  </div>
+
+  <div class="stage">
+    <div class="scorebar" id="scorebar">
+      <div class="tally"><span class="n" id="strokeN">0</span><span class="lbl" id="strokeL">strokes · par 4</span></div>
+      <button class="caddie" id="caddieBtn"><span class="g">🧤</span><span id="caddieLbl">Caddie</span></button>
+    </div>
+
+    <div class="course" id="course"><div class="chain" id="chain"></div></div>
+
+    <div class="pin" id="pin">
+      <span class="flagpole">⛳</span>
+      <span class="word" id="pinWord">WORK</span>
+      <span class="lbl">the pin</span>
+    </div>
+  </div>
+
+  <div id="kbd"></div>
+</div>
+
+<script src="../shared/kit.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const LINKS  = window.CHAINS_LINKS;
+  const ROUNDS = window.CHAINS_ROUNDS;
+
+  const DAY   = Kit.dayNumber();
+  const ROUND = Kit.pick(ROUNDS);
+  const HOLES = ROUND.holes;
+
+  const save  = Kit.store('chains');
+  const stats = Kit.store('chains:stats');
+  const seen  = Kit.store('chains:seen');
+
+  /* ---------- graph helpers ------------------------------------------- */
+  const linked = (a, b) => !!(LINKS[a] && LINKS[a].indexOf(b) >= 0);
+
+  function distTo(from, to) {              // strokes still needed, or Infinity
+    if (from === to) return 0;
+    const seen = new Set([from]);
+    let frontier = [from], d = 0;
+    while (frontier.length) {
+      d++;
+      const next = [];
+      for (const w of frontier) for (const b of (LINKS[w] || [])) {
+        if (b === to) return d;
+        if (!seen.has(b)) { seen.add(b); next.push(b); }
+      }
+      frontier = next;
+    }
+    return Infinity;
+  }
+
+  function stepToward(from, to) {          // first word on a shortest path
+    if (linked(from, to)) return to;
+    const prev = new Map([[from, null]]);
+    let frontier = [from];
+    while (frontier.length) {
+      const next = [];
+      for (const w of frontier) {
+        for (const b of (LINKS[w] || [])) {
+          if (prev.has(b)) continue;
+          prev.set(b, w);
+          if (b === to) {
+            let cur = b;
+            while (prev.get(cur) !== from) cur = prev.get(cur);
+            return cur;
+          }
+          next.push(b);
+        }
+      }
+      frontier = next;
+    }
+    const any = LINKS[from] || [];
+    return any.length ? any[0] : null;
+  }
+
+  /* ---------- scoring vocabulary --------------------------------------- */
+  function verdict(strokes, par, pickedUp) {
+    if (pickedUp) return { name: 'Picked up', short: 'picked up', diff: par + 4 - par, tone: 'blown' };
+    const d = strokes - par;
+    const tone = d < 0 ? 'under' : d === 0 ? 'even' : d === 1 ? 'over' : 'blown';
+    const name =
+      d <= -3 ? 'Albatross' : d === -2 ? 'Eagle' : d === -1 ? 'Birdie' :
+      d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double bogey' : 'Triple bogey';
+    return { name, short: name.toLowerCase(), diff: d, tone };
+  }
+  const toPar = (d) => d === 0 ? 'E' : d > 0 ? '+' + d : '−' + Math.abs(d);
+  const SQ = { under2: '🟦', under: '🟩', even: '🟨', over: '🟧', blown: '🟥', pick: '⬛' };
+  function squareFor(v) {
+    if (v.tone === 'blown' && v.name === 'Picked up') return SQ.pick;
+    if (v.diff <= -2) return SQ.under2;
+    if (v.diff === -1) return SQ.under;
+    if (v.diff === 0) return SQ.even;
+    if (v.diff === 1) return SQ.over;
+    return SQ.blown;
+  }
+
+  /* ---------- state ---------------------------------------------------- */
+  let S = save.get();
+  if (!S || S.d !== DAY) {
+    S = { d: DAY, hole: 0, chain: [HOLES[0].start.toLowerCase()], strokes: 0,
+          caddie: false, caddieAt: -1, scores: [], done: false };
+    save.set(S);
+  }
+  let typed = '';
+  let busy  = false;
+
+  const hole = () => HOLES[S.hole];
+  const head = () => S.chain[S.chain.length - 1];
+  const maxStrokes = () => hole().par + 3;
+
+  /* ---------- DOM ------------------------------------------------------ */
+  const el = (id) => document.getElementById(id);
+  const chainEl = el('chain'), courseEl = el('course'), pinEl = el('pin');
+
+  function renderHeader() {
+    const h = hole();
+    el('holeNo').textContent = `Hole ${S.hole + 1} of ${HOLES.length}`;
+    el('parLbl').innerHTML = `Par ${h.par}` + (h.long ? ' <span class="long">· long</span>' : '');
+    el('pinWord').textContent = h.target;
+    el('objective').textContent = h.long
+      ? `The long one. ${h.start} to ${h.target} — the perfect line is an eagle.`
+      : `${h.start} to ${h.target}. Each word must make a compound with the one above it.`;
+    el('caddieLbl').textContent = S.caddie ? 'Used' : 'Caddie';
+    el('caddieBtn').disabled = S.caddie || S.done;
+  }
+
+  function renderScore() {
+    const h = hole(), left = maxStrokes() - S.strokes;
+    el('strokeN').textContent = S.strokes;
+    el('strokeL').textContent = left === 1
+      ? `strokes · par ${h.par} · last swing`
+      : `strokes · par ${h.par}`;
+    const bar = el('scorebar');
+    bar.classList.toggle('alarm', left <= 1);
+    bar.classList.toggle('warn', left === 2);
+  }
+
+  function renderChain(fresh) {
+    chainEl.innerHTML = '';
+    S.chain.forEach((w, i) => {
+      if (i > 0) {
+        const r = document.createElement('div');
+        r.className = 'rung' + (fresh && i === S.chain.length - 1 ? ' fresh' : '');
+        r.innerHTML = `<i></i><span class="made">${Kit.esc(S.chain[i - 1])}·${Kit.esc(w)}</span><i></i>`;
+        chainEl.appendChild(r);
+      }
+      const n = document.createElement('div');
+      n.className = 'node' + (i === 0 ? ' tee' : '') +
+                    (fresh && i === S.chain.length - 1 ? ' snap' : '') +
+                    (S.caddieAt === i ? ' caddied' : '');
+      n.innerHTML = (i === 0 ? '<span class="tag">tee</span>' : '') + Kit.esc(w);
+      chainEl.appendChild(n);
+    });
+
+    if (!S.done) {
+      const r = document.createElement('div');
+      r.className = 'rung';
+      r.innerHTML = '<i></i><span class="made">?</span><i></i>';
+      chainEl.appendChild(r);
+      const e = document.createElement('div');
+      e.className = 'node entry' + (typed ? '' : ' empty');
+      e.id = 'entry';
+      e.innerHTML = typed ? Kit.esc(typed) + '<span class="caret"></span>' : 'type your word';
+      chainEl.appendChild(e);
+    }
+    courseEl.scrollTop = courseEl.scrollHeight;
+  }
+
+  function render(fresh) { renderHeader(); renderScore(); renderChain(fresh); }
+
+  /* ---------- play ----------------------------------------------------- */
+  function onKey(k) {
+    if (busy || S.done) return;
+    if (k === 'BACK') { typed = typed.slice(0, -1); renderChain(false); return; }
+    if (k === 'ENTER') { submit(); return; }
+    if (/^[A-Z]$/.test(k) && typed.length < 12) { typed += k.toLowerCase(); renderChain(false); }
+  }
+
+  function bounce(msg) {
+    Kit.toast(msg, 2300);
+    Kit.haptic(24);
+    const e = el('entry');
+    if (e) Kit.flash(e, 'shake');
+  }
+
+  function submit() {
+    const w = typed.trim().toLowerCase();
+    const from = head();
+    if (!w) return;
+    if (w.length < 2) { bounce('A little longer than that'); return; }
+    if (!linked(from, w)) {
+      bounce(`${from.toUpperCase()} · ${w.toUpperCase()} isn't in today's dictionary`);
+      return;
+    }
+    commit(w, false);
+  }
+
+  function commit(w, viaCaddie) {
+    busy = true;
+    typed = '';
+    S.chain.push(w);
+    S.strokes++;
+    if (viaCaddie) S.caddieAt = S.chain.length - 1;
+    save.set(S);
+    Kit.haptic(10);
+    render(true);
+
+    const holed = (w === hole().target.toLowerCase());
+    if (holed) {
+      Kit.flash(pinEl, 'holed');
+      setTimeout(() => finishHole(false), 620);
+    } else if (S.strokes >= maxStrokes()) {
+      setTimeout(() => finishHole(true), 500);
+    } else {
+      busy = false;
+    }
+  }
+
+  /* ---------- caddie --------------------------------------------------- */
+  el('caddieBtn').addEventListener('click', () => {
+    if (S.caddie || S.done || busy) return;
+    const h = hole();
+    if (S.strokes + 1 >= maxStrokes()) {
+      Kit.toast('No time for a caddie — one swing left', 2200);
+      return;
+    }
+    Kit.sheet(`
+      <h2>Call the caddie?</h2>
+      <p class="sub">She'll name one word that keeps you alive from <b>${Kit.esc(head().toUpperCase())}</b>.</p>
+      <div class="legend" style="text-align:center">
+        It costs you <b>one stroke</b>, right now, and you only get one caddie
+        per round — three holes. Spending her here means playing
+        ${S.hole < HOLES.length - 1 ? 'the rest of the round' : 'nothing'} alone.
+      </div>
+      <button class="btn primary wide" id="cadYes" style="margin-top:18px">Take the penalty</button>
+      <button class="btn ghost wide" data-close style="margin-top:8px">Play it myself</button>
+    `, { onOpen(root, close) {
+      root.querySelector('#cadYes').addEventListener('click', () => {
+        close();
+        S.caddie = true;
+        S.strokes++;                       // the penalty stroke
+        const next = stepToward(head(), h.target.toLowerCase());
+        save.set(S);
+        render(false);
+        if (!next) { Kit.toast('Even the caddie is stumped', 2400); return; }
+        Kit.toast(`Caddie says: ${next.toUpperCase()}`, 3200);
+        typed = next;
+        renderChain(false);
+        if (S.strokes >= maxStrokes()) setTimeout(() => finishHole(true), 400);
+      });
+    }});
+  });
+
+  /* ---------- hole / round end ----------------------------------------- */
+  function finishHole(pickedUp) {
+    const h = hole();
+    const v = verdict(S.strokes, h.par, pickedUp);
+    const score = pickedUp ? h.par + 4 : S.strokes;
+    S.scores.push({ strokes: score, par: h.par, pickedUp, caddie: S.caddieAt >= 0,
+                    chain: S.chain.slice() });
+    const last = S.hole >= HOLES.length - 1;
+    save.set(S);
+    holeSheet(v, pickedUp, last);
+  }
+
+  function holeSheet(v, pickedUp, last) {
+    const h = hole();
+    const line = S.chain.map(w => w.toUpperCase()).join(' · ');
+    const body = pickedUp
+      ? `<p class="sub">You ran out of swings ${Kit.esc(h.target)} short of the pin.
+         Take the ${h.par + 4}. It happens to everyone.</p>`
+      : `<p class="sub">${S.strokes} stroke${S.strokes === 1 ? '' : 's'} on a par ${h.par}.</p>`;
+    Kit.sheet(`
+      <h2>${v.name}</h2>
+      ${body}
+      <div style="text-align:center"><span class="badge ${v.tone}">${pickedUp ? 'no return' : toPar(v.diff)}</span></div>
+      <div class="lineout">${pickedUp ? 'your line ran out at' : 'your line'}<br><b>${Kit.esc(line)}</b>${pickedUp ? ' …' : ''}</div>
+      ${cardHTML(true)}
+      <button class="btn primary wide" id="nextBtn" style="margin-top:16px">
+        ${last ? 'Sign the card' : 'Next hole →'}
+      </button>
+    `, { sticky: true, onOpen(root, close) {
+      root.querySelector('#nextBtn').addEventListener('click', () => {
+        close();
+        if (last) { endRound(); return; }
+        S.hole++;
+        S.chain = [HOLES[S.hole].start.toLowerCase()];
+        S.strokes = 0;
+        S.caddieAt = -1;
+        typed = '';
+        busy = false;
+        save.set(S);
+        render(false);
+      });
+    }});
+  }
+
+  function cardHTML(partial) {
+    let rows = '', total = 0, parTotal = 0;
+    HOLES.forEach((h, i) => {
+      const sc = S.scores[i];
+      parTotal += h.par;
+      if (!sc) {
+        rows += `<tr><td class="hole">${i + 1}</td><td>${Kit.esc(h.start)} → ${Kit.esc(h.target)}</td>
+                 <td class="num">${h.par}</td><td class="num">—</td><td class="res num"></td></tr>`;
+        return;
+      }
+      total += sc.strokes;
+      const v = verdict(sc.pickedUp ? sc.par + 4 : sc.strokes, sc.par, sc.pickedUp);
+      rows += `<tr><td class="hole">${i + 1}</td><td>${Kit.esc(h.start)} → ${Kit.esc(h.target)}${sc.caddie ? ' 🧤' : ''}</td>
+               <td class="num">${sc.par}</td><td class="num">${sc.strokes}</td>
+               <td class="res num ${v.tone}">${sc.pickedUp ? 'X' : toPar(v.diff)}</td></tr>`;
+    });
+    const played = S.scores.length;
+    const parSoFar = S.scores.reduce((a, s) => a + s.par, 0);
+    const d = total - (partial ? parSoFar : parTotal);
+    const tone = d < 0 ? 'under' : d === 0 ? 'even' : d <= 2 ? 'over' : 'blown';
+    rows += `<tr class="tot"><td></td><td>${played < HOLES.length ? 'Through ' + played : 'Round'}</td>
+             <td class="num">${partial ? parSoFar : parTotal}</td><td class="num">${total}</td>
+             <td class="res num ${tone}">${toPar(d)}</td></tr>`;
+    return `<table class="card"><thead><tr><th></th><th>Hole</th><th class="num">Par</th>
+            <th class="num">Sc</th><th class="num">+/−</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  /* ---------- share ---------------------------------------------------- */
+  function shareText() {
+    const total = S.scores.reduce((a, s) => a + s.strokes, 0);
+    const par   = HOLES.reduce((a, h) => a + h.par, 0);
+    const d     = total - par;
+    const lines = S.scores.map((sc) => {
+      const v = verdict(sc.pickedUp ? sc.par + 4 : sc.strokes, sc.par, sc.pickedUp);
+      const n = sc.pickedUp ? sc.par + 3 : sc.strokes;
+      return `⛳ ${squareFor(v).repeat(n)} ${sc.pickedUp ? 'picked up' : v.short}${sc.caddie ? ' 🧤' : ''}`;
+    });
+    return [`CHAINS #${DAY} — ${total} strokes (par ${par}) · ${toPar(d)}`]
+      .concat(lines)
+      .concat(['sfun.games/chains'])
+      .join('\n');
+  }
+
+  function endRound() {
+    S.done = true;
+    save.set(S);
+    bumpStats();
+    render(false);
+    resultSheet();
+  }
+
+  function bumpStats() {
+    if (S.counted) return;
+    const st = stats.get() || { rounds: 0, toPar: 0, best: null, birdies: 0, eagles: 0 };
+    const total = S.scores.reduce((a, s) => a + s.strokes, 0);
+    const par   = HOLES.reduce((a, h) => a + h.par, 0);
+    st.rounds++;
+    st.toPar += (total - par);
+    st.best = st.best === null ? (total - par) : Math.min(st.best, total - par);
+    S.scores.forEach(sc => {
+      if (sc.pickedUp) return;
+      const d = sc.strokes - sc.par;
+      if (d === -1) st.birdies++;
+      if (d <= -2) st.eagles++;
+    });
+    stats.set(st);
+    S.counted = true;
+    save.set(S);
+  }
+
+  function resultSheet() {
+    const total = S.scores.reduce((a, s) => a + s.strokes, 0);
+    const par   = HOLES.reduce((a, h) => a + h.par, 0);
+    const d     = total - par;
+    const st    = stats.get() || { rounds: 0, toPar: 0, best: null, birdies: 0, eagles: 0 };
+    const headline =
+      d <= -2 ? 'A card to frame' : d === -1 ? 'Under par' : d === 0 ? 'Level par' :
+      d <= 2 ? 'One over here or there' : 'Rough day on the course';
+    Kit.sheet(`
+      <h2>${headline}</h2>
+      <p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
+      ${cardHTML(false)}
+      <div class="sharegrid" id="sg">${Kit.esc(shareText())}</div>
+      <button class="btn primary wide" id="shareBtn">Copy scorecard</button>
+      <div class="statrow">
+        <div class="stat"><span class="n">${st.rounds}</span><span class="l">rounds</span></div>
+        <div class="stat"><span class="n">${st.rounds ? toPar(Math.round(st.toPar / st.rounds)) : '—'}</span><span class="l">average</span></div>
+        <div class="stat"><span class="n">${st.best === null ? '—' : toPar(st.best)}</span><span class="l">best</span></div>
+        <div class="stat"><span class="n">${st.birdies + st.eagles}</span><span class="l">birdie+</span></div>
+      </div>
+      <div class="foot">Next tee time in <b id="cd">--:--:--</b></div>
+      <button class="btn ghost wide" data-close style="margin-top:12px">Close</button>
+    `, { onOpen(root) {
+      root.querySelector('#shareBtn').addEventListener('click', (e) => Kit.share(shareText(), e.currentTarget));
+      const cd = root.querySelector('#cd');
+      const t = Kit.countdown(cd);
+      const obs = setInterval(() => { if (!document.body.contains(cd)) { clearInterval(t); clearInterval(obs); } }, 1000);
+    }});
+  }
+
+  /* ---------- help / scorecard buttons --------------------------------- */
+  const HELP = `
+    <ul class="rules">
+      <li>Three holes. Each gives you a <b>tee word</b> and a <b>pin</b>.</li>
+      <li>Play a word that makes a <b>compound word or a common phrase</b> with the
+          word above it, in that order. <code>FIRE → HOUSE</code> (firehouse),
+          <code>HOUSE → BOAT</code> (houseboat), <code>BOAT → RACE</code> (boat race),
+          <code>RACE → CAR</code> (race car). Four strokes.</li>
+      <li><b>There is no undo.</b> A word that doesn't link bounces free — but the
+          moment one lands, it's played. You go on from where the ball lies.</li>
+      <li>Par is one more than the tightest known line, so the perfect route is a
+          <b>birdie</b>. On the long hole it's an <b>eagle</b>.</li>
+      <li>Run out of swings before the pin and you <b>pick up</b>: par + 4, and the
+          walk to the next tee.</li>
+      <li>One <b>caddie</b> per round, not per hole. She names a word that keeps you
+          alive. It costs a stroke. Choose the hole to spend her on.</li>
+    </ul>`;
+  el('helpBtn').addEventListener('click', Kit.helpButton(HELP, 'Compound-word golf'));
+  el('statsBtn').addEventListener('click', () => {
+    if (S.done) { resultSheet(); return; }
+    Kit.sheet(`<h2>Your card</h2><p class="sub">${ROUND.name} · ${Kit.dateLabel()}</p>
+      ${cardHTML(true)}
+      <div class="legend" style="margin-top:10px">
+        🟦 eagle &nbsp; 🟩 birdie &nbsp; 🟨 par &nbsp; 🟧 bogey &nbsp; 🟥 worse &nbsp; ⬛ picked up
+      </div>
+      <button class="btn primary wide" data-close style="margin-top:16px">Back to the tee</button>`);
+  });
+
+  /* ---------- boot ------------------------------------------------------ */
+  Kit.keyboard(el('kbd'), onKey, { enterLabel: 'PLAY' });
+  render(false);
+
+  if (S.done) {
+    setTimeout(resultSheet, 260);
+  } else if (!seen.get()) {
+    seen.set(1);
+    setTimeout(Kit.helpButton(HELP, 'Compound-word golf'), 260);
+  }
+})();
+</script>
+</body>
+</html>

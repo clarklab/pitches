@@ -435,39 +435,41 @@
   for (const k in RAW) LINKS[k] = RAW[k].split(' ');
 
   /* ---- the daily rounds: 6 × 3 holes ------------------------------------
-     par is the TRUE shortest path through LINKS (proved by verify.js).
-     `line` is the reference route used by the caddie's flavour text and by
-     verify.js's readability check.                                       */
+     `best` is the TRUE shortest path through LINKS (BFS-proved by verify.js).
+     `par`  is what a good player shoots.  par = best + 1 on a normal hole,
+            so finding the tightest line is a BIRDIE, and par = best + 2 on
+            the round's closing "long" hole, where the tightest line is an
+            EAGLE.  Max strokes = par + 3.                                */
   const ROUNDS = [
     { name: 'Opening Round', holes: [
-      { start: 'STAR',   target: 'WORK',    par: 3 },
-      { start: 'SNOW',   target: 'GROUND',  par: 4 },
-      { start: 'FIRE',   target: 'CAR',     par: 4 }
+      { start: 'STAR',   target: 'WORK',    best: 3, par: 4 },
+      { start: 'SNOW',   target: 'GROUND',  best: 4, par: 5 },
+      { start: 'FIRE',   target: 'CAR',     best: 4, par: 6, long: true }
     ]},
     { name: 'The Turn', holes: [
-      { start: 'MOON',   target: 'PARTY',   par: 3 },
-      { start: 'RAIN',   target: 'CRACKER', par: 4 },
-      { start: 'BOOK',   target: 'TIME',    par: 3 }
+      { start: 'MOON',   target: 'PARTY',   best: 3, par: 4 },
+      { start: 'RAIN',   target: 'CRACKER', best: 4, par: 5 },
+      { start: 'BOOK',   target: 'TIME',    best: 3, par: 5, long: true }
     ]},
     { name: 'Seaside Links', holes: [
-      { start: 'SEA',    target: 'BAND',    par: 3 },
-      { start: 'DAY',    target: 'MUSIC',   par: 3 },
-      { start: 'SUN',    target: 'ALARM',   par: 4 }
+      { start: 'SEA',    target: 'BAND',    best: 3, par: 4 },
+      { start: 'DAY',    target: 'MUSIC',   best: 3, par: 4 },
+      { start: 'SUN',    target: 'ALARM',   best: 4, par: 6, long: true }
     ]},
     { name: 'Windward', holes: [
-      { start: 'HORSE',  target: 'LIGHT',   par: 3 },
-      { start: 'ICE',    target: 'DOOR',    par: 3 },
-      { start: 'GOLD',   target: 'STOP',    par: 4 }
+      { start: 'HORSE',  target: 'LIGHT',   best: 3, par: 4 },
+      { start: 'ICE',    target: 'DOOR',    best: 3, par: 4 },
+      { start: 'GOLD',   target: 'STOP',    best: 4, par: 6, long: true }
     ]},
     { name: 'Long Course', holes: [
-      { start: 'BUTTER', target: 'ROOM',    par: 3 },
-      { start: 'NIGHT',  target: 'SMOKE',   par: 4 },
-      { start: 'SILVER', target: 'CLUB',    par: 4 }
+      { start: 'BUTTER', target: 'ROOM',    best: 3, par: 4 },
+      { start: 'NIGHT',  target: 'SMOKE',   best: 4, par: 5 },
+      { start: 'SILVER', target: 'CLUB',    best: 4, par: 6, long: true }
     ]},
     { name: 'Championship', holes: [
-      { start: 'GREEN',  target: 'WALK',    par: 3 },
-      { start: 'WHITE',  target: 'DRILL',   par: 4 },
-      { start: 'FOOT',   target: 'CAR',     par: 4 }
+      { start: 'GREEN',  target: 'WALK',    best: 3, par: 4 },
+      { start: 'WHITE',  target: 'DRILL',   best: 4, par: 5 },
+      { start: 'FOOT',   target: 'CAR',     best: 4, par: 6, long: true }
     ]}
   ];
 

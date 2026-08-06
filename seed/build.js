@@ -41,14 +41,14 @@ const MAX_SKIPS = 2;
    `note` is the hand-check: the witness chain was read by a human.
    -------------------------------------------------------------------------*/
 const PUZZLES = [
-  { seed: 'EAT', queue: 'CFRWSLPIE' },
-  { seed: 'TIE', queue: 'RPNSEBDPS' },
-  { seed: 'AGE', queue: 'KTRUSNEEM' },
+  { seed: 'RUN', queue: 'TEGWEVDAS' },
   { seed: 'EAR', queue: 'TLNIVOATC' },
   { seed: 'SET', queue: 'MLINAGHMN' },
-  { seed: 'TIN', queue: 'EQSRWEAUQ' },
-  { seed: 'ALE', queue: 'YSRTGNIEV' },
-  { seed: 'TEN', queue: 'OREIADPSG' },
+  { seed: 'RAT', queue: 'DEECSLBEP' },
+  { seed: 'NET', queue: 'RDYEPSERS' },
+  { seed: 'CAR', queue: 'MEPLIPTSE' },
+  { seed: 'RED', queue: 'AGDNEETGE' },
+  { seed: 'ONE', queue: 'DBRDESCNT' },
 ];
 
 /* The par chain is shown to the player on the death screen ("show me the 11"),
@@ -72,6 +72,22 @@ const PAR_PICKS = new Set(`
    the ones a reasonable English speaker would reject.
    -------------------------------------------------------------------------*/
 const BLOCKLIST = new Set(`
+aeolians alcide amin amine amines amit amrita andre andries angeles ansel anton
+acer arte artie ariel arles arne asher aurea boden
+carle cate ceres cetera claire clare crimea cristina corse crosse
+dante darin dorset
+edgar ela elia elsa electra elvira enos entre eros esta eton
+garde gare grande greta gunter
+irena israelite israelites
+lanier lear
+marc marcel carmel mets metis mitra
+nist noire nore nora norah norse notre
+orestes
+parc petersen petri petrie pieter piet
+rea redd reina renate reno rita ronde
+sade sainte selena stein stela stipe
+teresa teri tera terai tien tuareg tyne
+yale
 `.trim().split(/\s+/).filter(Boolean));
 
 /* --------------------------------------------------------------------------

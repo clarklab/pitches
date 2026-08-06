@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>SHUNT — Superfun Daily</title>
+<link rel="stylesheet" href="../shared/kit.css">
+<style>
+:root{
+  --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff;
+  --accent-2:#9a3412;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e; }
+}
+:root[data-theme="dark"]{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e; }
+:root[data-theme="light"]{ --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff; --accent-2:#9a3412; }
+
+body{ overscroll-behavior:none; }
+.app{ touch-action:manipulation; }
+
+/* ---------- status strip ---------- */
+.status{ display:flex; align-items:stretch; gap:8px; }
+.pip{
+  flex:1; background:var(--white); border:1px solid var(--line); border-radius:var(--r-sm);
+  padding:7px 4px 6px; text-align:center; min-width:0;
+}
+.pip .n{ font-family:var(--font-display); font-size:20px; font-weight:600; display:block; line-height:1.05; }
+.pip .l{ font-size:9.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); white-space:nowrap; }
+.pip.hot .n{ color:var(--accent); }
+.pip.danger{ border-color:var(--bad); }
+.pip.danger .n{ color:var(--bad); }
+
+/* lit dots */
+.lit{ display:flex; gap:4px; justify-content:center; margin-top:3px; }
+.lit i{ width:7px; height:7px; border-radius:50%; background:var(--line-2); display:block; transition:background .2s, transform .2s; }
+.lit i.on{ background:var(--accent); transform:scale(1.25); }
+
+/* ---------- grid + edge arrows ---------- */
+.gridwrap{
+  --arr: 30px;
+  width:100%; max-width:392px; margin:0 auto;
+  display:grid;
+  grid-template-columns:var(--arr) minmax(0,1fr) var(--arr);
+  grid-template-rows:var(--arr) auto var(--arr);
+  align-items:center; justify-items:center;
+  user-select:none; -webkit-user-select:none;
+}
+@media (min-width:620px){ .gridwrap{ --arr:38px; max-width:440px; } }
+
+.strip{ display:grid; gap:var(--gap,6px); width:100%; height:100%; }
+.strip.h{ grid-template-columns:repeat(4,1fr); padding:0 calc(var(--gap,6px)/2); }
+.strip.v{ grid-template-rows:repeat(4,1fr); padding:calc(var(--gap,6px)/2) 0; }
+
+.arr{
+  appearance:none; border:0; background:transparent; padding:0; margin:0;
+  display:grid; place-items:center; cursor:pointer; color:var(--ink-3);
+  border-radius:6px; position:relative;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  transition:color .15s, background .15s, transform .1s;
+}
+.arr::after{ content:""; position:absolute; inset:-8px; } /* enlarge hit area to >=44px */
+.arr svg{ width:15px; height:15px; display:block; }
+.arr:hover{ color:var(--accent); background:var(--accent-soft); }
+.arr:active{ transform:scale(.86); color:var(--accent); }
+.arr.armed{ color:var(--accent); }
+
+/* the board */
+.board{
+  position:relative; width:100%; aspect-ratio:1/1;
+  background:var(--paper-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+  box-shadow:var(--shadow-press);
+  touch-action:none;
+  cursor:grab;
+}
+.board.dragging{ cursor:grabbing; }
+.board.locked{ cursor:default; }
+
+/* faint rails so it reads as a sliding machine */
+.rail{ position:absolute; background:var(--line); opacity:.5; pointer-events:none; }
+
+/* row highlight band */
+.band{
+  position:absolute; left:2px; right:2px; border-radius:9px;
+  border:1.5px solid transparent; pointer-events:none;
+  transition:background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.band.on{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent-soft), 0 0 14px -2px var(--accent);
+}
+.band.armed{ background:color-mix(in srgb, var(--ink) 5%, transparent); }
+
+/* column arm highlight */
+.carm{ position:absolute; top:2px; bottom:2px; border-radius:9px; pointer-events:none;
+  background:color-mix(in srgb, var(--ink) 5%, transparent); opacity:0; transition:opacity .15s; }
+.carm.on{ opacity:1; }
+
+.tl{
+  position:absolute; display:grid; place-items:center;
+  background:var(--white); border:1.5px solid var(--line-2);
+  border-radius:8px; font-family:var(--font-tile); font-weight:800;
+  text-transform:uppercase; color:var(--ink);
+  will-change:transform; pointer-events:none;
+  box-shadow:0 1px 0 var(--line-2);
+}
+.tl.on{ border-color:var(--accent); color:var(--accent); background:var(--white); }
+.tl.ghost{ opacity:1; }
+.tl.cursor{ box-shadow:0 1px 0 var(--line-2), 0 0 0 3px var(--accent); z-index:3; }
+.tl.snapping{ transition:transform .13s cubic-bezier(.25,.9,.3,1); }
+
+.boardfocus:focus-visible{ outline:none; }
+.board.kb{ box-shadow:var(--shadow-press), 0 0 0 3px var(--accent-soft); }
+
+/* ---------- footer ---------- */
+.hintline{ text-align:center; font-size:12.5px; color:var(--ink-3); min-height:18px; }
+.hintline b{ color:var(--accent); font-weight:700; }
+.actions{ display:flex; gap:8px; }
+
+.wordlist{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0 2px; }
+.wordlist span{
+  font-family:var(--font-mono); font-size:13px; letter-spacing:.14em; text-transform:uppercase;
+  background:var(--accent-soft); color:var(--accent); border-radius:var(--r-pill);
+  padding:4px 11px; font-weight:700;
+}
+.solrow{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); margin:4px 0; }
+.solrow .bar-{ flex:1; height:7px; background:var(--paper-2); border-radius:99px; overflow:hidden; border:1px solid var(--line); }
+.solrow .bar- i{ display:block; height:100%; background:var(--line-2); }
+.solrow.you .bar- i{ background:var(--accent); }
+.solrow.you{ color:var(--ink); font-weight:700; }
+.solrow .pct{ font-family:var(--font-mono); font-size:11.5px; width:42px; text-align:right; color:var(--ink-3); }
+.solrow .nm{ width:74px; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.04em; }
+
+.mini{ display:inline-grid; grid-template-columns:repeat(4,1fr); gap:3px; }
+.mini b{ width:15px; height:15px; border-radius:3px; background:var(--line); display:block; }
+
+.demo{ font-family:var(--font-mono); font-size:13px; line-height:1.5; background:var(--paper-2);
+  border:1px solid var(--line); border-radius:var(--r-sm); padding:10px 12px; white-space:pre; overflow-x:auto; }
+
+.swipehint{
+  position:absolute; pointer-events:none; z-index:5;
+  display:flex; align-items:center; gap:6px;
+  color:var(--accent); font-size:12px; font-weight:700;
+  animation:sw 2.6s ease-in-out infinite;
+}
+@keyframes sw{ 0%,100%{transform:translateX(-14px);opacity:.25} 50%{transform:translateX(14px);opacity:1} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <button class="iconbtn" id="theme" aria-label="Toggle theme" title="Theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+    <h1>Shunt</h1>
+    <button class="iconbtn" id="help" aria-label="How to play" title="How to play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.8-.9 1.4v.4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
+    </button>
+  </div>
+
+  <div class="prompt">
+    <span class="k">Objective</span>
+    <span class="v" id="obj">Slide rows and columns until <b>all four rows</b> spell words. Everything wraps.</span>
+  </div>
+
+  <div class="stage">
+    <div class="status">
+      <div class="pip"><span class="n" id="pMoves">0</span><span class="l">Moves</span></div>
+      <div class="pip"><span class="n" id="pPar">6</span><span class="l">Par</span></div>
+      <div class="pip" id="pLitWrap"><span class="n" id="pLit">0<span style="font-size:13px;color:var(--ink-3)">/4</span></span><span class="l">Rows lit</span></div>
+    </div>
+
+    <div class="gridwrap" id="gw">
+      <div></div>
+      <div class="strip h" id="sUp"></div>
+      <div></div>
+      <div class="strip v" id="sLeft"></div>
+      <div class="board" id="board" tabindex="0" role="application"
+           aria-label="4 by 4 letter grid. Click a tile then use arrow keys to slide its row or column."></div>
+      <div class="strip v" id="sRight"></div>
+      <div></div>
+      <div class="strip h" id="sDown"></div>
+      <div></div>
+    </div>
+
+    <div class="hintline" id="hint"></div>
+    <div class="actions">
+      <button class="btn ghost sm" id="restart" style="flex:1">Restart puzzle</button>
+      <button class="btn sm" id="showres" style="flex:1;display:none">Result</button>
+    </div>
+  </div>
+
+  <div id="kbd"></div>
+</div>
+
+<script src="../shared/lex4.js"></script>
+<script src="../shared/kit.js"></script>
+<script src="puzzles.js"></script>
+<script>
+(function(){
+'use strict';
+const LEX = window.LEX4;
+const P = window.SHUNT_PUZZLES;
+
+/* ======================================================================
+   board model — 16 chars, row major. moves 0..15:
+   0..7  rows  : r*2 + (0 = left, 1 = right)
+   8..15 cols  : c*2 + (0 = up,   1 = down)
+   ====================================================================== */
+const PERM = (function(){
+  const out=[];
+  for(let m=0;m<16;m++){
+    const p=new Array(16);
+    const isRow=m<8, idx=(m>>1)&3, back=(m&1)===1;
+    for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+      let sr=r, sc=c;
+      if(isRow && r===idx) sc=(c + (back?3:1))%4;
+      if(!isRow && c===idx) sr=(r + (back?3:1))%4;
+      p[r*4+c]=sr*4+sc;
+    }
+    out.push(p);
+  }
+  return out;
+})();
+function applyMove(b,m){ const p=PERM[m],o=new Array(16); for(let i=0;i<16;i++)o[i]=b[p[i]]; return o; }
+function shiftLane(b,isRow,idx,k){ // k = signed steps, +1 = right/down
+  let o=b.slice(); k=((k%4)+4)%4;
+  for(let t=0;t<k;t++) o=applyMove(o, isRow ? idx*2+1 : 8+idx*2+1);
+  return o;
+}
+const key=b=>b.join('');
+const rowStr=(b,r)=>b.slice(r*4,r*4+4).join('');
+const isWord=w=>LEX.has(w);
+function litMask(b){ let m=0; for(let r=0;r<4;r++) if(isWord(rowStr(b,r))) m|=1<<r; return m; }
+const popcount=m=>((m>>0&1)+(m>>1&1)+(m>>2&1)+(m>>3&1));
+const solved=b=>litMask(b)===15;
+
+/* distance-to-nearest-solution, capped (used for the near-miss line) */
+function nearMiss(b,cap){
+  if(solved(b)) return 0;
+  let seen=new Set([key(b)]), front=[b];
+  for(let d=1;d<=cap;d++){
+    const nf=[];
+    for(const s of front) for(let m=0;m<16;m++){
+      const n=applyMove(s,m), k=key(n);
+      if(seen.has(k)) continue; seen.add(k);
+      if(solved(n)) return d;
+      nf.push(n);
+    }
+    front=nf;
+  }
+  return cap+1;
+}
+
+/* ======================================================================
+   puzzle selection + persistence
+   ====================================================================== */
+const puz = Kit.pick(P);
+const DAY = Kit.dayNumber();
+const CAP = puz.par + 8;                       // hard move limit -> lose state
+const store = Kit.store('shunt');
+const seenStore = Kit.store('shunt:seen');
+
+let S = null; // session state
+
+function freshState(){
+  return { day:DAY, grid:puz.start.split(''), moves:0, trail:[litMask(puz.start.split(''))],
+           best: nearMiss(puz.start.split(''),3), done:null };
+}
+(function load(){
+  const s = store.get();
+  if(s && s.day===DAY && s.puz===puz.start){ S = s; }
+  else { S = freshState(); S.puz = puz.start; }
+})();
+function save(){ store.set(S); }
+
+/* ======================================================================
+   layout
+   ====================================================================== */
+const board = document.getElementById('board');
+const gw = document.getElementById('gw');
+let STEP=0, TILE=0, GAP=6;
+
+const tiles=[], ghosts=[], bands=[], carms=[];
+for(let r=0;r<4;r++){
+  const b=document.createElement('div'); b.className='band'; board.appendChild(b); bands.push(b);
+}
+for(let c=0;c<4;c++){
+  const a=document.createElement('div'); a.className='carm'; board.appendChild(a); carms.push(a);
+}
+for(let i=0;i<16;i++){
+  const t=document.createElement('div'); t.className='tl'; board.appendChild(t); tiles.push(t);
+  const g=document.createElement('div'); g.className='tl ghost'; board.appendChild(g); ghosts.push(g);
+}
+
+function measure(){
+  const w = board.clientWidth;
+  if(!w) return;
+  GAP = Math.max(4, Math.round(w*0.022));
+  STEP = w/4;
+  TILE = STEP - GAP;
+  gw.style.setProperty('--gap', GAP+'px');
+  const fs = Math.round(TILE*0.46);
+  for(const t of tiles.concat(ghosts)){ t.style.width=TILE+'px'; t.style.height=TILE+'px'; t.style.fontSize=fs+'px'; }
+  bands.forEach((b,r)=>{ b.style.height=(TILE+4)+'px'; b.style.top=(r*STEP+GAP/2-2)+'px'; });
+  carms.forEach((a,c)=>{ a.style.width=(TILE+4)+'px'; a.style.left=(c*STEP+GAP/2-2)+'px'; });
+  board.querySelectorAll('.rail').forEach(e=>e.remove());
+  render();
+}
+const slotX=c=>c*STEP+GAP/2, slotY=r=>r*STEP+GAP/2;
+
+/* ======================================================================
+   render
+   ====================================================================== */
+let drag=null;      // {isRow, idx, off, preview, steps}
+let cursor={r:0,c:0}, kbMode=false;
+
+function place(el,x,y){ el.style.transform=`translate(${x}px,${y}px)`; }
+
+function render(){
+  const base = S.grid;
+  const view = drag ? drag.preview : base;
+  const mask = litMask(view);
+
+  for(let i=0;i<16;i++){
+    const r=i>>2, c=i&3;
+    let x=slotX(c), y=slotY(r), gx=-9999, gy=-9999, letter=base[i], litRow=r;
+
+    if(drag){
+      const P4 = 4*STEP;
+      if(drag.isRow && r===drag.idx){
+        let raw = slotX(c) + drag.off;
+        x = ((raw - GAP/2) % P4 + P4) % P4 + GAP/2;
+        gx = x - P4; gy = y;
+      } else if(!drag.isRow && c===drag.idx){
+        let raw = slotY(r) + drag.off;
+        y = ((raw - GAP/2) % P4 + P4) % P4 + GAP/2;
+        gy = y - P4; gx = x;
+        litRow = (((r + drag.steps)%4)+4)%4;   // where this tile lands on snap
+      }
+    }
+    const on = (mask>>litRow & 1)===1;
+    const t=tiles[i], g=ghosts[i];
+    if(t.textContent!==letter) t.textContent=letter;
+    t.classList.toggle('on', on);
+    t.classList.toggle('cursor', kbMode && cursor.r===r && cursor.c===c && !drag);
+    place(t,x,y);
+    if(gx>-9000){ g.style.display=''; if(g.textContent!==letter) g.textContent=letter; g.classList.toggle('on',on); place(g,gx,gy); }
+    else g.style.display='none';
+  }
+
+  bands.forEach((b,r)=>{
+    b.classList.toggle('on',(mask>>r&1)===1);
+    b.classList.toggle('armed', kbMode && !drag && cursor.r===r);
+  });
+  carms.forEach((a,c)=> a.classList.toggle('on', kbMode && !drag && cursor.c===c));
+
+  document.getElementById('pMoves').textContent = S.moves;
+  const n = popcount(mask);
+  document.getElementById('pLit').innerHTML = n+'<span style="font-size:13px;color:var(--ink-3)">/4</span>';
+  document.getElementById('pLitWrap').classList.toggle('hot', n>=3);
+  const left = CAP - S.moves;
+  const mp = document.querySelector('.status .pip');
+  mp.classList.toggle('danger', !S.done && left<=3);
+
+  document.querySelectorAll('.arr').forEach(a=>{
+    a.classList.toggle('armed', kbMode && !drag && (
+      (a.dataset.kind==='row' && +a.dataset.idx===cursor.r) ||
+      (a.dataset.kind==='col' && +a.dataset.idx===cursor.c)));
+  });
+}
+
+/* ======================================================================
+   committing a move
+   ====================================================================== */
+let busy=false;
+function doSlide(isRow, idx, k, animate){
+  if(busy || S.done) return;
+  k = ((k%4)+4)%4; if(k===0) return;
+  const cost = Math.min(k, 4-k);            // 3 steps one way == 1 the other
+  const signed = k<=2 ? k : k-4;
+  if(!animate){
+    // instant path (buttons / keys): fake a drag then snap
+    drag = { isRow, idx, off:0, steps:0, preview:S.grid };
+  }
+  const before = litMask(S.grid);
+  const after  = shiftLane(S.grid, isRow, idx, signed);
+  drag = { isRow, idx, off:signed*STEP, steps:signed, preview:after };
+  tilesInLane(isRow, idx).forEach(t=>t.classList.add('snapping'));
+  render();
+  busy=true;
+  setTimeout(()=>{
+    tilesInLane(isRow, idx).forEach(t=>t.classList.remove('snapping'));
+    drag=null;
+    S.grid = after; S.moves += cost;
+    const m = litMask(after);
+    S.trail.push(m);
+    const nm = nearMiss(after,3); if(nm < S.best) S.best = nm;
+    render();
+    busy=false;
+    Kit.haptic(8);
+    if(popcount(m)>popcount(before)) Kit.haptic(18);
+    save();
+    checkEnd();
+  }, 140);
+}
+function tilesInLane(isRow, idx){
+  const out=[];
+  for(let i=0;i<16;i++){ const r=i>>2,c=i&3; if(isRow? r===idx : c===idx){ out.push(tiles[i], ghosts[i]); } }
+  return out;
+}
+
+function checkEnd(){
+  if(S.done) return;
+  if(solved(S.grid)){ S.done={win:true, moves:S.moves}; save(); setTimeout(()=>endScreen(),420); return; }
+  if(S.moves>=CAP){ S.done={win:false, moves:S.moves}; save(); setTimeout(()=>endScreen(),420); }
+}
+
+/* ======================================================================
+   pointer drag
+   ====================================================================== */
+let pd=null;
+board.addEventListener('pointerdown', e=>{
+  if(busy || S.done) return;
+  const rect=board.getBoundingClientRect();
+  const px=e.clientX-rect.left, py=e.clientY-rect.top;
+  const c=Math.max(0,Math.min(3,Math.floor(px/STEP))), r=Math.max(0,Math.min(3,Math.floor(py/STEP)));
+  pd={ x:e.clientX, y:e.clientY, r, c, axis:null, id:e.pointerId, moved:false };
+  cursor={r,c};
+  board.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+board.addEventListener('pointermove', e=>{
+  if(!pd || e.pointerId!==pd.id) return;
+  const dx=e.clientX-pd.x, dy=e.clientY-pd.y;
+  if(!pd.axis){
+    if(Math.abs(dx)<5 && Math.abs(dy)<5) return;
+    pd.axis = Math.abs(dx)>Math.abs(dy) ? 'h' : 'v';
+    board.classList.add('dragging');
+    kbMode=false;
+  }
+  pd.moved=true;
+  const isRow = pd.axis==='h';
+  const off = isRow ? dx : dy;
+  const steps = Math.round(off/STEP);
+  const idx = isRow ? pd.r : pd.c;
+  const prev = drag && drag.mask;
+  const preview = shiftLane(S.grid, isRow, idx, steps);
+  drag = { isRow, idx, off, steps, preview, mask:litMask(preview) };
+  if(prev!==undefined && drag.mask!==prev && popcount(drag.mask)>popcount(prev)) Kit.haptic(14);
+  render();
+});
+function endDrag(e){
+  if(!pd || (e && e.pointerId!==pd.id)) return;
+  board.classList.remove('dragging');
+  const d=drag; pd=null;
+  if(!d){ // tap: just move the keyboard cursor
+    kbMode=true; render(); return;
+  }
+  drag=null;
+  const k=d.steps;
+  if(k===0){ render(); return; }
+  doSlide(d.isRow, d.idx, k, true);
+}
+board.addEventListener('pointerup', endDrag);
+board.addEventListener('pointercancel', endDrag);
+
+/* ======================================================================
+   edge arrow buttons
+   ====================================================================== */
+const SVG={
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
+};
+function mkArrows(mount, dirName, kind){
+  for(let i=0;i<4;i++){
+    const b=document.createElement('button');
+    b.className='arr'; b.type='button'; b.innerHTML=SVG[dirName];
+    b.dataset.kind=kind; b.dataset.idx=i;
+    const label = kind==='row' ? `Slide row ${i+1} ${dirName}` : `Slide column ${i+1} ${dirName}`;
+    b.setAttribute('aria-label', label);
+    b.addEventListener('click', ()=>{
+      if(kind==='row'){ cursor.r=i; doSlide(true,i, dirName==='right'?1:-1, true); }
+      else { cursor.c=i; doSlide(false,i, dirName==='down'?1:-1, true); }
+    });
+    mount.appendChild(b);
+  }
+}
+mkArrows(document.getElementById('sUp'),'up','col');
+mkArrows(document.getElementById('sDown'),'down','col');
+mkArrows(document.getElementById('sLeft'),'left','row');
+mkArrows(document.getElementById('sRight'),'right','row');
+
+/* ======================================================================
+   keyboard
+   ====================================================================== */
+document.addEventListener('keydown', e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  if(document.querySelector('.scrim')) return;
+  const k=e.key;
+  if(k==='Tab'){
+    // roving lane cursor: tab walks the 4 rows then the 4 columns
+    e.preventDefault(); kbMode=true;
+    if(e.shiftKey){ cursor.c=(cursor.c+3)%4; } else { cursor.r=(cursor.r+1)%4; if(cursor.r===0) cursor.c=(cursor.c+1)%4; }
+    board.classList.add('kb'); render(); return;
+  }
+  if(!/^Arrow/.test(k)) return;
+  e.preventDefault();
+  if(!kbMode){ kbMode=true; board.classList.add('kb'); render(); }
+  if(e.shiftKey){
+    if(k==='ArrowLeft') cursor.c=(cursor.c+3)%4;
+    if(k==='ArrowRight') cursor.c=(cursor.c+1)%4;
+    if(k==='ArrowUp') cursor.r=(cursor.r+3)%4;
+    if(k==='ArrowDown') cursor.r=(cursor.r+1)%4;
+    render(); return;
+  }
+  if(k==='ArrowLeft') doSlide(true,cursor.r,-1,true);
+  if(k==='ArrowRight') doSlide(true,cursor.r,1,true);
+  if(k==='ArrowUp') doSlide(false,cursor.c,-1,true);
+  if(k==='ArrowDown') doSlide(false,cursor.c,1,true);
+});
+board.addEventListener('focus', ()=>{ kbMode=true; board.classList.add('kb'); render(); });
+board.addEventListener('blur', ()=>{ board.classList.remove('kb'); });
+
+/* ======================================================================
+   end screen + share
+   ====================================================================== */
+const SQ=['⬜','🟨','🟧','🟥','🟩'];
+function trailArt(){
+  return S.trail.slice(1).map(m=>SQ[popcount(m)]).join('');
+}
+function whichSolution(){
+  const k=key(S.grid);
+  const idx = puz.sols.findIndex(s=>s.b===k);
+  return idx;
+}
+function shareText(){
+  const win = S.done && S.done.win;
+  const head = `SHUNT #${DAY} · ${win? S.moves+' move'+(S.moves===1?'':'s') : 'out of moves'} (par ${puz.par})`;
+  let art = trailArt();
+  if(art.length>28) art = art.slice(0,13)+'…'+art.slice(-13);
+  let line3;
+  if(win){
+    const i=whichSolution();
+    if(i<0) line3 = `Found an unmapped solution · off the ${puz.sols.length}-route map`;
+    else {
+      const s=puz.sols[i];
+      const tag = s.pct<=puz.rarePct ? ' · the rare one' : (i===0?' · the common one':'');
+      line3 = `Solution ${i+1} of ${puz.sols.length} · ${s.pct}% of par routes${tag}`;
+    }
+  } else {
+    const away = S.best>3 ? '4+ moves' : (S.best===1?'1 move':S.best+' moves');
+    line3 = `Closest approach: ${away} from a solution · ${puz.sols.length} existed`;
+  }
+  return `${head}\n${art}\n${line3}\nsfun.games/shunt`;
+}
+
+function endScreen(){
+  const win = S.done.win;
+  const i = win ? whichSolution() : -1;
+  const rows=[0,1,2,3].map(r=>rowStr(S.grid,r).toUpperCase());
+  let body='';
+  if(win){
+    body += `<div class="wordlist">${rows.map(w=>`<span>${w}</span>`).join('')}</div>`;
+  }
+  const stats = `<div class="statrow">
+    <div class="stat"><span class="n">${win?S.moves:'—'}</span><span class="l">Moves</span></div>
+    <div class="stat"><span class="n">${puz.par}</span><span class="l">Par</span></div>
+    <div class="stat"><span class="n">${puz.sols.length}</span><span class="l">Solutions</span></div>
+  </div>`;
+
+  let solTable='';
+  if(puz.sols.length>1){
+    solTable = `<div style="margin:14px 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Every par-${puz.par} solution</div>` +
+      puz.sols.map((s,n)=>`<div class="solrow ${n===i?'you':''}">
+        <span class="nm">${n===i?'YOURS':'#'+(n+1)}</span>
+        <span class="bar-"><i style="width:${Math.max(4,s.pct)}%"></i></span>
+        <span class="pct">${s.pct}%</span></div>`).join('');
+    solTable += `<div class="hint" style="margin-top:8px;text-align:left">Share of all shortest routes that end on each solution. ${
+      i>=0 && puz.sols[i].pct<=puz.rarePct ? '<b style="color:var(--accent)">You found the rarest one.</b>' : 'Letters hidden — go find the others.'}</div>`;
+  }
+
+  let verdict, sub;
+  if(win){
+    const d=S.moves-puz.par;
+    verdict = d<=0?'Par.':(d===1?'Bogey.':(d<=3?'Solved.':'Scrambled home.'));
+    sub = d<=0? `${S.moves} moves — you could not have done it in fewer.`
+              : `${S.moves} moves · ${d} over par.`;
+  } else {
+    verdict='Out of moves.';
+    sub = S.best<=1 ? 'You were one move away.' : (S.best<=3 ? `You got within ${S.best} moves of a solution.` : 'The board never lined up.');
+  }
+
+  Kit.sheet(`
+    <h2 class="verdict">${verdict}</h2>
+    <p class="sub">${sub}</p>
+    ${body}${stats}${solTable}
+    <div class="sharegrid" id="sg">${Kit.esc(shareText())}</div>
+    <button class="btn primary wide" id="shareBtn">Share result</button>
+    <div class="hint" style="margin-top:12px">Next puzzle in <span id="cd" style="font-family:var(--font-mono)">--:--:--</span></div>
+    <button class="btn ghost wide" data-close style="margin-top:10px">Close</button>
+  `, { onOpen(el){
+      const t=Kit.countdown(el.querySelector('#cd'));
+      el.querySelector('#shareBtn').addEventListener('click', ev=> Kit.share(shareText(), ev.currentTarget));
+      el.addEventListener('DOMNodeRemoved', ()=>clearInterval(t));
+  }});
+  document.getElementById('showres').style.display='';
+  document.getElementById('restart').style.display='none';
+  updateHint();
+}
+
+/* ======================================================================
+   help
+   ====================================================================== */
+const HELP = `
+<ul style="padding-left:18px;margin:0 0 14px">
+  <li><b>Every row must spell a 4-letter word.</b> All four at once.</li>
+  <li><b>Swipe a row</b> sideways or <b>a column</b> up and down. Letters wrap around the edge.</li>
+  <li>A row that spells a word <b>lights up</b> — live, while you're still dragging.</li>
+  <li>The catch: fixing row 3 with a column slide will break row 1.</li>
+  <li><b>No undo.</b> Sliding back is just another move. That's the whole cost.</li>
+  <li>Score is <b>moves used against par</b>. Par is the true minimum — proven by search.</li>
+  <li>There is usually <b>more than one solution</b>. The endgame tells you which one you found and how rare it is.</li>
+</ul>
+<div class="demo">row 2 slides right →
+
+ P L U M          P L U M
+ A T E D    →     D A T E   ✓ lit
+ R I C E          R I C E   ✓ lit
+ N O S E          N O S E   ✓ lit</div>
+<div class="hint" style="margin-top:10px;text-align:left">Desktop: click a tile, then arrow keys. Or use the chevrons around the grid. Shift+arrows moves the cursor without sliding.</div>`;
+document.getElementById('help').addEventListener('click', Kit.helpButton(HELP,'How to play'));
+
+/* ======================================================================
+   chrome
+   ====================================================================== */
+const themeBtn=document.getElementById('theme');
+const tstore=Kit.store('theme');
+if(tstore.get()) document.documentElement.dataset.theme=tstore.get();
+themeBtn.addEventListener('click',()=>{
+  const cur=document.documentElement.dataset.theme ||
+    (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=next; tstore.set(next);
+});
+document.getElementById('restart').addEventListener('click',()=>{
+  if(S.done) return;
+  S=freshState(); S.puz=puz.start; save(); kbMode=false; render(); updateHint();
+  Kit.toast('Board reset');
+});
+document.getElementById('showres').addEventListener('click', endScreen);
+
+function updateHint(){
+  const h=document.getElementById('hint');
+  if(S.done){ h.innerHTML = S.done.win? 'Solved. Come back tomorrow.' : 'Out of moves. Come back tomorrow.'; return; }
+  const left=CAP-S.moves;
+  const n=popcount(litMask(S.grid));
+  if(n===3) h.innerHTML = `<b>Three rows lit.</b> ${left} moves left.`;
+  else if(left<=3) h.innerHTML = `<b>${left} moves left.</b>`;
+  else h.innerHTML = `${left} moves left · swipe a row or column`;
+}
+const _render=render;
+render=function(){ _render(); updateHint(); };
+
+/* first-visit help */
+if(!seenStore.get()){ seenStore.set(1); setTimeout(()=>Kit.helpButton(HELP,'How to play')(),260); }
+
+/* boot */
+document.querySelector('.bar h1').insertAdjacentHTML('afterend','');
+new ResizeObserver(measure).observe(board);
+measure();
+if(S.done) { document.getElementById('showres').style.display=''; document.getElementById('restart').style.display='none'; }
+window.addEventListener('load', measure);
+})();
+</script>
+</body>
+</html>

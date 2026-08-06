@@ -4,14 +4,19 @@
    Optionally:  node verify.js --explore   (hole-finding helper)
 
    Proves, for every hole in every round:
-     (a) the stated par == the true shortest path length (BFS)
-     (b) at least 2 DISTINCT routes of length <= par+1 exist
+     (a) the stated `best` == the true shortest path length (BFS),
+         and par == best + 1 (normal hole) or best + 2 (long hole),
+         so the tightest line is always a birdie or an eagle
+     (b) at least 2 DISTINCT routes of length <= best+1 exist
      (c) the whole graph passes structural sanity checks:
          - no link whose second half is a bare suffix/fragment
          - no self-links, no duplicate targets
          - start/target words exist in the graph
      (d) the hole is not trivially wide (a start with an absurd
-         number of par-length routes reads as luck, not skill)
+         number of optimal routes reads as luck, not skill)
+     (e) the hole is survivable: from EVERY word reachable inside
+         par strokes there is still a route home, or the game's
+         "stranded" rule fires — no silent dead ends
    ============================================================ */
 'use strict';
 
@@ -105,7 +110,21 @@ function routes(start, target, maxLen, cap) {
   return out;
 }
 
-/* ---------- (a)(b)(d) per hole ---------------------------------------- */
+/* every word you can be standing on after n legal strokes */
+function reachableWithin(start, n) {
+  const seen = new Set([start]);
+  let frontier = [start];
+  for (let i = 0; i < n; i++) {
+    const next = [];
+    for (const w of frontier) for (const b of (LINKS[w] || [])) {
+      if (!seen.has(b)) { seen.add(b); next.push(b); }
+    }
+    frontier = next;
+  }
+  return seen;
+}
+
+/* ---------- (a)(b)(d)(e) per hole ------------------------------------- */
 function holes() {
   ROUNDS.forEach((round, ri) => {
     console.log(`\nROUND ${ri + 1} — ${round.name}`);
@@ -115,29 +134,42 @@ function holes() {
       parTotal += h.par;
       const label = `  hole ${hi + 1}  ${h.start} → ${h.target} (par ${h.par})`;
       if (!LINKS[s]) { fail(`${label}: START "${h.start}" has no outgoing links`); return; }
+
+      /* (a) */
       const d = dist(s, t);
       if (d === Infinity) { fail(`${label}: unreachable`); return; }
-      if (d !== h.par) { fail(`${label}: true shortest path is ${d}, par says ${h.par}`); return; }
+      if (d !== h.best) { fail(`${label}: true shortest path is ${d}, best says ${h.best}`); return; }
+      const bump = h.long ? 2 : 1;
+      if (h.par !== h.best + bump) {
+        fail(`${label}: par should be best+${bump} = ${h.best + bump}`); return;
+      }
+      if (linked(s, t)) { fail(`${label}: START·TARGET is itself a link — the hole gives itself away`); return; }
 
-      const rs = routes(s, t, h.par + 1);
-      const atPar = rs.filter(r => r.length - 1 === h.par);
-      const near = rs.filter(r => r.length - 1 <= h.par + 1);
-      if (near.length < 2) {
-        fail(`${label}: only ${near.length} route(s) of length ≤ par+1`);
-        return;
-      }
-      if (atPar.length < 1) { fail(`${label}: no route actually achieves par`); return; }
-      if (atPar.length > 60) {
-        fail(`${label}: ${atPar.length} par routes — hole is too wide to feel earned`);
-        return;
-      }
-      const sample = atPar.slice(0, 2).map(r => r.join('·').toUpperCase()).join('   |   ');
-      ok(`${h.start} → ${h.target}  par ${h.par}  ·  ${atPar.length} at par, ${near.length} within par+1`);
-      console.log(`      ${sample}`);
+      /* (b)(d) */
+      const rs = routes(s, t, h.best + 1);
+      const opt  = rs.filter(r => r.length - 1 === h.best);
+      const near = rs.filter(r => r.length - 1 <= h.best + 1);
+      if (near.length < 2) { fail(`${label}: only ${near.length} route(s) of length ≤ best+1`); return; }
+      if (opt.length < 2)  { fail(`${label}: only ${opt.length} optimal route — one line is not a golf hole`); return; }
+      if (opt.length > 40) { fail(`${label}: ${opt.length} optimal routes — too wide to feel earned`); return; }
+
+      /* (e) survivability: how much of the neighbourhood is a true dead end */
+      const nbhd = reachableWithin(s, h.par);
+      let stranded = 0;
+      for (const w of nbhd) if (!(LINKS[w] || []).length) stranded++;
+      const pct = (stranded / nbhd.size * 100).toFixed(0);
+      if (nbhd.size < 20) { fail(`${label}: neighbourhood of ${nbhd.size} words is too cramped`); return; }
+
+      const kind = h.long ? 'eagle' : 'birdie';
+      ok(`${h.start} → ${h.target}  par ${h.par}  ·  best ${h.best} (${kind})  ·  ` +
+         `${opt.length} optimal, ${near.length - opt.length} at best+1  ·  ` +
+         `${nbhd.size} words in range, ${pct}% of them terminal`);
+      console.log(`      ${opt.slice(0, 2).map(r => r.join('·').toUpperCase()).join('   |   ')}`);
     });
     console.log(`      round par: ${parTotal}`);
   });
 }
+const linked = (a, b) => !!(LINKS[a] && LINKS[a].indexOf(b) >= 0);
 
 /* ---------- explorer (authoring aid, not a test) ---------------------- */
 function explore() {
