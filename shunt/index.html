@@ -258,9 +258,10 @@ body{ overscroll-behavior:none; }
 
     <div class="hintline" id="hint"></div>
     <div class="actions">
-      <button class="btn ghost sm" id="restart" style="flex:1">Restart puzzle</button>
+      <button class="btn ghost sm" id="restart" style="flex:1">Reset the letters</button>
       <button class="btn sm" id="showres" style="flex:1;display:none">Result</button>
     </div>
+    <p class="sr" id="live" role="status" aria-live="polite"></p>
   </div>
 
   <div id="kbd"></div>
@@ -364,6 +365,7 @@ function save(){ store.set(S); }
    ====================================================================== */
 const board = document.getElementById('board');
 const gw = document.getElementById('gw');
+const live_ = document.getElementById('live');
 let STEP=0, TILE=0, GAP=6;
 
 const bands=[], carms=[], guts={};
@@ -580,7 +582,9 @@ function endDrag(e){
   if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
   const d=drag; pd=null;
   if(!d){ // tap: park the lane cursor here, ready for the arrow keys
-    kbMode=true; board.classList.add('kb'); render(); return;
+    kbMode=true; board.classList.add('kb');
+    try{ board.focus({preventScroll:true}); }catch(err){}
+    render(); return;
   }
   drag=null;
   const k=d.steps;
