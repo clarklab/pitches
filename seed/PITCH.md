@@ -209,7 +209,7 @@ maximum instead of a guess.
 1. Pick a target word of length 9–11 from `lexgen.raw.json` (36,273
    frequency-filtered words).
 2. Enumerate its 3-letter sub-multisets and keep the ones on a hand-written
-   whitelist of ~250 everyday words. **The seed cannot come from the lexicon.**
+   whitelist of 265 everyday words. **The seed cannot come from the lexicon.**
    The 3-letter slice of any frequency-filtered word list is a swamp — the
    first run of this search happily proposed `OCA`, `NOA`, `AIT` and `ANS` as
    seeds. The seed is the most-read word in the game; it gets a whitelist.
