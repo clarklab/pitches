@@ -14,7 +14,7 @@
   --paper-2:    #f1ece3;
   --ink:        #17161a;
   --ink-2:      #5c5a63;
-  --ink-3:      #8e8b96;
+  --ink-3:      #6b6874;
   --line:       #dcd6ca;
   --line-2:     #c6bfb0;
   --white:      #ffffff;
@@ -68,7 +68,7 @@
     --paper-2: #1f1e25;
     --ink:     #f4f1ea;
     --ink-2:   #a7a3b0;
-    --ink-3:   #77737f;
+    --ink-3:   #95919f;
     --line:    #35323d;
     --line-2:  #4a4653;
     --white:   #24232b;
@@ -83,14 +83,14 @@
 }
 :root[data-theme="dark"] {
   --paper:   #16151a; --paper-2: #1f1e25; --ink: #f4f1ea; --ink-2: #a7a3b0;
-  --ink-3:   #77737f; --line: #35323d; --line-2: #4a4653; --white: #24232b;
+  --ink-3:   #95919f; --line: #35323d; --line-2: #4a4653; --white: #24232b;
   --accent-soft: #17342c; --good-soft: #17311f; --warn-soft: #3a2f12; --bad-soft: #3a1f19;
   --shadow-1: 0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3);
   --shadow-2: 0 4px 16px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
 }
 :root[data-theme="light"] {
   --paper: #faf7f2; --paper-2: #f1ece3; --ink: #17161a; --ink-2: #5c5a63;
-  --ink-3: #8e8b96; --line: #dcd6ca; --line-2: #c6bfb0; --white: #ffffff;
+  --ink-3: #6b6874; --line: #dcd6ca; --line-2: #c6bfb0; --white: #ffffff;
   --accent-soft: #d9ece5; --good-soft: #dcefe2; --warn-soft: #f7ecd0; --bad-soft: #f7e0da;
 }
 
@@ -185,6 +185,19 @@ button { font: inherit; color: inherit; }
 .btn[disabled] { opacity: .45; cursor: default; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .btn.ghost { background: transparent; box-shadow: none; border-color: var(--line); color: var(--ink-2); }
+/* The second-strongest action. Every result sheet ends with two things worth
+   doing — share the result, play the next one — and giving both the filled
+   treatment meant neither was the primary. Outlined in the accent reads as
+   clearly co-important and clearly not the same weight, and it borrows the
+   game's own colour so the hierarchy is identical in all five without any of
+   them looking generic. */
+.btn.tonal {
+  background: transparent; color: var(--accent);
+  border: 1.5px solid var(--accent); box-shadow: none; font-weight: 700;
+}
+.btn.tonal:hover { background: var(--accent-soft); }
+.btn.tonal:active { background: var(--accent-soft); }
+.btn.tonal .ms { --ms-fill: 1; }
 .btn.wide { width: 100%; }
 .btn.sm { padding: 8px 14px; font-size: 13.5px; }
 /* buttons that carry a symbol centre their content and keep the label on the
@@ -284,7 +297,14 @@ button { font: inherit; color: inherit; }
 .key.wide { flex: 1.6 1 0; font-size: 12px; letter-spacing: .06em; }
 .key.act { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .key.dim { opacity: .35; }
-@media (min-width: 620px) { .kbd { display: none; } }
+/* Hide the on-screen keys only where a real one is certain to exist. Gating on
+   width alone made Chains and The Rule uninputtable on every tablet and every
+   phone in landscape: neither game has an <input>, so above 620px there was no
+   touch path to type at all, just a desk hint telling you to use a keyboard
+   you do not have. hover+fine pointer is the actual question being asked. */
+@media (min-width: 620px) and (hover: hover) and (pointer: fine) {
+  .kbd { display: none; }
+}
 
 /* ---------- misc ---------- */
 .hint { text-align: center; font-size: 13px; color: var(--ink-3); }

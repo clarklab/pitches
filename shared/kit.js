@@ -37,14 +37,21 @@
     return dayNumber() + (cursor(ns).get() || 0);
   }
   function advance(ns, by) {
-    // A pinned ?d= URL would otherwise swallow the step and look broken.
-    if (pinned() !== null) {
+    const step = by || 1;
+    const bumpUrl = (to) => {
       const url = new URL(location.href);
-      url.searchParams.set('d', pinned() + (by || 1));
+      url.searchParams.set('d', to);
       location.href = url.toString();
-      return;
-    }
-    cursor(ns).set((cursor(ns).get() || 0) + (by || 1));
+    };
+    // A pinned ?d= URL would otherwise swallow the step and look broken.
+    if (pinned() !== null) { bumpUrl(pinned() + step); return; }
+
+    const c = cursor(ns);
+    // With storage unavailable the cursor cannot survive the reload, so carry
+    // the next puzzle in the URL instead. Without this the button does nothing
+    // in private browsing — the one place a reviewer is most likely to open it.
+    if (!c.durable()) { bumpUrl(puzzleNo(ns) + step); return; }
+    c.set((c.get() || 0) + step);
     location.reload();
   }
   function resetCursor(ns) { cursor(ns).clear(); }
@@ -84,21 +91,40 @@
   }
 
   /* ---- storage --------------------------------------------------------- */
+  /* Shared across every store() for the same namespace. It used to be a
+     per-instance closure variable, which meant two `store('cursor:chains')`
+     calls did not see each other's writes — so with localStorage unavailable
+     (Safari private browsing throws on setItem) advance() wrote the cursor to
+     one throwaway object and read it back from another, and the next-puzzle
+     button did nothing at all. Still page-lifetime only, which is why
+     advance() also falls back to a ?d= bump when it cannot persist. */
+  const MEM = new Map();
+
   function store(ns) {
     const key = 'sfd:' + ns;
-    let mem = null; // fallback when localStorage is unavailable (private mode)
     return {
       get() {
-        try { return JSON.parse(localStorage.getItem(key) || 'null') || mem; }
-        catch (e) { return mem; }
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw !== null) return JSON.parse(raw);
+        } catch (e) { /* unavailable — fall through to memory */ }
+        return MEM.has(key) ? MEM.get(key) : null;
       },
       set(v) {
-        mem = v;
+        MEM.set(key, v);
         try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* memory only */ }
       },
       clear() {
-        mem = null;
+        MEM.delete(key);
         try { localStorage.removeItem(key); } catch (e) { /* noop */ }
+      },
+      // true when a write actually survives a round trip through localStorage
+      durable() {
+        try {
+          localStorage.setItem(key + ':probe', '1');
+          localStorage.removeItem(key + ':probe');
+          return true;
+        } catch (e) { return false; }
       }
     };
   }
@@ -130,7 +156,19 @@
      hand-offs where closing by accident would lose the thread.             */
   function sheet(html, opts) {
     opts = opts || {};
+    // Capture the return-focus target BEFORE evicting anything, or a sheet that
+    // replaces another inherits that one's close button as its "previous" focus.
     const prevFocus = document.activeElement;
+
+    /* Singleton. Every game has more than one control that can open a result
+       — a stats button, a "see the result" button, a finished-day boot — and
+       none of them knew about the others, so tapping two of them stacked two
+       identical modals and dismissing one revealed a clone underneath. That
+       reads as the app being stuck. One sheet at a time, always. */
+    document.querySelectorAll('.scrim').forEach(s => {
+      if (s._kitClose) s._kitClose(true); else s.remove();
+    });
+
     const scrim = document.createElement('div');
     scrim.className = 'scrim';
     const chrome = opts.sticky ? '' :
@@ -141,15 +179,22 @@
     const el = scrim.querySelector('.sheet');
 
     let gone = false;
-    function close() {
+    function close(immediate) {
       if (gone) return;
       gone = true;
       document.removeEventListener('keydown', onKeydown);
+      const done = () => {
+        scrim.remove();
+        // Only pull focus back if it is still inside the sheet we are closing;
+        // an eviction has already moved it somewhere deliberate.
+        if (!immediate) { try { prevFocus && prevFocus.focus(); } catch (e) {} }
+      };
+      if (immediate) { done(); return; }
       scrim.classList.add('leaving');
-      const done = () => { scrim.remove(); try { prevFocus && prevFocus.focus(); } catch (e) {} };
       // never strand the sheet if the animation is suppressed (reduced motion)
       setTimeout(done, 210);
     }
+    scrim._kitClose = close;
 
     function onKeydown(e) {
       if (e.key === 'Escape' && !opts.sticky) { close(); return; }
@@ -166,7 +211,9 @@
     scrim.addEventListener('click', (e) => { if (e.target === scrim && !opts.sticky) close(); });
     document.addEventListener('keydown', onKeydown);
     document.body.appendChild(scrim);
-    scrim.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+    // NB not `addEventListener('click', close)` — that hands the MouseEvent to
+    // close() as its `immediate` flag and silently skips the exit animation.
+    scrim.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => close()));
 
     /* swipe the sheet away, the way every native one does. Only from the top
        of its own scroll, or a flick while reading a long result would fire. */
@@ -518,8 +565,11 @@
   /* The one way out of a finished puzzle. Every result sheet ends with this
      exact control so the gesture is the same in all five games — and so no
      demo can quietly reintroduce a "come back tomorrow" wall. */
+  // Tonal, not primary: the share button is the filled call to action on a
+  // result sheet and this is the strong second. Two filled buttons stacked on
+  // top of each other is not a hierarchy, it is two buttons.
   function nextButton(ns, label) {
-    return `<button class="btn primary wide" type="button" data-next-puzzle="${esc(ns)}">` +
+    return `<button class="btn tonal wide" type="button" data-next-puzzle="${esc(ns)}">` +
            icon('play_arrow', { fill: 1 }) + (label || 'Next puzzle') + '</button>';
   }
   document.addEventListener('click', (e) => {
