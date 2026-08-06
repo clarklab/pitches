@@ -14,9 +14,9 @@
 
   /* ---------- growth staircase ---------- */
   .stair {
-    flex: 1 1 auto; min-height: 76px; max-height: 34dvh; overflow-y: auto;
+    flex: 1 1 0; min-height: 76px; overflow-y: auto;
     display: flex; flex-direction: column; justify-content: flex-end;
-    gap: 2px; padding: 4px 2px; scrollbar-width: thin;
+    gap: 2px; padding: 4px 2px 2px; scrollbar-width: thin;
   }
   .step {
     display: flex; align-items: baseline; gap: 8px;
@@ -31,8 +31,14 @@
     font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
     color: var(--ink-3); letter-spacing: 0;
   }
-  .step:last-child { color: var(--accent); font-size: 17px; }
-  .step:last-child .len { color: var(--accent); }
+  .step.cur { color: var(--accent); font-size: 17px; }
+  .step.cur .len { color: var(--accent); }
+  .step.ghost { color: var(--ink-3); opacity: .35; animation: none; }
+  .step.ghost.now { opacity: .85; color: var(--accent); }
+  .step .dots { letter-spacing: .34em; font-size: 15px; line-height: 1; }
+  .step.ghost.now .dots {
+    border-bottom: 1.5px dashed currentColor; padding-bottom: 2px;
+  }
 
   /* ---------- the public queue (a conveyor you can read ahead on) ---------- */
   .qwrap {
@@ -40,9 +46,10 @@
     border-radius: var(--r); padding: 9px 10px 10px; box-shadow: var(--shadow-1);
   }
   .qhead {
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 10px; font-weight: 700; letter-spacing: .12em;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
     text-transform: uppercase; color: var(--accent); margin-bottom: 7px;
+    white-space: nowrap;
   }
   .qhead .rem { color: var(--ink-3); letter-spacing: .06em; font-weight: 600; }
   .queue { position: relative; padding-top: 11px; }
@@ -59,14 +66,19 @@
     background: var(--accent); color: var(--accent-ink); border-color: transparent;
     transform: translateY(1px) scale(1.06); box-shadow: var(--shadow-1);
   }
-  .qt.done { opacity: .32; background: transparent; border-style: dashed; }
-  .qt.skipped { opacity: .32; background: transparent; border-style: dashed; color: var(--ink-3); }
-  .qt.skipped::after {
-    content: '⏭'; position: absolute; font-size: 9px; bottom: -1px; right: 2px; opacity: .9;
+  /* taken — absorbed into your word */
+  .qt.done {
+    background: var(--accent-soft); color: var(--accent);
+    border-color: transparent; opacity: .8;
   }
-  .qt.done::after {
-    content: ''; position: absolute; left: 15%; right: 15%; top: 50%;
-    height: 1.5px; background: var(--ink-3);
+  /* skipped — thrown away */
+  .qt.skipped {
+    opacity: .45; background: transparent; border-style: dashed;
+    color: var(--ink-3); border-color: var(--line-2);
+  }
+  .qt.skipped::after {
+    content: ''; position: absolute; left: 18%; right: 18%; top: 50%;
+    height: 1.5px; background: var(--ink-3); transform: rotate(-12deg);
   }
   .caret {
     position: absolute; top: 0; left: 0; width: 10px; height: 9px;
@@ -99,7 +111,7 @@
     background: var(--white); border: 1.5px solid var(--line-2);
     border-radius: var(--r-sm); font-family: var(--font-tile);
     font-weight: 700; font-size: 21px; text-transform: uppercase;
-    color: var(--ink); box-shadow: 0 1.5px 0 var(--line-2);
+    color: var(--ink); box-shadow: var(--shadow-1);
     touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     transition: transform .1s, box-shadow .12s, background .2s, border-color .2s;
     display: grid; place-items: center; user-select: none;
@@ -122,7 +134,12 @@
   .controls { display: flex; gap: 7px; }
   .controls .btn { flex: 1; padding: 13px 6px; font-size: 14px; min-height: 46px; }
   .controls .btn.enter { flex: 1.5; }
-  .skipdots { letter-spacing: -.06em; }
+  .skipdots {
+    display: inline-grid; place-items: center; min-width: 20px; height: 20px;
+    border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent);
+    font-size: 12px; font-weight: 800; margin-left: 3px; vertical-align: -3px;
+  }
+  #skip[disabled] .skipdots { background: var(--paper-2); color: var(--ink-3); }
   .bottom { margin-top: auto; display: flex; flex-direction: column; gap: 9px; padding-top: 6px; }
   .stuckrow { text-align: center; }
   .stuck {
@@ -138,10 +155,6 @@
     letter-spacing: .12em; text-align: center; text-transform: uppercase;
     color: var(--accent); margin: 2px 0 0; word-break: break-all;
   }
-  .gapline {
-    text-align: center; font-size: 14.5px; color: var(--ink-2); margin: 10px 0 0;
-  }
-  .gapline b { color: var(--ink); }
   .recap {
     background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
     padding: 10px 12px; margin: 12px 0 0; max-height: 30dvh; overflow-y: auto;
@@ -190,15 +203,15 @@
   </div>
 
   <div class="stage">
-    <div class="stair" id="stair" aria-label="Your growth so far"></div>
-
     <div class="qwrap">
-      <div class="qhead"><span>The queue — same for everyone today</span><span class="rem" id="qrem"></span></div>
+      <div class="qhead"><span>The queue · everyone, same order</span><span class="rem" id="qrem"></span></div>
       <div class="queue" id="queue">
         <div class="caret" id="caret"></div>
         <div class="qrow" id="qrow"></div>
       </div>
     </div>
+
+    <div class="stair" id="stair" aria-label="Your growth so far" aria-live="polite"></div>
 
     <div class="bottom">
       <div class="slotwrap"><div class="slot" id="slot"></div></div>
@@ -261,15 +274,32 @@
     el.innerHTML = '';
     S.hist.forEach(function (w, i) {
       var d = document.createElement('div');
-      d.className = 'step';
-      var rail = i === 0 ? '' : '│ '.repeat(0) + '↳';
+      d.className = 'step' + (i === S.hist.length - 1 ? ' cur' : '');
       d.innerHTML = '<span class="rail" style="padding-left:' + (i * 9) + 'px">' +
         (i === 0 ? '●' : '↳') + '</span>' +
         '<span>' + Kit.esc(w) + '</span>' +
         '<span class="len">' + w.length + '</span>';
       el.appendChild(d);
     });
-    el.scrollTop = el.scrollHeight;
+
+    // Ghost rungs: one per queue letter still to come. They show the staircase
+    // that is still on the table — the shape of the run you could still have.
+    // No numbers, so nothing about the maximum leaks.
+    var now = null;
+    if (!S.over && S.qi < Q.length) {
+      var left = Q.length - S.qi;
+      for (var k = 0; k < left; k++) {
+        var len = S.rack.length + k;
+        var g = document.createElement('div');
+        g.className = 'step ghost' + (k === 0 ? ' now' : '');
+        g.innerHTML = '<span class="rail" style="padding-left:' + ((S.hist.length + k) * 9) + 'px">↳</span>' +
+          '<span class="dots">' + '·'.repeat(len) + '</span>';
+        el.appendChild(g);
+        if (k === 0) now = g;
+      }
+    }
+    if (now) el.scrollTop = Math.max(0, now.offsetTop - el.clientHeight * 0.6);
+    else el.scrollTop = el.scrollHeight;
   }
 
   function renderQueue() {
@@ -332,7 +362,8 @@
   function renderControls() {
     var sk = $('skip');
     var left = MAXSK - S.skips;
-    sk.innerHTML = 'Skip <span class="skipdots">' + (left ? '⏭'.repeat(left) : '—') + '</span>';
+    sk.innerHTML = 'Skip <span class="skipdots">' + left + '</span>';
+    sk.setAttribute('aria-label', 'Skip this letter, ' + left + ' skips left');
     sk.disabled = left === 0 || S.over || S.qi >= Q.length;
     $('enter').disabled = S.over;
     $('shuffle').disabled = S.over;
@@ -409,7 +440,6 @@
     S.hist.push(word);
     S.timeline.push('take');
     Kit.haptic(14);
-    Kit.toast(word.length + ' letters');
     advance();
   }
 
@@ -476,16 +506,19 @@
   }
 
   /* ---- result --------------------------------------------------------- */
+  // "an 11", "an 8", but "a 10" and "a 9"
+  function an(n) { return (n === 8 || n === 11 || n === 18) ? 'an ' + n : 'a ' + n; }
+
   function showResult() {
     var reached = S.hist[S.hist.length - 1].length;
     var gap = PUZ.max - reached;
     var maxed = gap <= 0;
     var verdict, sub;
     if (maxed)                     { verdict = 'Maxed it.';   sub = 'Nobody grew a longer word today. Nobody could.'; }
-    else if (gap === 1)            { verdict = 'One short.';  sub = 'There was a ' + PUZ.max + ' in there. One letter more.'; }
-    else if (gap === 2)            { verdict = 'So close.';   sub = 'There was a ' + PUZ.max + ' in there.'; }
-    else if (S.ending === 'stuck') { verdict = 'Stuck at ' + reached + '.'; sub = 'The queue had a ' + PUZ.max + ' in it.'; }
-    else                           { verdict = reached + ' letters.'; sub = 'The queue had a ' + PUZ.max + ' in it.'; }
+    else if (gap === 1)            { verdict = 'One short.';  sub = 'There was ' + an(PUZ.max) + ' in there. One letter more.'; }
+    else if (gap === 2)            { verdict = 'So close.';   sub = 'There was ' + an(PUZ.max) + ' in there.'; }
+    else if (S.ending === 'stuck') { verdict = 'Stuck at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
+    else                           { verdict = reached + ' letters.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
 
     var steps = S.hist.map(function (w, i) {
       return '<div class="step"><span class="rail" style="padding-left:' + (i * 9) + 'px">' +
@@ -562,8 +595,8 @@
   S = load();
   $('pno').textContent = '#' + DAY;
   $('objective').textContent =
-    'Start from ' + SEED + '. Every turn the next queue letter joins your rack and you must ' +
-    'spend the whole rack on one word. Two skips. Longest word wins.';
+    'One queue letter joins your rack each turn. Spend the whole rack on one word. ' +
+    'Two skips. Longest word wins.';
   $('shuffle').addEventListener('click', shuffleRack);
   $('skip').addEventListener('click', doSkip);
   $('enter').addEventListener('click', submit);

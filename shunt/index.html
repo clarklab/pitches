@@ -106,11 +106,11 @@ body{ overscroll-behavior:none; }
   border-radius:8px; font-family:var(--font-tile); font-weight:800;
   text-transform:uppercase; color:var(--ink);
   will-change:transform; pointer-events:none;
-  box-shadow:0 1px 0 var(--line-2);
+  box-shadow:var(--shadow-1);
 }
 .tl.on{ border-color:var(--accent); color:var(--accent); background:var(--white); }
 .tl.ghost{ opacity:1; }
-.tl.cursor{ box-shadow:0 1px 0 var(--line-2), 0 0 0 3px var(--accent); z-index:3; }
+.tl.cursor{ box-shadow:0 0 0 3px var(--accent); z-index:3; }
 .tl.snapping{ transition:transform .13s cubic-bezier(.25,.9,.3,1); }
 
 .boardfocus:focus-visible{ outline:none; }
@@ -268,8 +268,14 @@ const seenStore = Kit.store('shunt:seen');
 let S = null; // session state
 
 function freshState(){
-  return { day:DAY, grid:puz.start.split(''), moves:0, trail:[litMask(puz.start.split(''))],
-           best: nearMiss(puz.start.split(''),3), done:null };
+  return { day:DAY, grid:puz.start.split(''), moves:0,
+           trail:[litMask(puz.start.split(''))], hist:[puz.start], done:null };
+}
+/* closest the player ever got, measured once at the end (BFS is too slow per move) */
+function closestApproach(){
+  let best=5;
+  for(const b of S.hist){ const d=nearMiss(b.split(''),4); if(d<best) best=d; }
+  return best;
 }
 (function load(){
   const s = store.get();
@@ -398,8 +404,7 @@ function doSlide(isRow, idx, k, animate){
     drag=null;
     S.grid = after; S.moves += cost;
     const m = litMask(after);
-    S.trail.push(m);
-    const nm = nearMiss(after,3); if(nm < S.best) S.best = nm;
+    S.trail.push(m); S.hist.push(key(after));
     render();
     busy=false;
     Kit.haptic(8);
@@ -416,8 +421,8 @@ function tilesInLane(isRow, idx){
 
 function checkEnd(){
   if(S.done) return;
-  if(solved(S.grid)){ S.done={win:true, moves:S.moves}; save(); setTimeout(()=>endScreen(),420); return; }
-  if(S.moves>=CAP){ S.done={win:false, moves:S.moves}; save(); setTimeout(()=>endScreen(),420); }
+  if(solved(S.grid)){ S.done={win:true, moves:S.moves, best:0}; save(); setTimeout(()=>endScreen(),420); return; }
+  if(S.moves>=CAP){ S.done={win:false, moves:S.moves, best:closestApproach()}; save(); setTimeout(()=>endScreen(),420); }
 }
 
 /* ======================================================================
@@ -535,11 +540,13 @@ const SQ=['⬜','🟨','🟧','🟥','🟩'];
 function trailArt(){
   return S.trail.slice(1).map(m=>SQ[popcount(m)]).join('');
 }
-function whichSolution(){
-  const k=key(S.grid);
-  const idx = puz.sols.findIndex(s=>s.b===k);
-  return idx;
-}
+function whichSolution(){ return puz.sols.findIndex(s=>s.b===key(S.grid)); }
+const PCTS = puz.sols.map(s=>s.pct);
+const RAREST = PCTS.filter(p=>p===Math.min(...PCTS)).length===1 ? Math.min(...PCTS) : -1;
+const COMMONEST = PCTS.filter(p=>p===Math.max(...PCTS)).length===1 ? Math.max(...PCTS) : -1;
+const isRarest = i => i>=0 && puz.sols.length>1 && puz.sols[i].pct===RAREST;
+function awayText(n){ return n>4 ? '5+ moves' : (n===1 ? '1 move' : n+' moves'); }
+
 function shareText(){
   const win = S.done && S.done.win;
   const head = `SHUNT #${DAY} · ${win? S.moves+' move'+(S.moves===1?'':'s') : 'out of moves'} (par ${puz.par})`;
@@ -548,15 +555,16 @@ function shareText(){
   let line3;
   if(win){
     const i=whichSolution();
-    if(i<0) line3 = `Found an unmapped solution · off the ${puz.sols.length}-route map`;
+    if(i<0) line3 = `Found a way home the ${puz.sols.length}-solution map doesn't have`;
+    else if(puz.sols.length===1) line3 = `The only solution · found it in ${S.moves}`;
     else {
       const s=puz.sols[i];
-      const tag = s.pct<=puz.rarePct ? ' · the rare one' : (i===0?' · the common one':'');
+      const tag = isRarest(i) ? ' · the rare one'
+                : (s.pct===COMMONEST ? ' · the popular one' : '');
       line3 = `Solution ${i+1} of ${puz.sols.length} · ${s.pct}% of par routes${tag}`;
     }
   } else {
-    const away = S.best>3 ? '4+ moves' : (S.best===1?'1 move':S.best+' moves');
-    line3 = `Closest approach: ${away} from a solution · ${puz.sols.length} existed`;
+    line3 = `Closest approach ${awayText(S.done.best)} · ${puz.sols.length} solution${puz.sols.length===1?'':'s'} were there`;
   }
   return `${head}\n${art}\n${line3}\nsfun.games/shunt`;
 }
@@ -570,9 +578,9 @@ function endScreen(){
     body += `<div class="wordlist">${rows.map(w=>`<span>${w}</span>`).join('')}</div>`;
   }
   const stats = `<div class="statrow">
-    <div class="stat"><span class="n">${win?S.moves:'—'}</span><span class="l">Moves</span></div>
+    <div class="stat"><span class="n">${S.moves}</span><span class="l">Moves</span></div>
     <div class="stat"><span class="n">${puz.par}</span><span class="l">Par</span></div>
-    <div class="stat"><span class="n">${puz.sols.length}</span><span class="l">Solutions</span></div>
+    <div class="stat"><span class="n">${puz.sols.length}</span><span class="l">Solution${puz.sols.length===1?'':'s'}</span></div>
   </div>`;
 
   let solTable='';
@@ -582,19 +590,24 @@ function endScreen(){
         <span class="nm">${n===i?'YOURS':'#'+(n+1)}</span>
         <span class="bar-"><i style="width:${Math.max(4,s.pct)}%"></i></span>
         <span class="pct">${s.pct}%</span></div>`).join('');
-    solTable += `<div class="hint" style="margin-top:8px;text-align:left">Share of all shortest routes that end on each solution. ${
-      i>=0 && puz.sols[i].pct<=puz.rarePct ? '<b style="color:var(--accent)">You found the rarest one.</b>' : 'Letters hidden — go find the others.'}</div>`;
+    solTable += `<div class="hint" style="margin-top:8px;text-align:left">Share of every shortest route that ends on each solution. ${
+      isRarest(i) ? '<b style="color:var(--accent)">You found the rarest one.</b>'
+      : (win ? 'Letters hidden — the others are still out there.' : 'None of them were letters you ever saw at once.')}</div>`;
   }
 
   let verdict, sub;
   if(win){
     const d=S.moves-puz.par;
     verdict = d<=0?'Par.':(d===1?'Bogey.':(d<=3?'Solved.':'Scrambled home.'));
-    sub = d<=0? `${S.moves} moves — you could not have done it in fewer.`
+    sub = d<=0? `${S.moves} moves — nobody could have done it in fewer.`
               : `${S.moves} moves · ${d} over par.`;
+    if(i<0) sub += ' And you found a way home that par never touches.';
   } else {
     verdict='Out of moves.';
-    sub = S.best<=1 ? 'You were one move away.' : (S.best<=3 ? `You got within ${S.best} moves of a solution.` : 'The board never lined up.');
+    const b=S.done.best;
+    sub = b<=1 ? 'At your closest you were <b>one slide</b> from finishing.'
+        : (b<=4 ? `Your closest approach was <b>${b} slides</b> from a solution.`
+                : 'The board never came close to lining up.');
   }
 
   Kit.sheet(`

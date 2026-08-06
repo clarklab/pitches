@@ -69,15 +69,19 @@
 
 /* ---------- tray ---------- */
 .tray{ display:flex; flex-direction:column; gap:9px; padding-top:10px; }
+@media (max-width:619px){ .tray{ margin-top:auto; } }
 .slot{
   height:50px; border:2px dashed var(--line-2); border-radius:12px;
-  display:grid; place-items:center; background:transparent;
+  display:flex; align-items:center; justify-content:center; background:transparent;
   font-family:var(--font-mono); font-size:20px; letter-spacing:.16em; font-weight:700;
   transition:border-color .15s, background .15s;
 }
 .slot.filled{ border-style:solid; border-color:var(--accent); background:var(--white); }
-.slot .ph{ font-size:11.5px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:600; }
-.slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; }
+.slot .ph{ font-size:11.5px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:600; text-align:center; }
+.slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; margin-left:-.08em; }
+.key.wide{ font-size:10.5px; letter-spacing:.02em; }
+.deskhint{ display:none; }
+@media (min-width:620px){ .deskhint{ display:block; text-align:center; font-size:12px; color:var(--ink-3); } }
 @keyframes blink{ 50%{opacity:0} }
 .trayrow{ display:flex; align-items:center; gap:10px; }
 .pips{ display:flex; gap:5px; align-items:center; }
@@ -389,6 +393,7 @@
     callBtn.addEventListener('click', confirmCall);
     row.appendChild(callBtn);
     tray.appendChild(row);
+    tray.appendChild(el('div', 'deskhint', 'Type any letters, then press Enter to probe.'));
     stage.appendChild(tray);
 
     paintSlot();
@@ -471,12 +476,38 @@
     );
   }
 
+  function caseFileHTML() {
+    var yes = [], no = [];
+    P.pass.forEach(function (w) { yes.push(w); });
+    P.fail.forEach(function (w) { no.push(w); });
+    S.probes.slice().reverse().forEach(function (p) {
+      if (p.ok === null) return;
+      (p.ok ? yes : no).push(p.w + ' *');
+    });
+    function colHTML(list, cls, head) {
+      return '<div class="col ' + cls + '"><h3>' + head + '</h3>' +
+        list.map(function (w) { return '<div class="w">' + Kit.esc(w) + '</div>'; }).join('') + '</div>';
+    }
+    return '<h2>Case file</h2><p class="sub">Everything you know. * = your probe.</p>' +
+      '<div class="board">' + colHTML(yes, '', '✅ Follows the rule') + colHTML(no, 'no', '❌ Breaks it') + '</div>' +
+      '<button class="btn primary wide" data-close type="button" style="margin-top:16px">Back to the call</button>';
+  }
+
   function renderCall() {
+    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · the call';
+    document.getElementById('objective').textContent =
+      'Tap the exactly 3 that follow the rule. One shot, no second try.';
+
     var head = el('div', 'callhead');
     head.appendChild(el('p', 't', 'Name the three.'));
     var sub = el('p', 's');
     sub.innerHTML = 'Eight new words. Exactly <b>three</b> follow the hidden rule.';
     head.appendChild(sub);
+    var cf = el('button', 'btn ghost sm', 'Check the case file');
+    cf.type = 'button';
+    cf.style.marginTop = '8px';
+    cf.addEventListener('click', function () { Kit.sheet(caseFileHTML()); });
+    head.appendChild(cf);
     stage.appendChild(head);
 
     var list = el('div', 'cands');
@@ -560,7 +591,12 @@
 
   /* ---- result + reveal ---- */
   function tierFor(used, won) {
-    if (!won) return used === 6 ? 'Went the distance' : 'Called it early';
+    if (!won) {
+      if (used === 0) return 'Pure hubris';
+      if (used <= 2) return 'Called it far too soon';
+      if (used <= 5) return 'Not enough evidence';
+      return 'All six probes. Still wrong.';
+    }
     if (used === 0) return 'Legendary';
     if (used === 1) return 'Surgical';
     if (used <= 3) return 'Clean';
@@ -594,8 +630,10 @@
   }
 
   function renderResult() {
-    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · solved';
-    document.getElementById('objective').textContent = P.rule;
+    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · closed';
+    document.getElementById('objective').textContent = S.won
+      ? 'You called it and you were right. Here is what you were looking at all along.'
+      : 'One call, and it got away. Here is what you were looking at all along.';
 
     var used = S.calledAt || 0;
     var wrap = el('div', 'res-wrap');
@@ -614,9 +652,12 @@
     tw.appendChild(el('span', 'tier' + (S.won ? '' : ' lose'), tierFor(used, S.won)));
     wrap.appendChild(tw);
 
-    // the picks, resolved — the sting or the victory lap
+    // the call, resolved — the sting or the victory lap.
+    // Only what you touched and what you should have: the other five
+    // near-misses are laid out in full inside the reveal below.
+    wrap.appendChild(el('div', 'nb-head', 'Your call'));
     var list = el('div', 'cands');
-    CANDS.forEach(function (w) {
+    CANDS.filter(function (w) { return S.picks.indexOf(w) >= 0 || P.pred(w); }).forEach(function (w) {
       var b = el('div', 'cand');
       b.dataset.w = w;
       b.appendChild(el('span', 'box', '✓'));

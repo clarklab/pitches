@@ -6,7 +6,11 @@
 <title>CHAINS — compound-word golf</title>
 <link rel="stylesheet" href="../shared/kit.css">
 <style>
-  :root { --accent:#1f7a63; --accent-soft:#d9ece5; --accent-ink:#fff; }
+  :root { --accent:#1f7a63; --accent-soft:#d9ece5; --accent-ink:#fff; --accent-hi:#1f7a63; }
+  @media (prefers-color-scheme: dark) { :root { --accent-hi:#6cc4a8; } }
+  :root[data-theme="dark"]  { --accent-hi:#6cc4a8; }
+  :root[data-theme="light"] { --accent-hi:#1f7a63; }
+  .prompt .k { color: var(--accent-hi); }
 
   /* ---------- layout overrides ---------- */
   .stage { justify-content: flex-start; gap: 10px; min-height: 0; }
@@ -99,30 +103,26 @@
 
   /* the word being typed */
   .node.entry {
-    border-style:dashed; border-color:var(--accent); background:var(--accent-soft);
+    border-style:dashed; border-color:var(--accent-hi); background:var(--accent-soft);
     box-shadow:none; color:var(--ink);
   }
   .node.entry.empty { color: var(--ink-3); font-size:13px; font-family:var(--font-ui);
     font-weight:600; letter-spacing:.09em; }
-  .caret { display:inline-block; width:2px; height:19px; background:var(--accent);
+  .caret { display:inline-block; width:2px; height:19px; background:var(--accent-hi);
     margin-left:3px; vertical-align:-3px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity:0 } }
 
   /* ---------- the pin ---------- */
   .pin {
     display:flex; align-items:center; gap:12px;
-    border:2px solid var(--accent); background:var(--accent-soft);
+    border:2px solid var(--accent-hi); background:var(--accent-soft);
     border-radius: var(--r); padding:9px 14px; position:relative;
   }
   .pin .flagpole { font-size:22px; line-height:1; }
   .pin .word {
     flex:1; font-family:var(--font-tile); font-weight:800; font-size:21px;
-    letter-spacing:.07em; text-transform:uppercase; color:var(--accent);
+    letter-spacing:.07em; text-transform:uppercase; color:var(--accent-hi);
   }
-  :root[data-theme="dark"] .pin .word, .pin .word { }
-  @media (prefers-color-scheme: dark) { .pin .word { color: #6cc4a8; } }
-  :root[data-theme="dark"] .pin .word { color:#6cc4a8; }
-  :root[data-theme="light"] .pin .word { color: var(--accent); }
   .pin .lbl { font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }
   .pin.holed { animation: holed .5s ease-out; }
   @keyframes holed { 0%{transform:none} 40%{transform:scale(1.05)} 100%{transform:none} }
@@ -149,7 +149,7 @@
   .badge { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.12em;
     text-transform:uppercase; padding:3px 9px; border-radius:var(--r-pill); }
   .badge.under { background:var(--good-soft); color:var(--good); }
-  .badge.even  { background:var(--accent-soft); color:var(--accent); }
+  .badge.even  { background:var(--accent-soft); color:var(--accent-hi); }
   .badge.over  { background:var(--warn-soft); color:var(--warn); }
   .badge.blown { background:var(--bad-soft); color:var(--bad); }
 
@@ -320,13 +320,16 @@
 
   function renderScore() {
     const h = hole(), left = maxStrokes() - S.strokes;
+    const need = S.done ? 0 : distTo(head(), h.target.toLowerCase());
     el('strokeN').textContent = S.strokes;
-    el('strokeL').textContent = left === 1
-      ? `strokes · par ${h.par} · last swing`
-      : `strokes · par ${h.par}`;
+    let tail = '';
+    if (!S.done && left === 1) tail = ' · last swing';
+    else if (!S.done && need === left) tail = ' · needs a perfect line';
+    else if (!S.done && left === 2) tail = ' · two swings left';
+    el('strokeL').textContent = `strokes · par ${h.par}${tail}`;
     const bar = el('scorebar');
-    bar.classList.toggle('alarm', left <= 1);
-    bar.classList.toggle('warn', left === 2);
+    bar.classList.toggle('alarm', !S.done && (left <= 1 || need === left));
+    bar.classList.toggle('warn', !S.done && left === 2 && need !== left);
   }
 
   function renderChain(fresh) {
@@ -360,14 +363,22 @@
     courseEl.scrollTop = courseEl.scrollHeight;
   }
 
+  /* typing must not rebuild the chain — that would cut the compound flash short */
+  function renderEntry() {
+    const e = el('entry');
+    if (!e) return;
+    e.classList.toggle('empty', !typed);
+    e.innerHTML = typed ? Kit.esc(typed) + '<span class="caret"></span>' : 'type your word';
+  }
+
   function render(fresh) { renderHeader(); renderScore(); renderChain(fresh); }
 
   /* ---------- play ----------------------------------------------------- */
   function onKey(k) {
     if (busy || S.done) return;
-    if (k === 'BACK') { typed = typed.slice(0, -1); renderChain(false); return; }
+    if (k === 'BACK') { typed = typed.slice(0, -1); renderEntry(); return; }
     if (k === 'ENTER') { submit(); return; }
-    if (/^[A-Z]$/.test(k) && typed.length < 12) { typed += k.toLowerCase(); renderChain(false); }
+    if (/^[A-Z]$/.test(k) && typed.length < 12) { typed += k.toLowerCase(); renderEntry(); }
   }
 
   function bounce(msg) {
@@ -398,24 +409,34 @@
     save.set(S);
     Kit.haptic(10);
     render(true);
+    if (!settle()) busy = false;
+  }
 
-    const holed = (w === hole().target.toLowerCase());
-    if (holed) {
+  /* After every stroke: holed out, out of swings, or mathematically dead.
+     A player is never left flailing at a position the pin can't be reached
+     from — the hole ends there, and it ends loudly. */
+  function settle() {
+    const h = hole(), t = h.target.toLowerCase();
+    if (head() === t) {
       Kit.flash(pinEl, 'holed');
       setTimeout(() => finishHole(false), 620);
-    } else if (S.strokes >= maxStrokes()) {
-      setTimeout(() => finishHole(true), 500);
-    } else {
-      busy = false;
+      return true;
     }
+    const left = maxStrokes() - S.strokes;
+    const need = distTo(head(), t);
+    if (left <= 0)        { setTimeout(() => finishHole(true, 'swings'), 520); return true; }
+    if (need === Infinity){ setTimeout(() => finishHole(true, 'nowhere'), 520); return true; }
+    if (need > left)      { setTimeout(() => finishHole(true, 'short', need), 520); return true; }
+    return false;
   }
 
   /* ---------- caddie --------------------------------------------------- */
   el('caddieBtn').addEventListener('click', () => {
     if (S.caddie || S.done || busy) return;
     const h = hole();
-    if (S.strokes + 1 >= maxStrokes()) {
-      Kit.toast('No time for a caddie — one swing left', 2200);
+    const t = h.target.toLowerCase();
+    if (distTo(head(), t) >= maxStrokes() - S.strokes) {
+      Kit.toast('No time for a caddie — you need every swing', 2400);
       return;
     }
     Kit.sheet(`
@@ -433,39 +454,54 @@
         close();
         S.caddie = true;
         S.strokes++;                       // the penalty stroke
-        const next = stepToward(head(), h.target.toLowerCase());
+        const next = stepToward(head(), t);
         save.set(S);
-        render(false);
-        if (!next) { Kit.toast('Even the caddie is stumped', 2400); return; }
+        if (!next) { render(false); Kit.toast('Even the caddie is stumped', 2400); settle(); return; }
         Kit.toast(`Caddie says: ${next.toUpperCase()}`, 3200);
         typed = next;
-        renderChain(false);
-        if (S.strokes >= maxStrokes()) setTimeout(() => finishHole(true), 400);
+        render(false);
+        settle();
       });
     }});
   });
 
   /* ---------- hole / round end ----------------------------------------- */
-  function finishHole(pickedUp) {
+  function finishHole(pickedUp, why, need) {
     const h = hole();
     const v = verdict(S.strokes, h.par, pickedUp);
     const score = pickedUp ? h.par + 4 : S.strokes;
-    S.scores.push({ strokes: score, par: h.par, pickedUp, caddie: S.caddieAt >= 0,
-                    chain: S.chain.slice() });
+    S.scores.push({ strokes: score, swings: S.strokes, par: h.par, pickedUp,
+                    caddie: S.caddieAt >= 0, chain: S.chain.slice() });
     const last = S.hole >= HOLES.length - 1;
     save.set(S);
-    holeSheet(v, pickedUp, last);
+    holeSheet(v, pickedUp, last, why, need);
   }
 
-  function holeSheet(v, pickedUp, last) {
+  function holeSheet(v, pickedUp, last, why, need) {
     const h = hole();
     const line = S.chain.map(w => w.toUpperCase()).join(' · ');
-    const body = pickedUp
-      ? `<p class="sub">You ran out of swings ${Kit.esc(h.target)} short of the pin.
-         Take the ${h.par + 4}. It happens to everyone.</p>`
-      : `<p class="sub">${S.strokes} stroke${S.strokes === 1 ? '' : 's'} on a par ${h.par}.</p>`;
+    let title = v.name, body;
+    if (pickedUp) {
+      if (why === 'nowhere') {
+        title = 'Stranded';
+        body = `<p class="sub">There is no line from <b>${Kit.esc(head().toUpperCase())}</b> back to
+                <b>${Kit.esc(h.target)}</b> — not in one more link, not in a hundred.
+                Pick up: ${h.par + 4}.</p>`;
+      } else if (why === 'short') {
+        title = 'Unplayable';
+        body = `<p class="sub">${need} more links to the pin and only ${maxStrokes() - S.strokes}
+                swing${maxStrokes() - S.strokes === 1 ? '' : 's'} left. You can't get there from
+                <b>${Kit.esc(head().toUpperCase())}</b>. Pick up: ${h.par + 4}.</p>`;
+      } else {
+        title = 'Picked up';
+        body = `<p class="sub">Out of swings, still short of <b>${Kit.esc(h.target)}</b>.
+                Take the ${h.par + 4} and walk to the next tee.</p>`;
+      }
+    } else {
+      body = `<p class="sub">${S.strokes} stroke${S.strokes === 1 ? '' : 's'} on a par ${h.par}.</p>`;
+    }
     Kit.sheet(`
-      <h2>${v.name}</h2>
+      <h2>${title}</h2>
       ${body}
       <div style="text-align:center"><span class="badge ${v.tone}">${pickedUp ? 'no return' : toPar(v.diff)}</span></div>
       <div class="lineout">${pickedUp ? 'your line ran out at' : 'your line'}<br><b>${Kit.esc(line)}</b>${pickedUp ? ' …' : ''}</div>
@@ -523,7 +559,7 @@
     const d     = total - par;
     const lines = S.scores.map((sc) => {
       const v = verdict(sc.pickedUp ? sc.par + 4 : sc.strokes, sc.par, sc.pickedUp);
-      const n = sc.pickedUp ? sc.par + 3 : sc.strokes;
+      const n = Math.max(1, sc.swings != null ? sc.swings : sc.strokes);
       return `⛳ ${squareFor(v).repeat(n)} ${sc.pickedUp ? 'picked up' : v.short}${sc.caddie ? ' 🧤' : ''}`;
     });
     return [`CHAINS #${DAY} — ${total} strokes (par ${par}) · ${toPar(d)}`]

@@ -427,7 +427,70 @@
     worm: 'hole',
 
     /* --- Y --- */
-    yard: 'stick sale work arm'
+    yard: 'stick sale work arm',
+
+    /* ------------------------------------------------------------------
+       RECALL PASS.  Playtesting stranded a player on ROOM · SERVICE —
+       a link they'd played correctly — because SERVICE had no onward
+       links of its own, even though SERVICE STATION is obvious.  Every
+       word below was a dead end in the first pass purely because I
+       forgot to give it a row.  Being stranded has to be the player's
+       fault, never the dictionary's.
+       ------------------------------------------------------------------ */
+    alarm: 'clock bell call',
+    bank: 'note roll account holiday card robber',
+    bomb: 'shell site squad proof scare',
+    bone: 'dry marrow yard head china',
+    bottle: 'neck cap opener top',
+    brake: 'pad light fluid disc',
+    center: 'piece field point stage line court',
+    centre: 'piece field point stage line court',
+    check: 'list point book mate out in box up',
+    clip: 'board art on',
+    clock: 'work wise tower radio face',
+    cold: 'front snap war sore call shoulder cut',
+    collar: 'bone',
+    cook: 'book out house ware',
+    count: 'down',
+    cover: 'up girl story letter charge',
+    craft: 'beer work shop',
+    dance: 'floor hall party move class',
+    dish: 'washer cloth towel rack water',
+    face: 'lift mask paint time value plant off',
+    fall: 'out back guy off',
+    feed: 'back bag',
+    forest: 'fire floor',
+    gear: 'box stick shift',
+    hill: 'side top climb country',
+    hose: 'pipe',
+    lady: 'bug bird luck finger',
+    leg: 'room work',
+    metal: 'work detector head',
+    over: 'head time night board coat pass lap load flow drive dose look turn view kill run sight',
+    pain: 'killer relief',
+    party: 'animal trick line hat favor pooper',
+    pen: 'pal knife name',
+    pie: 'chart crust',
+    pin: 'ball point wheel head stripe cushion',
+    pit: 'fall stop bull crew lane',
+    puppet: 'show master theater',
+    rest: 'room stop home area',
+    ring: 'master side finger tone leader road',
+    seat: 'belt back cover',
+    service: 'station road charge desk man',
+    share: 'holder price',
+    shift: 'work key',
+    sick: 'bay day leave note',
+    site: 'map plan',
+    spot: 'light check on',
+    stage: 'coach door fright hand name',
+    stream: 'line',
+    street: 'light car lamp food corner wise party sign',
+    style: 'guide sheet',
+    talk: 'show back time',
+    tower: 'block crane',
+    will: 'power',
+    window: 'sill pane box seat frame shopping'
   };
 
   /* expand to {first: Set(second)} */

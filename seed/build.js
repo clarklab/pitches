@@ -48,7 +48,8 @@ const PUZZLES = [
   { seed: 'NET', queue: 'RDYEPSERS' },
   { seed: 'CAR', queue: 'MEPLIPTSE' },
   { seed: 'RED', queue: 'AGDNEETGE' },
-  { seed: 'ONE', queue: 'DBRDESCNT' },
+  { seed: 'DIG', queue: 'JRENHESSP' },
+  { seed: 'ONE', queue: 'PSDRXCENU' },
 ];
 
 /* The par chain is shown to the player on the death screen ("show me the 11"),

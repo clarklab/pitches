@@ -21,7 +21,13 @@
     --key:#b07f12; --key-soft:#fbeec8; --key-ink:#fff;
   }
 
-  .stage { justify-content: flex-start; gap: 12px; }
+  .stage { justify-content: flex-start; gap: 10px; padding: 4px 0 0; }
+  /* the live region is absolutely positioned; pin it so it cannot add a
+     stray pixel of page height and defeat the no-scroll layout */
+  #live { position: fixed; top: 0; left: 0; }
+  /* toasts sit low, in the gap above the controls — never over the passage
+     or the theme strip, which are the two things you are reading */
+  #toast-layer { top: auto; bottom: calc(78px + var(--safe-b)); }
   .bar .iconbtn { text-decoration: none; }
 
   /* ---------- progress chips ---------- */
@@ -45,10 +51,11 @@
     height: 30px; display: flex; align-items: center; justify-content: center;
     font-family: var(--font-mono); font-size: 15px; letter-spacing: .16em;
     color: var(--accent); font-weight: 700; text-transform: uppercase;
-    white-space: nowrap; overflow: hidden;
+    white-space: nowrap; overflow: hidden; text-align: center;
   }
   .readout.idle { font-family: var(--font-ui); font-size: 12.5px; letter-spacing: 0;
-    color: var(--ink-3); font-weight: 400; text-transform: none; }
+    color: var(--ink-3); font-weight: 400; text-transform: none;
+    white-space: normal; line-height: 1.25; }
 
   /* ---------- the passage ---------- */
   .passage {
@@ -68,15 +75,17 @@
   .wd { display: inline-block; }
   .ch { display: inline-block; }
   .ch.sp { display: inline; white-space: pre; }
-  .ltr { padding: 3px 1.1px; border-radius: 0; position: relative; transition: background .18s, color .18s; }
+  /* NB: nothing below may change the box model of a .ch — highlighting must
+     never reflow the passage, or the letter you are aiming at moves. */
+  .ltr { padding: 3px 1.2px; border-radius: 0; position: relative; transition: background .18s, color .18s; }
   .pun, .sp { padding: 3px 0; }
 
   .ch.sel  { background: var(--accent); color: var(--accent-ink); }
   .ch.fnd  { background: var(--accent-soft); color: var(--accent); }
   .ch.fnd.k{ background: var(--key-soft); color: var(--key); }
   .ch.mis  { background: var(--bad-soft); color: var(--bad); }
-  .ch.cap  { border-top-left-radius: 6px; border-bottom-left-radius: 6px; padding-left: 3px; }
-  .ch.cbp  { border-top-right-radius: 6px; border-bottom-right-radius: 6px; padding-right: 3px; }
+  .ch.cap  { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+  .ch.cbp  { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
   .ltr.anc { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 5px; }
   .ltr.cur { box-shadow: inset 0 0 0 2px var(--ink-2); border-radius: 5px; }
   .ltr.tip { animation: beacon 1.3s ease-in-out infinite; border-radius: 5px; }
@@ -88,8 +97,23 @@
   @keyframes zip { 40% { transform: translateY(-5px) scale(1.16); } }
 
   /* ---------- controls ---------- */
-  .controls { display: flex; gap: 8px; margin-top: auto; padding-top: 14px; }
+  .controls { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
   .controls .btn { flex: 1; min-height: 46px; }
+
+  /* short phones (SE, older Androids): tighten the chrome so the passage
+     keeps enough room to stay legible without the page having to scroll */
+  @media (max-height: 730px) {
+    .bar { padding: 8px 0 8px; margin-bottom: 10px; }
+    .bar h1 { font-size: 19px; }
+    .prompt { padding: 9px 12px; }
+    .prompt .v { font-size: 13px; }
+    .chips { gap: 5px; }
+    .chip { font-size: 10.5px; padding: 4px 7px; min-width: 28px; }
+    .readout { height: 24px; }
+    .stage { gap: 8px; }
+    .controls { padding-top: 8px; }
+    .controls .btn { min-height: 44px; padding: 10px 14px; }
+  }
 
   /* ---------- reveal list ---------- */
   .found-list { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
@@ -143,8 +167,7 @@
 
   <div class="prompt">
     <span class="k">Theme <span class="puzz-no" id="pno"></span></span>
-    <span class="v"><b id="clue"></b> — six words are hiding in the passage. One of
-      them names the theme.</span>
+    <span class="v"><b id="clue"></b> — six words hide in the passage. One names the theme.</span>
   </div>
 
   <div class="stage">
@@ -284,9 +307,7 @@
 
   function paintFound(t, animate) {
     paintRange(t.s, t.e, 'fnd', t.key ? 'k' : null);
-    var first = letters[t.s].cell;
-    var el0 = cells[letters[t.s].cell].el;
-    if (el0.classList.contains('tip')) el0.classList.remove('tip');
+    cells[letters[t.s].cell].el.classList.remove('tip');
     if (animate) {
       for (var i = t.s; i <= t.e; i++) {
         (function (el, n) {
@@ -294,7 +315,6 @@
         })(cells[letters[i].cell].el, i - t.s);
       }
     }
-    void first;
   }
 
   function paintMissed(t) { paintRange(t.s, t.e, 'mis'); }
@@ -421,11 +441,9 @@
     else if (sameEnd) msg = 'Right last letter — wrong length.';
     Kit.haptic(14);
     Kit.flash(passEl, 'shake');
-    var sel = passEl.querySelectorAll('.sel');
     setTimeout(function () { clearSel(); setReadout(-1); }, 240);
     Kit.toast(msg);
     say(msg);
-    void sel;
   }
 
   function land(t) {
@@ -638,6 +656,7 @@
     resBtn.hidden = false;
     setReadout(-1);
     passEl.style.cursor = 'default';
+    passEl.style.touchAction = 'auto';   // the page grows; let it scroll again
     setTimeout(resultSheet, gaveUp ? 260 : 520);
   }
 
@@ -703,6 +722,34 @@
   document.getElementById('helpBtn').addEventListener('click', openHelp);
 
   /* ---------------------------------------------------------------
+     Autofit — the passage owns `touch-action: none` so a drag never
+     scrolls the page out from under you. That is only safe if the
+     page never needs to scroll, so shrink the type until it fits.
+     --------------------------------------------------------------- */
+  var BASE_FS = null;
+  function autofit() {
+    if (st.over) return;
+    if (BASE_FS === null) { passEl.style.fontSize = ''; BASE_FS = parseFloat(getComputedStyle(passEl).fontSize); }
+    var size = BASE_FS, guard = 0;
+    passEl.style.fontSize = '';
+    var doc = document.documentElement;
+    while (doc.scrollHeight > doc.clientHeight + 1 && size > 14 && guard++ < 40) {
+      size -= 0.5;
+      passEl.style.fontSize = size + 'px';
+    }
+    // If it still will not fit (very short screen), stop trapping vertical
+    // gestures — the page must stay scrollable. Tap-tap is unaffected.
+    passEl.style.touchAction = doc.scrollHeight > doc.clientHeight + 1 ? 'pan-y' : 'none';
+    rects = null;
+  }
+  var fitT;
+  window.addEventListener('resize', function () {
+    BASE_FS = null;
+    clearTimeout(fitT);
+    fitT = setTimeout(autofit, 120);
+  });
+
+  /* ---------------------------------------------------------------
      Boot
      --------------------------------------------------------------- */
   buildChips();
@@ -719,12 +766,15 @@
     renderAfterwards();
     quitBtn.hidden = true; hintBtn.hidden = true; resBtn.hidden = false;
     passEl.style.cursor = 'default';
+    passEl.style.touchAction = 'auto';
+  } else {
+    autofit();
   }
 
   var seen = Kit.store('stowaways:seen');
   if (!seen.get()) { seen.set(1); setTimeout(openHelp, 380); }
 
-  window.addEventListener('load', function () { rects = null; });
+  window.addEventListener('load', function () { rects = null; if (!st.over) autofit(); });
 })();
 </script>
 </body>

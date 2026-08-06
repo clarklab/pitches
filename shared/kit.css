@@ -4,6 +4,8 @@
    Each game sets --accent / --accent-soft on :root to reskin.
    ============================================================ */
 
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400..700&family=Google+Sans+Flex:wght@300..800&display=swap');
+
 :root {
   --paper:      #faf7f2;
   --paper-2:    #f1ece3;
@@ -30,14 +32,15 @@
   --r-lg: 22px;
   --r-pill: 999px;
 
-  --shadow-1: 0 1px 2px rgba(23,22,26,.06), 0 2px 8px rgba(23,22,26,.06);
-  --shadow-2: 0 2px 4px rgba(23,22,26,.08), 0 8px 24px rgba(23,22,26,.10);
-  --shadow-press: inset 0 2px 6px rgba(23,22,26,.14);
+  /* Soft, even elevation on every side. No single-edge "chin" shadows —
+     they read as a 3D lip and cheapen the whole surface. */
+  --shadow-1: 0 1px 3px rgba(23,22,26,.07), 0 1px 2px rgba(23,22,26,.04);
+  --shadow-2: 0 4px 16px rgba(23,22,26,.10), 0 2px 6px rgba(23,22,26,.06);
 
-  --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-tile: ui-rounded, "SF Pro Rounded", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-display: "Google Sans Flex", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-ui: "Google Sans Flex", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-tile: "Google Sans Flex", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --maxw: 560px;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -59,18 +62,16 @@
     --good-soft: #17311f;
     --warn-soft: #3a2f12;
     --bad-soft:  #3a1f19;
-    --shadow-1: 0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
-    --shadow-2: 0 2px 4px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
-    --shadow-press: inset 0 2px 6px rgba(0,0,0,.45);
+    --shadow-1: 0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3);
+    --shadow-2: 0 4px 16px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
   }
 }
 :root[data-theme="dark"] {
   --paper:   #16151a; --paper-2: #1f1e25; --ink: #f4f1ea; --ink-2: #a7a3b0;
   --ink-3:   #77737f; --line: #35323d; --line-2: #4a4653; --white: #24232b;
   --accent-soft: #17342c; --good-soft: #17311f; --warn-soft: #3a2f12; --bad-soft: #3a1f19;
-  --shadow-1: 0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
-  --shadow-2: 0 2px 4px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
-  --shadow-press: inset 0 2px 6px rgba(0,0,0,.45);
+  --shadow-1: 0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-2: 0 4px 16px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
 }
 :root[data-theme="light"] {
   --paper: #faf7f2; --paper-2: #f1ece3; --ink: #17161a; --ink-2: #5c5a63;
@@ -116,7 +117,7 @@ button { font: inherit; color: inherit; }
 }
 .bar h1 {
   font-family: var(--font-display);
-  font-size: 21px; font-weight: 600; letter-spacing: .04em;
+  font-size: 20px; font-weight: 700; letter-spacing: .10em;
   margin: 0; flex: 1; text-align: center; text-transform: uppercase;
 }
 .bar .puzz-no { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); letter-spacing: .06em; }
@@ -208,7 +209,7 @@ button { font: inherit; color: inherit; }
 @keyframes sheet-up { from { transform: translateY(24px); opacity: .4 } }
 .sheet h2 {
   font-family: var(--font-display); font-size: 26px; margin: 0 0 4px;
-  text-align: center; font-weight: 600;
+  text-align: center; font-weight: 700; letter-spacing: -.015em;
 }
 .sheet .sub { text-align: center; color: var(--ink-2); font-size: 14.5px; margin: 0 0 18px; }
 .sheet .rules { font-size: 14.5px; color: var(--ink-2); line-height: 1.6; }
@@ -217,7 +218,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- result / share ---------- */
 .verdict {
-  font-family: var(--font-display); font-size: 30px; font-weight: 600;
+  font-family: var(--font-display); font-size: 31px; font-weight: 700; letter-spacing: -.02em;
   text-align: center; margin: 0 0 2px;
 }
 .sharegrid {
@@ -232,7 +233,7 @@ button { font: inherit; color: inherit; }
   flex: 1; background: var(--white); border: 1px solid var(--line);
   border-radius: var(--r-sm); padding: 9px 4px; text-align: center;
 }
-.stat .n { font-family: var(--font-display); font-size: 22px; font-weight: 600; display: block; line-height: 1.1; }
+.stat .n { font-family: var(--font-display); font-size: 22px; font-weight: 700; display: block; line-height: 1.1; letter-spacing: -.02em; }
 .stat .l { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
 
 /* ---------- keyboard ---------- */
@@ -244,12 +245,13 @@ button { font: inherit; color: inherit; }
   background: var(--white); border: 1px solid var(--line);
   border-radius: var(--r-sm); font-size: 15px; font-weight: 700;
   font-family: var(--font-tile); cursor: pointer; user-select: none;
-  box-shadow: 0 1.5px 0 var(--line-2);
+  box-shadow: var(--shadow-1);
+  transition: background .12s, transform .08s, box-shadow .12s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.key:active { transform: translateY(1.5px); box-shadow: none; }
+.key:active { transform: scale(.94); background: var(--paper-2); box-shadow: none; }
 .key.wide { flex: 1.6 1 0; font-size: 12px; letter-spacing: .06em; }
-.key.act { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: 0 1.5px 0 rgba(0,0,0,.2); }
+.key.act { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .key.dim { opacity: .35; }
 @media (min-width: 620px) { .kbd { display: none; } }
 

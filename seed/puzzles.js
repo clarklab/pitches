@@ -123,16 +123,32 @@ window.SEED_PUZZLES = [
   "ADER":["DARE","DEAR","READ"],
   "DER":["DER","RED"]
 }},
-{n:8,seed:"ONE",queue:"DBRDESCNT",max:10,maxSkips:2,par:["ONE","DONE","DRONE","REDONE","ENDORSE","CENSORED","CONDENSER","CONTENDERS"],words:{
-  "BENO":["BONE"],
-  "BENOR":["BORNE"],
+{n:8,seed:"DIG",queue:"JRENHESSP",max:10,maxSkips:2,par:["DIG","GRID","RIDGE","RINGED","REIGNED","DESIGNER","DESIGNERS","DEPRESSING"],words:{
+  "DEEGINPRSS":["DEPRESSING"],
+  "DEEGINR":["REIGNED"],
+  "DEEGINRS":["DESIGNER","REDESIGN","RESIGNED"],
+  "DEEGINRSS":["DESIGNERS"],
+  "DEGHINR":["HERDING"],
+  "DEGINR":["RINGED"],
+  "DEGIR":["RIDGE"],
+  "DGI":["DIG"],
+  "DGINR":["GRIND"],
+  "DGIR":["GRID"]
+}},
+{n:9,seed:"ONE",queue:"PSDRXCENU",max:10,maxSkips:2,par:["ONE","NOSE","NODES","DRONES","SCORNED","CENSORED","CONDENSER","UNCENSORED"],words:{
   "CDEENNORS":["CONDENSER"],
-  "CDEENNORST":["CONTENDERS"],
+  "CDEENNORSU":["UNCENSORED"],
   "CDEENORS":["CENSORED"],
-  "DEENOR":["REDONE"],
-  "DEENORS":["ENDORSE"],
+  "CDENORS":["SCORNED"],
   "DENO":["DONE","NODE"],
   "DENOR":["DRONE"],
-  "ENO":["EON","NEO","ONE"]
+  "DENORS":["DRONES"],
+  "DENOS":["NODES"],
+  "ENO":["EON","NEO","ONE"],
+  "ENOP":["OPEN"],
+  "ENOPR":["PRONE"],
+  "ENOPRS":["PERSON"],
+  "ENOPS":["OPENS"],
+  "ENOS":["NOSE","ONES"]
 }}
 ];
