@@ -456,9 +456,11 @@
     el('holeNo').textContent = `Hole ${S.hole + 1} of ${HOLES.length}`;
     el('parLbl').innerHTML = `Par ${h.par}` + (h.long ? ' <span class="long">· long</span>' : '');
     el('pinWord').textContent = h.target;
+    /* the tee card and the pin already say WHERE — this line only has to say
+       what a stroke is, and (on the closer) what a good score looks like */
     el('objective').textContent = h.long
-      ? `The long one. ${h.start} to ${h.target} — the perfect line is an eagle.`
-      : `${h.start} to ${h.target}. Each word must make a compound with the one above it.`;
+      ? `The long one. Two under par here is an eagle.`
+      : `Each word must make a compound with the one above it.`;
     /* once the round is signed the caddie has nothing left to do — the button
        becomes the way back into your card, so the last screen is never a wall */
     if (S.done) {
@@ -733,7 +735,9 @@
       const n = Math.max(1, sc.swings != null ? sc.swings : sc.strokes);
       return `⛳ ${squareFor(v).repeat(n)} ${sc.pickedUp ? 'picked up' : v.short}${sc.caddie ? ' 🧤' : ''}`;
     });
-    return [`CHAINS #${DAY} — ${total} strokes (par ${par}) · ${toPar(d)}`]
+    /* headline first, the way a golfer reads a card: the number to par, then
+       the strokes. Kept short enough to render on a 390px phone unwrapped. */
+    return [`CHAINS #${DAY} · ${toPar(d)} (${total} strokes)`]
       .concat(lines)
       .concat(['sfun.games/chains'])
       .join('\n');
@@ -797,23 +801,35 @@
   }
 
   /* ---------- help / scorecard buttons --------------------------------- */
+  /* The rules are two sentences and a picture. Everything else is fine print —
+     a first-timer should be able to close this sheet after four seconds. */
   const HELP = `
+    <div class="demo" aria-hidden="true">
+      <span class="w tee">FIRE</span>
+      <span class="l">firehouse</span>
+      <span class="w">HOUSE</span>
+      <span class="l">houseboat</span>
+      <span class="w">BOAT</span>
+      <span class="l">boat race</span>
+      <span class="w">RACE</span>
+      <span class="l">race car</span>
+      <span class="w pinw">CAR ⛳</span>
+    </div>
+    <p class="demolbl">Fire to car in <b>four strokes</b></p>
     <ul class="rules">
-      <li>Three holes. Each gives you a <b>tee word</b> and a <b>pin</b>.</li>
-      <li>Play a word that makes a <b>compound word or a common phrase</b> with the
-          word above it, in that order. <code>FIRE → HOUSE</code> (firehouse),
-          <code>HOUSE → BOAT</code> (houseboat), <code>BOAT → RACE</code> (boat race),
-          <code>RACE → CAR</code> (race car). Four strokes.</li>
-      <li><b>There is no undo.</b> A word that doesn't link bounces free — but the
-          moment one lands, it's played. You go on from where the ball lies.</li>
-      <li>Par is one more than the tightest known line, so the perfect route is a
-          <b>birdie</b>. On the long hole it's an <b>eagle</b>.</li>
-      <li>Run out of swings before the pin and you <b>pick up</b>: par + 4, and the
-          walk to the next tee.</li>
-      <li>One <b>caddie</b> per round, not per hole. She names a word that keeps you
-          alive. It costs a stroke. Choose the hole to spend her on.</li>
+      <li>Every word must make a <b>compound word</b> — or a very common two-word
+          phrase — with the word directly above it.</li>
+      <li><b>There is no undo.</b> A word that doesn't link just bounces. A word
+          that links is <i>played</i>, and you carry on from there.</li>
+      <li>Par is one stroke more than the tightest line anyone has found, so the
+          perfect route is a <b>birdie</b> — an <b>eagle</b> on the long hole.</li>
     </ul>
-    <div class="keymap" style="margin-top:14px">
+    <div class="fineprint">
+      <b>Out of swings</b> short of the pin? You pick up for par + 4.
+      <b>One caddie a round</b> (not per hole) names a word that keeps you alive,
+      for the price of a stroke.
+    </div>
+    <div class="keymap" style="margin-top:13px">
       <span>TYPE — a word</span><span>ENTER — play it</span><span>⌫ — edit</span>
     </div>`;
   el('helpBtn').addEventListener('click', Kit.helpButton(HELP, 'Compound-word golf'));

@@ -121,7 +121,7 @@
   position:sticky; bottom:0; background:var(--paper); z-index:2;
 }
 .tray::before{
-  content:''; position:absolute; left:0; right:0; top:-14px; height:14px;
+  content:''; position:absolute; left:0; right:0; top:-20px; height:20px;
   background:linear-gradient(to top, var(--paper), transparent); pointer-events:none;
 }
 @media (max-width:619px){ .tray{ margin-top:auto; } }
@@ -195,7 +195,7 @@
 .cand.missed .mk{ color:var(--good); }
 .cand.dud{ opacity:.5; }
 .counter{ text-align:center; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:800; }
-.counter b{ color:var(--accent); font-size:15px; font-family:var(--font-mono); }
+.counter b{ color:var(--accent); font-size:15px; font-family:var(--font-display); font-weight:800; }
 
 /* ---------- result ---------- */
 .res-wrap{ display:flex; flex-direction:column; gap:12px; }

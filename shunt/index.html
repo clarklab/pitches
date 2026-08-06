@@ -499,6 +499,7 @@ let busy=false;
 function doSlide(isRow, idx, k){
   if(busy || S.done) return;
   k = ((k%4)+4)%4; if(k===0) return;
+  killCue();
   const cost = Math.min(k, 4-k);            // 3 steps one way == 1 the other
   const signed = k<=2 ? k : k-4;
   const before = litMask(S.grid);
@@ -802,10 +803,25 @@ themeBtn.addEventListener('click',()=>{
   const next=cur==='dark'?'light':'dark';
   document.documentElement.dataset.theme=next; tstore.set(next);
 });
+/* Reset puts the letters back. It does NOT put the moves back — otherwise
+   "no undo" is a lie and everybody shoots par. */
 document.getElementById('restart').addEventListener('click',()=>{
-  if(S.done) return;
-  S=freshState(); S.puz=puz.start; save(); kbMode=false; render(); updateHint();
-  Kit.toast('Board reset');
+  if(S.done||busy) return;
+  if(S.moves===0){ Kit.toast('Nothing to reset yet'); return; }
+  Kit.sheet(`<h2>Reset the letters?</h2>
+    <p class="sub">The grid goes back to the start. Your <b>${S.moves} spent move${S.moves===1?'':'s'}</b> stay spent — you would have <b>${CAP-S.moves}</b> left.</p>
+    <button class="btn primary wide" id="rsY">Reset the letters</button>
+    <button class="btn ghost wide" data-close style="margin-top:10px">Keep playing</button>`,
+    { onOpen(el, close){
+      el.querySelector('#rsY').addEventListener('click',()=>{
+        const spent=S.moves, resets=(S.resets||0)+1, hist=S.hist, trail=S.trail;
+        S=freshState(); S.puz=puz.start;
+        S.moves=spent; S.resets=resets; S.hist=hist.concat([puz.start]); S.trail=trail.concat([litMask(puz.start.split(''))]);
+        save(); kbMode=false; board.classList.remove('kb'); prevMask=null; render();
+        close(); Kit.toast('Letters reset · '+(CAP-S.moves)+' moves left');
+        checkEnd();
+      });
+    }});
 });
 document.getElementById('showres').addEventListener('click', endScreen);
 
@@ -814,21 +830,42 @@ function updateHint(){
   if(S.done){ h.innerHTML = S.done.win? 'Solved. Come back tomorrow.' : 'Out of moves. Come back tomorrow.'; return; }
   const left=CAP-S.moves;
   const n=popcount(litMask(S.grid));
-  if(n===3) h.innerHTML = `<b>Three rows lit.</b> ${left} moves left.`;
-  else if(left<=3) h.innerHTML = `<b>${left} moves left.</b>`;
-  else h.innerHTML = `${left} moves left · swipe a row or column`;
+  if(n===3) h.innerHTML = `<b>Three rows lit.</b> One row between you and it.`;
+  else if(left<=3) h.innerHTML = `<b>${left} move${left===1?'':'s'} left.</b>`;
+  else if(S.moves===0) h.innerHTML = `Push any row or column · ${left} moves`;
+  else h.innerHTML = `${left} moves left`;
 }
 const _render=render;
 render=function(){ _render(); updateHint(); };
+
+/* ---- first-move cue: a self-explanatory game still needs one nudge ---- */
+let cue=null;
+function showCue(){
+  if(cue || S.moves>0 || S.done) return;
+  cue=document.createElement('div');
+  cue.className='swipehint';
+  cue.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 7l5 5-5 5"/></svg>push';
+  board.appendChild(cue);
+  const pos=()=>{ if(cue){ cue.style.left='50%'; cue.style.marginLeft='-30px'; cue.style.top=(1.5*STEP - 12)+'px'; } };
+  pos();
+}
+function killCue(){ if(cue){ cue.remove(); cue=null; } }
 
 /* first-visit help */
 if(!seenStore.get()){ seenStore.set(1); setTimeout(()=>Kit.helpButton(HELP,'How to play')(),260); }
 
 /* boot */
-document.querySelector('.bar h1').insertAdjacentHTML('afterend','');
+document.getElementById('pno').textContent = 'No. '+DAY;
 new ResizeObserver(measure).observe(board);
 measure();
-if(S.done) { document.getElementById('showres').style.display=''; document.getElementById('restart').style.display='none'; }
+if(S.done){
+  document.getElementById('showres').style.display='';
+  document.getElementById('restart').style.display='none';
+  setTimeout(endScreen, 340);           // a finished day reopens its card
+} else {
+  setTimeout(showCue, 900);
+}
+board.addEventListener('pointerdown', killCue, {once:true});
 window.addEventListener('load', measure);
 })();
 </script>
