@@ -58,7 +58,8 @@
 .entry{
   display:flex; align-items:center; gap:11px;
   background:var(--white); border:1px solid var(--line);
-  border-radius:10px; padding:7px 11px; min-height:38px;
+  border-left:3px solid var(--line-2);
+  border-radius:10px; padding:7px 11px 7px 10px; min-height:38px;
   font-family:var(--font-mono); font-size:15px; font-weight:600; letter-spacing:.07em;
   animation:drop .22s cubic-bezier(.2,.9,.3,1);
   transition:border-color .25s, background .25s;
@@ -75,13 +76,13 @@
   display:grid; place-items:center; font-family:var(--font-ui); font-size:14px;
   line-height:1; background:var(--paper-2); color:var(--ink-3);
 }
-.entry.yes{ border-color:var(--good); }
-.entry.no{ border-color:var(--bad); }
+.entry.yes{ border-left-color:var(--good); }
+.entry.no{ border-left-color:var(--bad); }
 .entry.yes .res{ background:var(--good-soft); animation:land .3s cubic-bezier(.2,1.6,.4,1); }
 .entry.no  .res{ background:var(--bad-soft);  animation:land .3s cubic-bezier(.2,1.6,.4,1); }
 @keyframes land{ 0%{ transform:scale(.4); opacity:0 } 60%{ transform:scale(1.18) } 100%{ transform:scale(1) } }
 /* the beat of suspense */
-.entry.pending{ border-color:var(--accent); background:var(--paper-2); }
+.entry.pending{ border-left-color:var(--accent); background:var(--paper-2); }
 .entry.pending .w{ color:var(--ink-2); }
 .entry.pending .res{ background:transparent; }
 .entry.pending .res span{
@@ -94,7 +95,7 @@
 /* unwritten lines of the log */
 .entry.ghost{
   background:transparent; border-style:dashed; border-color:var(--line);
-  border-left:3px dashed var(--line); min-height:28px; padding-top:3px; padding-bottom:3px;
+  border-left-width:3px; min-height:28px; padding-top:3px; padding-bottom:3px;
   animation:none; color:var(--ink-3);
 }
 .entry.ghost .dots{ flex:1; border-bottom:1px dotted var(--line-2); height:0; opacity:.7; }

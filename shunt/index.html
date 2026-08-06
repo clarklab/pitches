@@ -308,10 +308,18 @@ function litMask(b){ let m=0; for(let r=0;r<4;r++) if(isWord(rowStr(b,r))) m|=1<
 const popcount=m=>((m>>0&1)+(m>>1&1)+(m>>2&1)+(m>>3&1));
 const solved=b=>litMask(b)===15;
 
-/* distance-to-nearest-solution, capped (used for the near-miss line) */
-function nearMiss(b,cap){
-  if(solved(b)) return 0;
-  let seen=new Set([key(b)]), front=[b];
+/* How close did the player EVER get? One multi-source BFS out of every board
+   they visited at once — the first depth at which any of those frontiers
+   touches an all-words board is, by definition, their closest approach.
+   Doing it as a single shared search instead of one BFS per board keeps it
+   under ~100ms instead of freezing the phone for two seconds. */
+function closestApproachOf(boards,cap){
+  let seen=new Set(), front=[];
+  for(const b of boards){
+    const k=key(b); if(seen.has(k)) continue; seen.add(k);
+    if(solved(b)) return 0;
+    front.push(b);
+  }
   for(let d=1;d<=cap;d++){
     const nf=[];
     for(const s of front) for(let m=0;m<16;m++){
@@ -337,14 +345,12 @@ const seenStore = Kit.store('shunt:seen');
 let S = null; // session state
 
 function freshState(){
-  return { day:DAY, grid:puz.start.split(''), moves:0,
+  return { day:DAY, grid:puz.start.split(''), moves:0, resets:0,
            trail:[litMask(puz.start.split(''))], hist:[puz.start], done:null };
 }
-/* closest the player ever got, measured once at the end (BFS is too slow per move) */
+/* closest the player ever got, measured once at the end */
 function closestApproach(){
-  let best=5;
-  for(const b of S.hist){ const d=nearMiss(b.split(''),4); if(d<best) best=d; }
-  return best;
+  return closestApproachOf(S.hist.map(h=>h.split('')), 4);
 }
 (function load(){
   const s = store.get();
@@ -360,30 +366,42 @@ const board = document.getElementById('board');
 const gw = document.getElementById('gw');
 let STEP=0, TILE=0, GAP=6;
 
-const tiles=[], ghosts=[], bands=[], carms=[];
+const bands=[], carms=[], guts={};
 for(let r=0;r<4;r++){
   const b=document.createElement('div'); b.className='band'; board.appendChild(b); bands.push(b);
 }
 for(let c=0;c<4;c++){
   const a=document.createElement('div'); a.className='carm'; board.appendChild(a); carms.push(a);
 }
+['l','r','t','b'].forEach(k=>{
+  const g=document.createElement('div'); g.className='gut '+k; board.appendChild(g); guts[k]=g;
+});
+/* Each letter gets THREE bodies: the real one and a copy one board-width to
+   either side. Whichever copy is on screen IS the letter — that is what makes
+   a bead leaving the right edge legibly the same bead arriving on the left,
+   and it means a snap never has to teleport across a modulo seam. */
+const CELLS=[];
 for(let i=0;i<16;i++){
-  const t=document.createElement('div'); t.className='tl'; board.appendChild(t); tiles.push(t);
-  const g=document.createElement('div'); g.className='tl ghost'; board.appendChild(g); ghosts.push(g);
+  const trio=[];
+  for(let k=0;k<3;k++){ const t=document.createElement('div'); t.className='tl'; board.appendChild(t); trio.push(t); }
+  CELLS.push(trio);
 }
 
 function measure(){
   const w = board.clientWidth;
   if(!w) return;
-  GAP = Math.max(4, Math.round(w*0.022));
+  GAP = Math.max(4, Math.round(w*0.024));
   STEP = w/4;
   TILE = STEP - GAP;
   gw.style.setProperty('--gap', GAP+'px');
-  const fs = Math.round(TILE*0.46);
-  for(const t of tiles.concat(ghosts)){ t.style.width=TILE+'px'; t.style.height=TILE+'px'; t.style.fontSize=fs+'px'; }
-  bands.forEach((b,r)=>{ b.style.height=(TILE+4)+'px'; b.style.top=(r*STEP+GAP/2-2)+'px'; });
-  carms.forEach((a,c)=>{ a.style.width=(TILE+4)+'px'; a.style.left=(c*STEP+GAP/2-2)+'px'; });
-  board.querySelectorAll('.rail').forEach(e=>e.remove());
+  board.style.setProperty('--step', STEP+'px');
+  board.style.setProperty('--half', (STEP/2)+'px');
+  const fs = Math.round(TILE*0.52);
+  for(const trio of CELLS) for(const t of trio){
+    t.style.width=TILE+'px'; t.style.height=TILE+'px'; t.style.fontSize=fs+'px';
+  }
+  bands.forEach((b,r)=>{ b.style.height=(TILE+5)+'px'; b.style.top=(r*STEP+GAP/2-2.5)+'px'; });
+  carms.forEach((a,c)=>{ a.style.width=(TILE+5)+'px'; a.style.left=(c*STEP+GAP/2-2.5)+'px'; });
   render();
 }
 const slotX=c=>c*STEP+GAP/2, slotY=r=>r*STEP+GAP/2;
