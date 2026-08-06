@@ -384,31 +384,60 @@
   }
 
   /* ---- share ----------------------------------------------------------- */
+  /* Resolves to 'shared' | 'copied' | 'manual' | 'cancelled' so a caller can
+     never congratulate someone on a copy that did not happen. Games used to
+     paint their own "Copied!" state on click, which lied whenever the
+     clipboard was blocked and the textarea fallback ran — so the button
+     feedback lives HERE now, driven by what actually occurred. */
   async function share(text, btn) {
-    const label = btn && btn.textContent;
-    try {
-      if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-        await navigator.share({ text });
-        return;
+    const label = btn && btn.innerHTML;
+    const settle = (state) => {
+      if (!btn) return state;
+      const map = {
+        shared:  null,
+        copied:  { ico: 'check_circle', txt: 'Copied to clipboard' },
+        manual:  { ico: 'content_copy',  txt: 'Select it and copy' },
+        cancelled: null
+      };
+      const m = map[state];
+      if (m) {
+        btn.innerHTML = icon(m.ico, { fill: 1 }) + m.txt;
+        btn.classList.toggle('done', state === 'copied');
+        setTimeout(() => {
+          btn.innerHTML = label;
+          btn.classList.remove('done');
+        }, state === 'copied' ? 1900 : 3200);
       }
+      return state;
+    };
+
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try { await navigator.share({ text }); return settle('shared'); }
+      // A dismissed share sheet is a user decision, not a failure: fall through
+      // to the clipboard only if the platform actually refused us.
+      catch (e) { if (e && e.name === 'AbortError') return settle('cancelled'); }
+    }
+    try {
       await navigator.clipboard.writeText(text);
       toast('Copied to clipboard');
-    } catch (e) {
-      // clipboard blocked (insecure origin, permissions) — fall back to a
-      // selectable textarea so the result is never trapped in the page.
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:80vw;max-width:420px;height:180px;z-index:200;font:14px monospace;padding:12px;border-radius:12px;';
-      document.body.appendChild(ta);
-      ta.select();
-      let ok = false;
-      try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
-      if (ok) { ta.remove(); toast('Copied to clipboard'); }
-      else { toast('Select and copy', 3000); ta.addEventListener('blur', () => ta.remove()); }
-    } finally {
-      if (btn && label) btn.textContent = label;
-    }
+      haptic(10);
+      return settle('copied');
+    } catch (e) { /* insecure origin, or permission denied — fall through */ }
+
+    // Last resort: put it on screen, selected, so the result is never trapped.
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.setAttribute('aria-label', 'Your result — select and copy');
+    ta.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:80vw;max-width:420px;height:180px;z-index:200;font:14px monospace;padding:12px;border-radius:12px;';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    if (ok) { ta.remove(); toast('Copied to clipboard'); return settle('copied'); }
+    toast('Select and copy', 3000);
+    ta.addEventListener('blur', () => ta.remove());
+    return settle('manual');
   }
 
   /* ---- on-screen keyboard --------------------------------------------- */
