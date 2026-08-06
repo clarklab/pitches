@@ -774,20 +774,20 @@ function endScreen(){
 const HELP = `
 <ul style="padding-left:18px;margin:0 0 14px">
   <li><b>Every row must spell a 4-letter word.</b> All four at once.</li>
-  <li><b>Swipe a row</b> sideways or <b>a column</b> up and down. Letters wrap around the edge.</li>
-  <li>A row that spells a word <b>lights up</b> — live, while you're still dragging.</li>
-  <li>The catch: fixing row 3 with a column slide will break row 1.</li>
-  <li><b>No undo.</b> Sliding back is just another move. That's the whole cost.</li>
-  <li>Score is <b>moves used against par</b>. Par is the true minimum — proven by search.</li>
+  <li><b>Push a row</b> sideways or <b>a column</b> up and down. Letters wrap round the edge — what leaves the right comes back on the left.</li>
+  <li>A row that spells a word <b>lights up</b> — live, while your thumb is still moving.</li>
+  <li>The catch: fixing row 3 with a column push will break row 1.</li>
+  <li><b>No undo.</b> Pushing back is just another move. That is the whole cost.</li>
+  <li>Score is <b>moves used against par</b>. Par is the true minimum — proven by exhaustive search, not a guess.</li>
   <li>There is usually <b>more than one solution</b>. The endgame tells you which one you found and how rare it is.</li>
 </ul>
-<div class="demo">row 2 slides right →
+<div class="demo">push row 2 right →
 
  P L U M          P L U M
- A T E D    →     D A T E   ✓ lit
- R I C E          R I C E   ✓ lit
- N O S E          N O S E   ✓ lit</div>
-<div class="hint" style="margin-top:10px;text-align:left">Desktop: click a tile, then arrow keys. Or use the chevrons around the grid. Shift+arrows moves the cursor without sliding.</div>`;
+ A T E D    →    <b>D A T E</b>  ✓ lit
+ R I C E          R I C E  ✓ lit
+ N O S E          N O S E  ✓ lit</div>
+<div class="hint" style="margin-top:10px;text-align:left">Desktop: drag with the mouse, or tap a tile and use the arrow keys. The chevrons round the grid work too. Shift+arrows moves the lane cursor without spending a move.</div>`;
 document.getElementById('help').addEventListener('click', Kit.helpButton(HELP,'How to play'));
 
 /* ======================================================================
