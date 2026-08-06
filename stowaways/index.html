@@ -109,13 +109,17 @@
      It never goes far enough to hurt the search. */
   .passage .ch:not(.fnd):not(.mis):not(.sel):not(.tip) { opacity: var(--rest-op); }
 
-  .ch.sel  { background: var(--accent); color: var(--accent-ink); }
   .ch.fnd  { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .ch.fnd.k{ background: var(--key-soft); color: var(--key); }
   .ch.mis  { background: var(--bad-soft); color: var(--bad); }
-  .ch.no   { background: var(--bad-soft); color: var(--bad); }
-  .ch.cap  { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
-  .ch.cbp  { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+  /* live selection outranks everything underneath it — while you are dragging,
+     the only thing that matters is the exact range you have marked */
+  .passage .ch.sel { background: var(--accent); color: var(--accent-ink); }
+  .passage .ch.no  { background: var(--bad-soft); color: var(--bad); }
+  /* found/missed ends use cap/cbp; the transient selection uses its own pair so
+     clearing a selection can never strand a rounded corner mid-word */
+  .ch.cap, .ch.scap { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
+  .ch.cbp, .ch.scbp { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
   .ltr.anc { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 6px; }
   .ltr.cur { box-shadow: inset 0 0 0 2px var(--ink-2); border-radius: 6px; }
   .ltr.tip { animation: beacon 1.4s ease-in-out infinite; border-radius: 6px; }
@@ -354,20 +358,14 @@
       cells[i].el.classList.add(cls);
       if (extra) cells[i].el.classList.add(extra);
     }
-    cells[r[0]].el.classList.add('cap');
-    cells[r[1]].el.classList.add('cbp');
+    var sel = cls === 'sel';
+    cells[r[0]].el.classList.add(sel ? 'scap' : 'cap');
+    cells[r[1]].el.classList.add(sel ? 'scbp' : 'cbp');
   }
 
   function clearSel() {
     for (var i = 0; i < cells.length; i++) {
-      var el = cells[i].el;
-      if (el.classList.contains('sel')) {
-        el.classList.remove('sel');
-        if (!el.classList.contains('fnd') && !el.classList.contains('mis')) {
-          el.classList.remove('cap', 'cbp');
-        }
-      }
-      el.classList.remove('anc');
+      cells[i].el.classList.remove('sel', 'scap', 'scbp', 'anc');
     }
   }
 

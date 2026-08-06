@@ -12,9 +12,17 @@
   --accent-soft:#e2ddf7;
   --accent-ink:#fff;
 }
-@media (prefers-color-scheme: dark){ :root{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c; } }
-:root[data-theme="dark"]{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c; }
-:root[data-theme="light"]{ --accent:#5b46c9; --accent-soft:#e2ddf7; --accent-ink:#fff; }
+/* Dark needs a lighter accent AND a dark ink on top of it, or every filled
+   pill turns into white-on-lavender mush. Same for the good/bad semantics —
+   the kit's light-mode green and rust go muddy on a near-black paper. */
+@media (prefers-color-scheme: dark){
+  :root{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c;
+         --good:#4cb782; --bad:#e2664e; }
+}
+:root[data-theme="dark"]{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c;
+                          --good:#4cb782; --bad:#e2664e; }
+:root[data-theme="light"]{ --accent:#5b46c9; --accent-soft:#e2ddf7; --accent-ink:#fff;
+                           --good:#2e7d4f; --bad:#b3402f; }
 
 /* ---------- layout tweaks ---------- */
 .app{ padding-bottom: calc(8px + var(--safe-b)); }
@@ -121,7 +129,7 @@
 .slot.filled{ border-style:solid; border-color:var(--accent); background:var(--white); }
 .slot .ph{ font-size:11px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:700; text-transform:uppercase; text-align:center; }
 .slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; margin-left:-.08em; }
-.key.wide{ font-size:10.5px; letter-spacing:.04em; font-weight:800; }
+.key.wide{ font-size:10.5px; letter-spacing:.01em; font-weight:800; padding:0 2px; }
 .deskhint{ display:none; }
 @media (min-width:620px){ .deskhint{ display:block; text-align:center; font-size:12px; color:var(--ink-3); } }
 @keyframes blink{ 50%{opacity:0} }
@@ -173,10 +181,10 @@
 .cand.sel .box{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .cand .mk{ margin-left:auto; font-size:11px; letter-spacing:.08em; font-family:var(--font-ui); font-weight:800; text-transform:uppercase; }
 .cand.right{ border-color:var(--good); background:var(--good-soft); }
-.cand.right .box{ background:var(--good); border-color:var(--good); color:#fff; }
+.cand.right .box{ background:var(--good); border-color:var(--good); color:var(--paper); }
 .cand.right .mk{ color:var(--good); }
 .cand.wrong{ border-color:var(--bad); background:var(--bad-soft); }
-.cand.wrong .box{ background:var(--bad); border-color:var(--bad); color:#fff; }
+.cand.wrong .box{ background:var(--bad); border-color:var(--bad); color:var(--paper); }
 .cand.wrong .mk{ color:var(--bad); }
 .cand.missed{ border-style:dashed; border-color:var(--good); }
 .cand.missed .mk{ color:var(--good); }
@@ -199,7 +207,7 @@
   background:var(--accent); color:var(--accent-ink);
   font-size:10.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
 }
-.tier.lose{ background:var(--bad); color:#fff; }
+.tier.lose{ background:var(--bad); color:var(--paper); }
 
 /* the sting / the victory lap — one sentence, the thing you say out loud */
 .sting{
@@ -257,10 +265,10 @@
 }
 .evgroup.bad .evrow .tag{ color:var(--ink-3); font-weight:700; letter-spacing:.07em; }
 .evrow .src{
-  font-size:8.5px; color:var(--ink-3); letter-spacing:.1em; text-transform:uppercase;
-  font-weight:800; border:1px solid var(--line); border-radius:var(--r-pill);
-  padding:1px 6px; opacity:.85; flex:0 0 auto;
+  font-size:8.5px; color:var(--ink-3); letter-spacing:.11em; text-transform:uppercase;
+  font-weight:700; flex:0 0 auto; opacity:.75;
 }
+.evrow .src::before{ content:'· '; }
 /* when every failing word fails for the same reason, say it once and go dense */
 .evchips{ display:flex; flex-wrap:wrap; gap:5px; padding-top:6px; border-top:1px solid var(--line); }
 .evchips span{

@@ -411,54 +411,77 @@ const slotX=c=>c*STEP+GAP/2, slotY=r=>r*STEP+GAP/2;
    ====================================================================== */
 let drag=null;      // {isRow, idx, off, preview, steps}
 let cursor={r:0,c:0}, kbMode=false;
-
-function place(el,x,y){ el.style.transform=`translate(${x}px,${y}px)`; }
+let prevMask=null;
 
 function render(){
   const base = S.grid;
   const view = drag ? drag.preview : base;
   const mask = litMask(view);
+  const P4 = 4*STEP;
+  const live = drag && !drag.settled;
 
   for(let i=0;i<16;i++){
     const r=i>>2, c=i&3;
-    let x=slotX(c), y=slotY(r), gx=-9999, gy=-9999, letter=base[i], litRow=r;
+    const letter = base[i];
+    let x=slotX(c), y=slotY(r), inLane=false, litRow=r;
 
     if(drag){
-      const P4 = 4*STEP;
-      if(drag.isRow && r===drag.idx){
-        let raw = slotX(c) + drag.off;
-        x = ((raw - GAP/2) % P4 + P4) % P4 + GAP/2;
-        gx = x - P4; gy = y;
-      } else if(!drag.isRow && c===drag.idx){
-        let raw = slotY(r) + drag.off;
-        y = ((raw - GAP/2) % P4 + P4) % P4 + GAP/2;
-        gy = y - P4; gx = x;
-        litRow = (((r + drag.steps)%4)+4)%4;   // where this tile lands on snap
+      if(drag.isRow && r===drag.idx){ x = slotX(c) + drag.off; inLane=true; }
+      else if(!drag.isRow && c===drag.idx){
+        y = slotY(r) + drag.off; inLane=true;
+        litRow = (((r + drag.steps)%4)+4)%4;   // where this bead lands on snap
       }
     }
     const on = (mask>>litRow & 1)===1;
-    const t=tiles[i], g=ghosts[i];
-    if(t.textContent!==letter) t.textContent=letter;
-    t.classList.toggle('on', on);
-    t.classList.toggle('cursor', kbMode && cursor.r===r && cursor.c===c && !drag);
-    place(t,x,y);
-    if(gx>-9000){ g.style.display=''; if(g.textContent!==letter) g.textContent=letter; g.classList.toggle('on',on); place(g,gx,gy); }
-    else g.style.display='none';
+    const trio = CELLS[i];
+    /* copy 0 is the letter itself; 1 and 2 are its wrap-around twins. Only a
+       lane that is actually moving needs its twins drawn. */
+    for(let k=0;k<3;k++){
+      const t=trio[k];
+      if(k>0 && !inLane){ if(t.style.display!=='none') t.style.display='none'; continue; }
+      const off = k===0 ? 0 : (k===1 ? -P4 : P4);
+      const tx = drag && drag.isRow && inLane ? x+off : x;
+      const ty = drag && !drag.isRow && inLane ? y+off : y;
+      if(k>0){
+        const outside = drag.isRow ? (tx+TILE < -2 || tx > P4+2) : (ty+TILE < -2 || ty > P4+2);
+        if(outside){ if(t.style.display!=='none') t.style.display='none'; continue; }
+        if(t.style.display==='none') t.style.display='';
+      }
+      if(t.textContent!==letter) t.textContent=letter;
+      t.classList.toggle('on', on);
+      t.classList.toggle('live', !!live && inLane);
+      t.classList.toggle('cursor', k===0 && kbMode && cursor.r===r && cursor.c===c && !drag);
+      t.style.transform = `translate(${tx}px,${ty}px)`;
+    }
+    /* the bead straddling the seam: one of its bodies is on the board and
+       another is visible too — mark them so the eye pairs them up */
+    const seam = inLane && trio[1].style.display==='' || inLane && trio[2].style.display==='';
+    for(let k=0;k<3;k++) trio[k].classList.toggle('wrapping', !!seam);
   }
 
   bands.forEach((b,r)=>{
-    b.classList.toggle('on',(mask>>r&1)===1);
+    const on=(mask>>r&1)===1;
+    if(on && prevMask!==null && !((prevMask>>r)&1)) { b.classList.remove('justlit'); void b.offsetWidth; b.classList.add('justlit'); }
+    b.classList.toggle('on', on);
     b.classList.toggle('armed', kbMode && !drag && cursor.r===r);
   });
+  prevMask = mask;
   carms.forEach((a,c)=> a.classList.toggle('on', kbMode && !drag && cursor.c===c));
+
+  const gOn = live && drag.off!==0;
+  guts.l.classList.toggle('on', !!gOn && drag.isRow);
+  guts.r.classList.toggle('on', !!gOn && drag.isRow);
+  guts.t.classList.toggle('on', !!gOn && !drag.isRow);
+  guts.b.classList.toggle('on', !!gOn && !drag.isRow);
 
   document.getElementById('pMoves').textContent = S.moves;
   const n = popcount(mask);
-  document.getElementById('pLit').innerHTML = n+'<span style="font-size:13px;color:var(--ink-3)">/4</span>';
+  document.getElementById('pLit').innerHTML = n+'<span class="sub">/4</span>';
   document.getElementById('pLitWrap').classList.toggle('hot', n>=3);
   const left = CAP - S.moves;
   const mp = document.querySelector('.status .pip');
   mp.classList.toggle('danger', !S.done && left<=3);
+  live_.textContent = S.done ? '' : `${n} of 4 rows spell words. ${left} moves left.`;
 
   document.querySelectorAll('.arr').forEach(a=>{
     a.classList.toggle('armed', kbMode && !drag && (
