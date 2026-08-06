@@ -122,7 +122,7 @@ there. `verify.js` measures this per puzzle and refuses a rotation where fewer
 than half the days offer real choice, because a puzzle with one line produces
 one share. The artifact encodes *where* you spent your skips, which is the
 interesting part, and the reply is always the same reply: "wait, you skipped
-the **C**?"
+the **D**?"
 
 That's the thing you want. A share artifact that provokes a specific question
 rather than a thumbs-up.
@@ -153,10 +153,13 @@ does not spoil anything**: knowing an 11 exists tells you nothing about which
 Four lines. One square per queue letter, all from the same emoji family so the
 row never breaks alignment in iMessage, Slack or a tweet.
 
+This is the real output of the greedy run through puzzle #4, copied out of the
+game:
+
 ```
 SEED #219 · RAT
-🟪🟪🟪🟪🟪🟨🟥⬜⬜
-3→8 · there was an 11 in there
+🟪🟪🟨🟪🟨🟥⬜⬜⬜
+3→6 · an 11 was in there
 sfun.games/seed
 ```
 
@@ -165,14 +168,19 @@ sfun.games/seed
 - 🟥 — that letter is what killed you
 - ⬜ — you never got that far
 
-And the brag version:
+And the brag version — the same puzzle, played properly:
 
 ```
 SEED #219 · RAT
-🟪⬜🟪🟪🟪🟪🟪🟪🟪
+🟨🟪🟪🟪🟪🟪🟪🟪🟪
 3→11 · MAXED IT 🏆
 sfun.games/seed
 ```
+
+Put those two side by side in a group chat and the whole game is legible
+without a word of explanation. One person spent both skips flailing in the
+middle and hit a wall on letter six. The other spent one skip, immediately, and
+never needed another.
 
 No word from the answer set appears anywhere. The seed word is public — it's on
 everyone's screen — so printing it is free and it makes the line scan as a
