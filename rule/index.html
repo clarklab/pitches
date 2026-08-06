@@ -418,22 +418,24 @@
     if (dupe) { Kit.toast('Already on the board'); Kit.flash(slotEl, 'shake'); return; }
 
     busy = true;
-    S.probes.unshift({ w: w, ok: null });
+    var rec = { w: w, ok: null };
+    S.probes.push(rec);
     cur = '';
     paintSlot();
     renderNote();
+    renderTray();          // the pip burns down the instant you commit
     Kit.haptic(6);
+    say('Testing ' + w);
 
     setTimeout(function () {
-      var res = !!P.pred(w);
-      S.probes[0].ok = res;
+      rec.ok = !!P.pred(w);
       busy = false;
       saveDay();
       renderNote();
       renderTray();
-      Kit.haptic(res ? 14 : 26);
-      say(w + (res ? ' passes' : ' fails'));
-    }, 680);
+      Kit.haptic(rec.ok ? 14 : 26);
+      say(w + (rec.ok ? ' passes' : ' fails'));
+    }, 720);
   }
 
   /* ---------------- screens ---------------- */
@@ -446,22 +448,32 @@
   }
 
   /* ---- probe screen ---- */
-  var slotEl, noteEl, pipsEl, callBtn;
+  var slotEl, noteEl, pipsEl, callBtn, nbHead, nbLeft, nbHint;
 
   function renderProbe() {
     document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · ' + Kit.dateLabel();
 
     var board = el('div', 'board');
-    var yes = el('div', 'col');
-    yes.appendChild(el('h3', null, '✅ Follows the rule'));
-    P.pass.forEach(function (w) { yes.appendChild(el('div', 'w', w)); });
-    var no = el('div', 'col no');
-    no.appendChild(el('h3', null, '❌ Breaks it'));
-    P.fail.forEach(function (w) { no.appendChild(el('div', 'w', w)); });
-    board.appendChild(yes); board.appendChild(no);
+    function col(cls, glyph, head, words) {
+      var c = el('div', 'col ' + cls);
+      var h = el('h3');
+      h.appendChild(el('span', 'gl', glyph));
+      h.appendChild(document.createTextNode(head));
+      c.appendChild(h);
+      words.forEach(function (w) { c.appendChild(el('div', 'w', w)); });
+      return c;
+    }
+    board.appendChild(col('', '✅', 'Follows the rule', P.pass));
+    board.appendChild(col('no', '❌', 'Breaks it', P.fail));
     stage.appendChild(board);
 
-    stage.appendChild(el('div', 'nb-head', 'Notebook'));
+    nbHead = el('div', 'nb-head');
+    nbHead.appendChild(el('span', null, 'Notebook'));
+    nbHead.appendChild(el('span', 'rule-line'));
+    nbLeft = el('span', 'left');
+    nbHead.appendChild(nbLeft);
+    stage.appendChild(nbHead);
+
     noteEl = el('div', 'note');
     stage.appendChild(noteEl);
     renderNote();
