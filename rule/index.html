@@ -57,8 +57,8 @@
 .note{ display:flex; flex-direction:column; gap:5px; }
 .entry{
   display:flex; align-items:center; gap:11px;
-  background:var(--white); border:1px solid var(--line); border-left:3px solid var(--line-2);
-  border-radius:10px; padding:7px 10px 7px 11px; min-height:38px;
+  background:var(--white); border:1px solid var(--line);
+  border-radius:10px; padding:7px 11px; min-height:38px;
   font-family:var(--font-mono); font-size:15px; font-weight:600; letter-spacing:.07em;
   animation:drop .22s cubic-bezier(.2,.9,.3,1);
   transition:border-color .25s, background .25s;
@@ -75,13 +75,13 @@
   display:grid; place-items:center; font-family:var(--font-ui); font-size:14px;
   line-height:1; background:var(--paper-2); color:var(--ink-3);
 }
-.entry.yes{ border-left-color:var(--good); }
-.entry.no{ border-left-color:var(--bad); }
+.entry.yes{ border-color:var(--good); }
+.entry.no{ border-color:var(--bad); }
 .entry.yes .res{ background:var(--good-soft); animation:land .3s cubic-bezier(.2,1.6,.4,1); }
 .entry.no  .res{ background:var(--bad-soft);  animation:land .3s cubic-bezier(.2,1.6,.4,1); }
 @keyframes land{ 0%{ transform:scale(.4); opacity:0 } 60%{ transform:scale(1.18) } 100%{ transform:scale(1) } }
 /* the beat of suspense */
-.entry.pending{ border-left-color:var(--accent); background:var(--paper-2); }
+.entry.pending{ border-color:var(--accent); background:var(--paper-2); }
 .entry.pending .w{ color:var(--ink-2); }
 .entry.pending .res{ background:transparent; }
 .entry.pending .res span{
@@ -780,6 +780,41 @@
     return g;
   }
 
+  /* One sentence, in plain English, naming the exact word that decided it.
+     On a bust this is the sting; on a win it is the victory lap. */
+  function stingLine() {
+    var d = el('div', 'sting');
+    var tagOf = function (w) { return Kit.esc(P.ev(w).tag); };
+    var mono = function (w) { return '<b>' + Kit.esc(w) + '</b>'; };
+    var wrongs = S.picks.filter(function (w) { return !P.pred(w); });
+    var missed = CANDS.filter(function (w) { return P.pred(w) && S.picks.indexOf(w) < 0; });
+
+    if (!S.won) {
+      var parts = [];
+      parts.push(mono(wrongs[0]) + ' was never in it: ' + tagOf(wrongs[0]) + '.');
+      if (wrongs.length > 1) parts.push('Nor was ' + mono(wrongs[1]) + '.');
+      if (missed.length) {
+        parts.push('You walked straight past ' + mono(missed[0]) +
+                   ' — <span class="hi">' + tagOf(missed[0]) + '</span>.');
+      }
+      d.innerHTML = parts.join(' ');
+      return d;
+    }
+    // a win: point at the sharpest thing they spotted
+    var shown = S.picks.filter(function (w) { return P.ev(w).hits.length; })
+                       .sort(function (a, b) { return P.ev(a).hits.length - P.ev(b).hits.length; });
+    if (S.calledAt === 0) {
+      d.innerHTML = 'Zero probes. You looked at six words and simply <span class="hi">knew</span>.';
+    } else if (shown.length) {
+      d.innerHTML = 'You saw <span class="hi">' + tagOf(shown[0]) + '</span> inside ' +
+                    mono(shown[0]) + '. That is the whole game.';
+    } else {
+      d.innerHTML = 'Three for three off <b>' + S.calledAt + '</b> probe' +
+                    (S.calledAt === 1 ? '' : 's') + '. No luck involved.';
+    }
+    return d;
+  }
+
   function renderResult() {
     document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · closed';
     document.getElementById('objective').textContent = S.won
@@ -873,7 +908,7 @@
     var used = S.calledAt || 0;
     var lines = ['THE RULE #' + DAY];
     if (used > 0) {
-      var story = S.probes.slice().reverse().map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
+      var story = S.probes.map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
       lines.push('🔬 ' + story);
     }
     if (S.won) {
