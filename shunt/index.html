@@ -538,7 +538,7 @@ function checkEnd(){
 /* ======================================================================
    pointer drag
    ====================================================================== */
-let pd=null;
+let pd=null, rafId=0;
 board.addEventListener('pointerdown', e=>{
   if(busy || S.done) return;
   const rect=board.getBoundingClientRect();
@@ -546,7 +546,7 @@ board.addEventListener('pointerdown', e=>{
   const c=Math.max(0,Math.min(3,Math.floor(px/STEP))), r=Math.max(0,Math.min(3,Math.floor(py/STEP)));
   pd={ x:e.clientX, y:e.clientY, r, c, axis:null, id:e.pointerId, moved:false };
   cursor={r,c};
-  board.setPointerCapture(e.pointerId);
+  try{ board.setPointerCapture(e.pointerId); }catch(err){}
   e.preventDefault();
 });
 board.addEventListener('pointermove', e=>{
@@ -556,30 +556,43 @@ board.addEventListener('pointermove', e=>{
     if(Math.abs(dx)<5 && Math.abs(dy)<5) return;
     pd.axis = Math.abs(dx)>Math.abs(dy) ? 'h' : 'v';
     board.classList.add('dragging');
-    kbMode=false;
+    if(kbMode){ kbMode=false; board.classList.remove('kb'); }
   }
   pd.moved=true;
   const isRow = pd.axis==='h';
-  const off = isRow ? dx : dy;
+  const P4 = 4*STEP;
+  /* Reduce the raw finger travel into (-2, +2] cells. A drag of 3 cells one
+     way IS a drag of 1 cell the other; showing it that way keeps the beads
+     under the thumb and keeps the snap short. */
+  let off = isRow ? dx : dy;
+  off = off - Math.round(off/P4)*P4;
   const steps = Math.round(off/STEP);
   const idx = isRow ? pd.r : pd.c;
-  const prev = drag && drag.mask;
+  const prev = drag ? drag.mask : -1;
   const preview = shiftLane(S.grid, isRow, idx, steps);
   drag = { isRow, idx, off, steps, preview, mask:litMask(preview) };
-  if(prev!==undefined && drag.mask!==prev && popcount(drag.mask)>popcount(prev)) Kit.haptic(14);
-  render();
+  if(prev>=0 && drag.mask!==prev && popcount(drag.mask)>popcount(prev)) Kit.haptic(14);
+  if(!rafId) rafId = requestAnimationFrame(()=>{ rafId=0; if(drag) render(); });
 });
 function endDrag(e){
   if(!pd || (e && e.pointerId!==pd.id)) return;
   board.classList.remove('dragging');
+  if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
   const d=drag; pd=null;
-  if(!d){ // tap: just move the keyboard cursor
-    kbMode=true; render(); return;
+  if(!d){ // tap: park the lane cursor here, ready for the arrow keys
+    kbMode=true; board.classList.add('kb'); render(); return;
   }
   drag=null;
   const k=d.steps;
-  if(k===0){ render(); return; }
-  doSlide(d.isRow, d.idx, k, true);
+  if(k===0){
+    /* released short of a cell — glide the beads home rather than cut */
+    const lane=tilesInLane(d.isRow,d.idx);
+    lane.forEach(t=>t.classList.add('snapping'));
+    render();
+    setTimeout(()=>lane.forEach(t=>t.classList.remove('snapping')),190);
+    return;
+  }
+  doSlide(d.isRow, d.idx, k);
 }
 board.addEventListener('pointerup', endDrag);
 board.addEventListener('pointercancel', endDrag);

@@ -15,7 +15,7 @@ window.STOWAWAY_PUZZLES = [
     clue: 'First things first',
     theme: 'BREAKFAST',
     reveal: 'Six things you might eat before nine in the morning.',
-    text: "Uncle Ray's turn at the samba contest ended in heartbreak, fast. He reeled into a stone planter, flattened the cabbage leaves on the produce table, and fed some lettuce to the judge's whippet. Everyone agreed it was nice, really, that he had tried at all.",
+    text: "Uncle Ray’s turn at the samba contest ended in heartbreak, fast. He reeled into a stone planter, flattened the cabbage leaves on the produce table, and fed some lettuce to the judge’s whippet. Everyone agreed it was nice, really, that he had tried at all.",
     keystone: 'BREAKFAST',
     words: ['BREAKFAST', 'BACON', 'TOAST', 'BAGEL', 'OMELET', 'CEREAL'],
     decoys: ['EGGS', 'COFFEE', 'JUICE', 'PORRIDGE', 'MUFFIN', 'SCONE', 'WAFFLE', 'GRITS', 'BREW']
@@ -47,7 +47,7 @@ window.STOWAWAY_PUZZLES = [
     id: 'dances',
     clue: 'Take the floor',
     theme: 'DANCES',
-    reveal: 'Five of them, and the word for what they are.',
+    reveal: 'Five of them, and the word for a floor full of them.',
     text: "Walt zipped himself into a tartan gown for the wake and would not say why. His refusal, said Maud, was the most honest thing all afternoon. Later the room became a scrum, barging her into the fireplace, where a stuffed falcon gathered dust and ancestral portraits looked away.",
     keystone: 'DANCES',
     words: ['DANCES', 'WALTZ', 'TANGO', 'SALSA', 'RUMBA', 'CONGA'],
