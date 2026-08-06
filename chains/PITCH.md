@@ -361,7 +361,7 @@ dated. Any international version is a re-authoring job, not a translation.
 defined as `best + 1` (or `+ 2`), the perfect round is exactly **−4 on every
 course we ship**. That's a clean target and a bad long-term score distribution:
 once a committed player is reliably shooting −4, the daily number stops carrying
-information and every share looks identical — three rows of green, one of blue.
+information and every share looks identical — two rows of green, one of blue.
 Golf's own answer is the handicap and we may need ours (score against your own
 rolling average, not against par), or a tiebreak below par — time-to-hole-out,
 or a bonus for a line nobody else found that day.
