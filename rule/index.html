@@ -92,7 +92,7 @@
 /* the beat of suspense */
 .entry.pending{ border-left-color:var(--accent); background:var(--paper-2); }
 .entry.pending .w{ color:var(--ink-2); }
-.entry.pending .res{ background:transparent; }
+.entry.pending .res{ background:transparent; display:flex; align-items:center; justify-content:center; }
 .entry.pending .res span{
   display:inline-block; width:4px; height:4px; border-radius:50%; margin:0 1px;
   background:var(--accent); animation:think 1s infinite;
@@ -129,7 +129,7 @@
 .slot.filled{ border-style:solid; border-color:var(--accent); background:var(--white); }
 .slot .ph{ font-size:11px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:700; text-transform:uppercase; text-align:center; }
 .slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; margin-left:-.08em; }
-.key.wide{ font-size:10.5px; letter-spacing:.01em; font-weight:800; padding:0 2px; }
+.key.wide{ font-size:9.5px; letter-spacing:.02em; font-weight:800; padding:0 2px; }
 .deskhint{ display:none; }
 @media (min-width:620px){ .deskhint{ display:block; text-align:center; font-size:12px; color:var(--ink-3); } }
 @keyframes blink{ 50%{opacity:0} }

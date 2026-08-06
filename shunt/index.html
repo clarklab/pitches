@@ -588,8 +588,10 @@ function endDrag(e){
     /* released short of a cell — glide the beads home rather than cut */
     const lane=tilesInLane(d.isRow,d.idx);
     lane.forEach(t=>t.classList.add('snapping'));
+    drag={ isRow:d.isRow, idx:d.idx, off:0, steps:0, preview:S.grid, settled:true };
     render();
-    setTimeout(()=>lane.forEach(t=>t.classList.remove('snapping')),190);
+    busy=true;
+    setTimeout(()=>{ lane.forEach(t=>t.classList.remove('snapping')); drag=null; busy=false; render(); },190);
     return;
   }
   doSlide(d.isRow, d.idx, k);
@@ -614,8 +616,8 @@ function mkArrows(mount, dirName, kind){
     const label = kind==='row' ? `Slide row ${i+1} ${dirName}` : `Slide column ${i+1} ${dirName}`;
     b.setAttribute('aria-label', label);
     b.addEventListener('click', ()=>{
-      if(kind==='row'){ cursor.r=i; doSlide(true,i, dirName==='right'?1:-1, true); }
-      else { cursor.c=i; doSlide(false,i, dirName==='down'?1:-1, true); }
+      if(kind==='row'){ cursor.r=i; doSlide(true,i, dirName==='right'?1:-1); }
+      else { cursor.c=i; doSlide(false,i, dirName==='down'?1:-1); }
     });
     mount.appendChild(b);
   }
@@ -632,13 +634,11 @@ document.addEventListener('keydown', e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   if(document.querySelector('.scrim')) return;
   const k=e.key;
-  if(k==='Tab'){
-    // roving lane cursor: tab walks the 4 rows then the 4 columns
-    e.preventDefault(); kbMode=true;
-    if(e.shiftKey){ cursor.c=(cursor.c+3)%4; } else { cursor.r=(cursor.r+1)%4; if(cursor.r===0) cursor.c=(cursor.c+1)%4; }
-    board.classList.add('kb'); render(); return;
-  }
+  const tag = e.target && e.target.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA') return;
   if(!/^Arrow/.test(k)) return;
+  /* Tab is left alone on purpose — it has to keep reaching the help, theme and
+     restart buttons. WASD is the second lane cursor for people who want it. */
   e.preventDefault();
   if(!kbMode){ kbMode=true; board.classList.add('kb'); render(); }
   if(e.shiftKey){
@@ -648,13 +648,13 @@ document.addEventListener('keydown', e=>{
     if(k==='ArrowDown') cursor.r=(cursor.r+1)%4;
     render(); return;
   }
-  if(k==='ArrowLeft') doSlide(true,cursor.r,-1,true);
-  if(k==='ArrowRight') doSlide(true,cursor.r,1,true);
-  if(k==='ArrowUp') doSlide(false,cursor.c,-1,true);
-  if(k==='ArrowDown') doSlide(false,cursor.c,1,true);
+  if(k==='ArrowLeft') doSlide(true,cursor.r,-1);
+  if(k==='ArrowRight') doSlide(true,cursor.r,1);
+  if(k==='ArrowUp') doSlide(false,cursor.c,-1);
+  if(k==='ArrowDown') doSlide(false,cursor.c,1);
 });
 board.addEventListener('focus', ()=>{ kbMode=true; board.classList.add('kb'); render(); });
-board.addEventListener('blur', ()=>{ board.classList.remove('kb'); });
+board.addEventListener('blur', ()=>{ kbMode=false; board.classList.remove('kb'); render(); });
 
 /* ======================================================================
    end screen + share
