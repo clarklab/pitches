@@ -663,13 +663,13 @@
       const sc = S.scores[i];
       parTotal += h.par;
       if (!sc) {
-        rows += `<tr><td class="hole">${i + 1}</td><td>${Kit.esc(h.start)} → ${Kit.esc(h.target)}</td>
+        rows += `<tr class="pending"><td class="hole">${i + 1}</td><td class="leg">${Kit.esc(h.start)} → ${Kit.esc(h.target)}</td>
                  <td class="num">${h.par}</td><td class="num">—</td><td class="res num"></td></tr>`;
         return;
       }
       total += sc.strokes;
       const v = verdict(sc.pickedUp ? sc.par + 4 : sc.strokes, sc.par, sc.pickedUp);
-      rows += `<tr><td class="hole">${i + 1}</td><td>${Kit.esc(h.start)} → ${Kit.esc(h.target)}${sc.caddie ? ' 🧤' : ''}</td>
+      rows += `<tr><td class="hole">${i + 1}</td><td class="leg">${Kit.esc(h.start)} → ${Kit.esc(h.target)}${sc.caddie ? ' 🧤' : ''}</td>
                <td class="num">${sc.par}</td><td class="num">${sc.strokes}</td>
                <td class="res num ${v.tone}">${sc.pickedUp ? 'X' : toPar(v.diff)}</td></tr>`;
     });
@@ -677,7 +677,7 @@
     const parSoFar = S.scores.reduce((a, s) => a + s.par, 0);
     const d = total - (partial ? parSoFar : parTotal);
     const tone = d < 0 ? 'under' : d === 0 ? 'even' : d <= 2 ? 'over' : 'blown';
-    rows += `<tr class="tot"><td></td><td>${played < HOLES.length ? 'Through ' + played : 'Round'}</td>
+    rows += `<tr class="tot"><td></td><td class="leg">${played < HOLES.length ? 'Through ' + played : 'Round'}</td>
              <td class="num">${partial ? parSoFar : parTotal}</td><td class="num">${total}</td>
              <td class="res num ${tone}">${toPar(d)}</td></tr>`;
     return `<table class="card"><thead><tr><th></th><th>Hole</th><th class="num">Par</th>
@@ -773,7 +773,10 @@
           walk to the next tee.</li>
       <li>One <b>caddie</b> per round, not per hole. She names a word that keeps you
           alive. It costs a stroke. Choose the hole to spend her on.</li>
-    </ul>`;
+    </ul>
+    <div class="keymap" style="margin-top:14px">
+      <span>TYPE — a word</span><span>ENTER — play it</span><span>⌫ — edit</span>
+    </div>`;
   el('helpBtn').addEventListener('click', Kit.helpButton(HELP, 'Compound-word golf'));
   el('statsBtn').addEventListener('click', () => {
     if (S.done) { resultSheet(); return; }
