@@ -738,15 +738,46 @@
     return out;
   }
 
-  function evRow(w, src) {
+  function evRow(w, src, showTag) {
     var ev = P.ev(w);
     var row = el('div', 'evrow');
     var word = el('span', 'word');
     word.innerHTML = wordHTML(w, ev);
     row.appendChild(word);
     if (src) row.appendChild(el('span', 'src', src));
-    row.appendChild(el('span', 'tag', ev.tag));
+    if (showTag !== false) row.appendChild(el('span', 'tag', ev.tag));
     return row;
+  }
+
+  /* The evidence, re-sorted so it becomes obvious in hindsight: words that
+     failed (or passed) for the same reason sit next to each other. */
+  function evGroup(cls, glyph, head, rows) {
+    var g = el('div', 'evgroup ' + cls);
+    var h = el('h4');
+    h.appendChild(el('span', 'gl', glyph));
+    h.appendChild(document.createTextNode(head));
+    h.appendChild(el('span', 'ct', rows.length + (rows.length === 1 ? ' word' : ' words')));
+    g.appendChild(h);
+
+    var tags = rows.map(function (r) { return P.ev(r[0]).tag; });
+    var sameTag = tags.every(function (t) { return t === tags[0]; });
+    var noHits = rows.every(function (r) { return !P.ev(r[0]).hits.length; });
+
+    if (sameTag && noHits && rows.length > 3) {
+      // every one fails for the same reason and there is nothing to point at —
+      // say it once in the header and let the words go dense.
+      h.appendChild(el('span', 'why', tags[0]));
+      var chips = el('div', 'evchips');
+      rows.forEach(function (r) { chips.appendChild(el('span', null, r[0])); });
+      g.appendChild(chips);
+    } else {
+      rows.sort(function (a, b) {
+        var ta = P.ev(a[0]).tag, tb = P.ev(b[0]).tag;
+        return ta === tb ? (a[0] < b[0] ? -1 : 1) : (ta < tb ? -1 : 1);
+      });
+      rows.forEach(function (r) { g.appendChild(evRow(r[0], r[1], true)); });
+    }
+    return g;
   }
 
   function renderResult() {
@@ -775,7 +806,11 @@
     // the call, resolved — the sting or the victory lap.
     // Only what you touched and what you should have: the other five
     // near-misses are laid out in full inside the reveal below.
-    wrap.appendChild(el('div', 'nb-head', 'Your call'));
+    var head = el('div', 'nb-head');
+    head.appendChild(el('span', null, S.won ? 'Your call — all three' : 'Your call'));
+    head.appendChild(el('span', 'rule-line'));
+    wrap.appendChild(head);
+
     var list = el('div', 'cands');
     CANDS.filter(function (w) { return S.picks.indexOf(w) >= 0 || P.pred(w); }).forEach(function (w) {
       var b = el('div', 'cand');
@@ -787,9 +822,12 @@
     });
     wrap.appendChild(list);
 
-    // THE REVEAL
+    // the sentence you say out loud — names the word that killed you
+    wrap.appendChild(stingLine());
+
+    // ---- THE REVEAL ----
     var rev = el('div', 'reveal');
-    rev.appendChild(el('div', 'kick', 'The rule was'));
+    rev.appendChild(el('div', 'kick', 'Today’s rule was'));
     rev.appendChild(el('div', 'rule', P.rule));
     rev.appendChild(el('p', 'detail', P.detail));
 
@@ -802,22 +840,19 @@
     }
     P.pass.forEach(function (w) { add(w, 'opener'); });
     P.fail.forEach(function (w) { add(w, 'opener'); });
-    S.probes.slice().reverse().forEach(function (p) { add(p.w, 'your probe'); });
-    CANDS.forEach(function (w) { add(w, 'the call'); });
+    S.probes.forEach(function (p) { if (p.ok !== null) add(p.w, 'probe'); });
+    CANDS.forEach(function (w) { add(w, 'call'); });
 
-    var g1 = el('div', 'evgroup');
-    g1.appendChild(el('h4', null, '✅ Obeys — ' + yes.length + ' words'));
-    yes.forEach(function (r) { g1.appendChild(evRow(r[0], r[1])); });
-    rev.appendChild(g1);
-
-    var g2 = el('div', 'evgroup bad');
-    g2.appendChild(el('h4', null, '❌ Breaks it — ' + no.length + ' words'));
-    no.forEach(function (r) { g2.appendChild(evRow(r[0], r[1])); });
-    rev.appendChild(g2);
-
+    rev.appendChild(evGroup('', '✅', 'Obeys it', yes));
+    rev.appendChild(evGroup('bad', '❌', 'Breaks it', no));
     wrap.appendChild(rev);
 
-    var sh = el('button', 'btn primary wide', 'Share result');
+    // what you will actually paste
+    var sg = el('div', 'sharegrid');
+    sg.textContent = shareText();
+    wrap.appendChild(sg);
+
+    var sh = el('button', 'btn primary wide', S.won ? 'Share the flex' : 'Share the damage');
     sh.type = 'button';
     sh.addEventListener('click', function () { Kit.share(shareText(), sh); });
     wrap.appendChild(sh);
