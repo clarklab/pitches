@@ -494,23 +494,23 @@ function render(){
    committing a move
    ====================================================================== */
 let busy=false;
-function doSlide(isRow, idx, k, animate){
+function doSlide(isRow, idx, k){
   if(busy || S.done) return;
   k = ((k%4)+4)%4; if(k===0) return;
   const cost = Math.min(k, 4-k);            // 3 steps one way == 1 the other
   const signed = k<=2 ? k : k-4;
-  if(!animate){
-    // instant path (buttons / keys): fake a drag then snap
-    drag = { isRow, idx, off:0, steps:0, preview:S.grid };
-  }
   const before = litMask(S.grid);
   const after  = shiftLane(S.grid, isRow, idx, signed);
-  drag = { isRow, idx, off:signed*STEP, steps:signed, preview:after };
-  tilesInLane(isRow, idx).forEach(t=>t.classList.add('snapping'));
+  /* Snap from wherever the beads currently are to the committed slot. Because
+     the lane is drawn with its wrap-twins rather than a modulo, this is always
+     a short continuous glide — never a jump back across the board. */
+  const lane = tilesInLane(isRow, idx);
+  lane.forEach(t=>t.classList.add('snapping'));
+  drag = { isRow, idx, off:signed*STEP, steps:signed, preview:after, settled:true };
   render();
   busy=true;
   setTimeout(()=>{
-    tilesInLane(isRow, idx).forEach(t=>t.classList.remove('snapping'));
+    lane.forEach(t=>t.classList.remove('snapping'));
     drag=null;
     S.grid = after; S.moves += cost;
     const m = litMask(after);
@@ -521,11 +521,11 @@ function doSlide(isRow, idx, k, animate){
     if(popcount(m)>popcount(before)) Kit.haptic(18);
     save();
     checkEnd();
-  }, 140);
+  }, 175);
 }
 function tilesInLane(isRow, idx){
   const out=[];
-  for(let i=0;i<16;i++){ const r=i>>2,c=i&3; if(isRow? r===idx : c===idx){ out.push(tiles[i], ghosts[i]); } }
+  for(let i=0;i<16;i++){ const r=i>>2,c=i&3; if(isRow? r===idx : c===idx) out.push(...CELLS[i]); }
   return out;
 }
 

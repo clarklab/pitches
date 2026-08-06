@@ -754,7 +754,9 @@
     st.over = true; st.gave = gaveUp;
     save();
     anchor = -1; press = null;
+    clearWrong();
     clearSel();
+    relight();
     targets.forEach(function (t) { if (!t.found) paintMissed(t); });
     fillChips(null);
     renderAfterwards();
@@ -771,13 +773,22 @@
   function resultSheet() {
     var n = st.order.length;
     var clean = n === 6 && st.hints === 0;
-    var verdict = st.gave ? 'Right there.'
-                : clean ? 'Clean sweep.'
-                : 'All six aboard.';
-    var sub = st.gave
-      ? 'You looked straight at them ' + (n ? 'for ' + n + ' of the six. ' : '. ') + 'Everyone does.'
-      : clean ? 'Six words, no hints, no help. Nobody is going to believe you.'
-              : 'Found in ' + n + ' pulls with ' + st.hints + (st.hints === 1 ? ' hint.' : ' hints.');
+    var verdict, sub;
+    if (!st.gave) {
+      verdict = clean ? 'Clean sweep.' : 'All six aboard.';
+      sub = clean
+        ? 'Six stowaways, no hints, no help. Nobody is going to believe you.'
+        : 'All six, on ' + st.hints + (st.hints === 1 ? ' hint.' : ' hints.');
+    } else if (n === 5) {
+      verdict = 'One got away.';
+      sub = 'Five of six, and the last one was in a sentence you read nine times.';
+    } else if (n === 0) {
+      verdict = 'Nothing aboard.';
+      sub = 'Every single one was in plain sight the whole time. Look again below.';
+    } else {
+      verdict = 'Right there.';
+      sub = 'You looked straight at ' + n + ' of the six and walked past the rest. Everyone does.';
+    }
 
     var html =
       '<h2>' + verdict + '</h2>' +
@@ -795,8 +806,13 @@
     Kit.sheet(html, { onOpen: function (el, close) {
       var b = el.querySelector('#shareBtn');
       b.addEventListener('click', function () { Kit.share(shareText(), b); });
-      var t = Kit.countdown(el.querySelector('#cd'));
-      el.closest('.scrim').addEventListener('click', function () { clearInterval(t); });
+      var cd = el.querySelector('#cd');
+      var t = Kit.countdown(cd);
+      // stop the clock when the sheet actually leaves the document — keying it
+      // to a click on the scrim also killed it when you tapped Share
+      var guard = setInterval(function () {
+        if (!cd.isConnected) { clearInterval(t); clearInterval(guard); }
+      }, 1000);
       void close;
     } });
   }
@@ -841,7 +857,7 @@
     var size = BASE_FS, guard = 0;
     passEl.style.fontSize = '';
     var doc = document.documentElement;
-    while (doc.scrollHeight > doc.clientHeight + 1 && size > 14 && guard++ < 40) {
+    while (doc.scrollHeight > doc.clientHeight + 1 && size > 15 && guard++ < 40) {
       size -= 0.5;
       passEl.style.fontSize = size + 'px';
     }
@@ -867,6 +883,7 @@
   });
   fillChips(null);
   syncHintBtn();
+  relight();
   setReadout(-1);
 
   if (st.over) {
