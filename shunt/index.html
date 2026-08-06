@@ -2,79 +2,295 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SHUNT — Superfun Daily</title>
 <link rel="stylesheet" href="../shared/fonts.css">
 <link rel="stylesheet" href="../shared/icons.css">
 <link rel="stylesheet" href="../shared/kit.css">
 <link rel="stylesheet" href="font.css">
 <style>
-:root{
-  --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff;
-  --accent-2:#9a3412;
-  --rail:rgba(23,22,26,.055);
+/* ============================================================
+   SHUNT — a precision object.
+   Everything below describes one machine: a recessed tray, machined
+   beads that ride in it, rails with detents, and an instrument panel
+   that reads out what the machine is doing. Colour, depth and edge
+   are all driven from tokens so light and dark are one edit, not two.
+   ============================================================ */
+
+:root, :root[data-theme="light"] {
+  --accent:#b23b0b; --accent-soft:#fbe4d5; --accent-ink:#fff;
+  --sig-warn:#a8620b; --sig-bad:#b3402f;
+
+  --font-brand:'Archivo', var(--font-display);
+
+  /* the tray sits DARKER than the paper it is recessed into */
+  --tray:#e9e1d2;
+  --tray-edge:#c9c0ae;
+  --tray-in-1:rgba(23,22,26,.13);
+  --tray-in-2:rgba(23,22,26,.06);
+  --rail-lo:rgba(23,22,26,.085);      /* the engraved half of a groove */
+  --rail-hi:rgba(255,255,255,.82);    /* the lit half — makes it read as cut, not drawn */
+  --lane:rgba(23,22,26,.022);
+  --lane-arm:rgba(23,22,26,.055);
+
+  /* beads: a machined cap, lit from above */
+  --bead-top:#ffffff;
+  --bead-bot:#f4efe6;
+  --bead-edge:#cdc5b6;
+  --bead-hi:rgba(255,255,255,.95);
+  --bead-sh:0 1px 1px rgba(23,22,26,.13), 0 2px 5px rgba(23,22,26,.08);
+  --bead-sh-live:0 2px 4px rgba(23,22,26,.16), 0 8px 18px rgba(23,22,26,.14);
+
+  --cap:#f7f3ec;                      /* the face of a rail button */
+  --panel:var(--white);
 }
-@media (prefers-color-scheme: dark){
-  :root{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e;
-         --rail:rgba(255,255,255,.05); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05;
+    --sig-warn:#e0a92b; --sig-bad:#f5715c;
+    --tray:#0d0c11;
+    --tray-edge:#383544;
+    --tray-in-1:rgba(0,0,0,.75);
+    --tray-in-2:rgba(0,0,0,.5);
+    --rail-lo:rgba(0,0,0,.6);
+    --rail-hi:rgba(255,255,255,.055);
+    --lane:rgba(255,255,255,.022);
+    --lane-arm:rgba(255,255,255,.06);
+    --bead-top:#2e2d37;
+    --bead-bot:#212027;
+    --bead-edge:#43414e;
+    --bead-hi:rgba(255,255,255,.09);
+    --bead-sh:0 1px 2px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+    --bead-sh-live:0 2px 5px rgba(0,0,0,.7), 0 10px 22px rgba(0,0,0,.55);
+    --cap:#26252e;
+    --panel:#1c1b22;
+  }
 }
-:root[data-theme="dark"]{ --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05; --accent-2:#ffa15e; --rail:rgba(255,255,255,.05); }
-:root[data-theme="light"]{ --accent:#c2410c; --accent-soft:#fbe4d5; --accent-ink:#fff; --accent-2:#9a3412; --rail:rgba(23,22,26,.055); }
+:root[data-theme="dark"] {
+  --accent:#f0762f; --accent-soft:#3a1c0d; --accent-ink:#1a0d05;
+  --sig-warn:#e0a92b; --sig-bad:#f5715c;
+  --tray:#0d0c11; --tray-edge:#383544;
+  --tray-in-1:rgba(0,0,0,.75); --tray-in-2:rgba(0,0,0,.5);
+  --rail-lo:rgba(0,0,0,.6); --rail-hi:rgba(255,255,255,.055);
+  --lane:rgba(255,255,255,.022); --lane-arm:rgba(255,255,255,.06);
+  --bead-top:#2e2d37; --bead-bot:#212027; --bead-edge:#43414e;
+  --bead-hi:rgba(255,255,255,.09);
+  --bead-sh:0 1px 2px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+  --bead-sh-live:0 2px 5px rgba(0,0,0,.7), 0 10px 22px rgba(0,0,0,.55);
+  --cap:#26252e; --panel:#1c1b22;
+}
+
+/* one shadow recipe for the recess, reused by the focus ring */
+:root { --tray-sh: inset 0 2px 6px var(--tray-in-1), inset 0 -1px 0 var(--tray-in-2), inset 0 0 0 1px var(--tray-in-2); }
 
 body{ overscroll-behavior:none; }
 .app{ touch-action:manipulation; }
 
-/* ---------- type re-tune for Google Sans Flex ---------- */
+/* ---------- app bar: back · wordmark · tools ----------
+   The flanks are minmax(0,1fr), not 1fr. A bare 1fr floors at the track's
+   min-content, so the two-button tools side used to inflate its column and
+   shove the wordmark off the real centre line the moment the bar got
+   narrow — at 320px the mark sat 13.5px left of centre with 8px of daylight
+   left before it hit the theme button. Zeroing the floor keeps the flanks
+   identical at every width, so the mark is centred on the BAR and not on
+   whatever was left over. */
+.bar{
+  display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+  gap:8px; padding:11px 0 9px;
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 var(--rail-hi);
+  margin-bottom:13px;
+}
+.bar .back{ justify-self:start; }
+.bar .tools{ justify-self:end; display:flex; gap:6px; }
+.mark{ text-align:center; line-height:1; }
 .bar h1{
-  font-weight:800; letter-spacing:.20em; font-size:19px;
-  text-indent:.20em;                       /* optically re-centre the tracking */
-  line-height:1.1;
+  font-family:var(--font-brand);
+  font-variation-settings:'wdth' 125, 'wght' 900;
+  font-size:23px; line-height:.94; letter-spacing:.012em;
+  margin:0; text-indent:0; text-transform:uppercase;
 }
-.bar .puzz-no{ display:block; margin-top:1px; font-weight:500; }
-.sheet h2, .verdict{ font-weight:800; letter-spacing:-.028em; }
-.prompt .k{ font-weight:800; letter-spacing:.14em; }
-.prompt .v{ font-size:14px; line-height:1.5; }
-.stat .n{ font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+.bar .puzz-no{
+  display:inline-flex; align-items:center; gap:5px;
+  margin-top:5px; font-family:var(--font-mono); font-size:9.5px; font-weight:600;
+  letter-spacing:.19em; text-transform:uppercase; color:var(--ink-3);
+}
+.bar .puzz-no::before{
+  content:''; width:5px; height:5px; border-radius:1.5px;
+  background:var(--accent); flex:0 0 5px;
+}
+/* Centring is geometry, not goodwill: a 111px wordmark, a 44px back button
+   and 94px of tools cannot all fit round the true centre below ~347px. The
+   mark condenses on the wdth axis instead of the bar giving up its centre —
+   which is the more honest reading of this identity anyway. */
+@media (max-width:359px){
+  .bar h1{ font-size:20px; font-variation-settings:'wdth' 100, 'wght' 900; }
+}
 
-/* ---------- status strip ---------- */
-.status{ display:flex; align-items:stretch; gap:8px; }
-.pip{
-  flex:1; background:var(--white); border:1px solid var(--line); border-radius:var(--r-sm);
-  padding:8px 4px 7px; text-align:center; min-width:0;
-  box-shadow:var(--shadow-1);
-  transition:border-color .2s, box-shadow .2s;
+/* ---------- the instrument cluster ----------
+   Replaces both the old objective strip (which only restated the board)
+   and the three generic stat boxes. One panel, three readings: what the
+   machine has spent, how much travel is left before it jams, and which
+   of the four rows are closed. */
+.cluster{
+  display:grid; grid-template-columns:auto auto; justify-content:space-between;
+  align-items:end; row-gap:6px;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
+  padding:9px 13px 9px;
+  box-shadow:var(--shadow-1), inset 0 1px 0 var(--rail-hi);
+  transition:border-color .25s, box-shadow .25s;
 }
-.pip .n{
-  font-family:var(--font-display); font-size:21px; font-weight:800;
-  display:block; line-height:1.05; letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums;
+.cluster .lab{
+  display:block; font-size:9.5px; font-weight:800; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink-3); margin-bottom:2px;
   transition:color .2s;
 }
-.pip .n .sub{ font-size:13px; font-weight:600; color:var(--ink-3); letter-spacing:0; }
-.pip .l{ font-size:9.5px; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); white-space:nowrap; }
-.pip.hot{ border-color:var(--accent); }
-.pip.hot .n{ color:var(--accent); }
-.pip.danger{ border-color:var(--bad); }
-.pip.danger .n{ color:var(--bad); }
+.cluster .gauge.right{ text-align:right; }
+.cluster .val{ display:flex; align-items:baseline; gap:6px; line-height:1; }
+.cluster .val b{
+  font-family:var(--font-brand); font-variation-settings:'wdth' 112, 'wght' 800;
+  font-size:27px; letter-spacing:-.01em; color:var(--ink);
+  font-variant-numeric:tabular-nums lining-nums;
+  transition:color .2s;
+}
+/* the counter wheel clicking over — the number drops into its window
+   rather than blinking to a new value */
+.cluster .val b.odo{ animation:odo .3s var(--ease-out); }
+@keyframes odo{ 0%{ translate:0 -8px; opacity:0 } 55%{ opacity:1 } 100%{ translate:0 0; opacity:1 } }
+.cluster .val i{
+  font-style:normal; font-size:10.5px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.cluster.danger .val b, .cluster.jammed .val b{ color:var(--sig-bad); }
+.cluster.hot{ border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.cluster.hot .gauge.right .lab{ color:var(--accent); }
+/* three rows lit AND two moves left is the most common shape of a near miss.
+   When both readings are live the warning owns the housing. */
+.cluster.danger{ border-color:color-mix(in srgb, var(--sig-bad) 42%, var(--line)); }
+/* the machine closed: the whole panel takes the accent */
+.cluster.closed{
+  border-color:color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow:var(--shadow-1), inset 0 1px 0 var(--rail-hi), 0 0 22px -9px var(--accent);
+}
+.cluster.closed .lab{ color:var(--accent); }
+.cluster.jammed{ border-color:color-mix(in srgb, var(--sig-bad) 45%, var(--line)); }
 
-/* ---------- grid + edge arrows ---------- */
+/* four lamps, one per row of the tray, top row leftmost. The FILL axis
+   does the work: an outlined ring becomes a solid contact. */
+.lamps{ display:flex; gap:7px; justify-content:flex-end; height:27px; align-items:center; }
+.lamp{
+  --ms-size:15px; --ms-fill:0; --ms-wght:600; --ms-opsz:20;
+  color:var(--ink-3); opacity:.6;
+  transition:font-variation-settings .28s cubic-bezier(.2,.9,.3,1), color .2s, opacity .2s, text-shadow .25s;
+}
+.lamp.lit{
+  --ms-fill:1; color:var(--accent); opacity:1;
+  text-shadow:0 0 9px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+/* a lamp does not simply become lit: the contact strikes and settles */
+.lamp.strike{ animation:lampstrike .5s var(--ease-spring); }
+@keyframes lampstrike{ 0%{ scale:1 } 26%{ scale:1.5 } 58%{ scale:.93 } 100%{ scale:1 } }
+/* and it does not simply go out: the circuit opens and the filament dies */
+.lamp.out{ animation:lampout .4s var(--ease-out); }
+@keyframes lampout{
+  0%   { color:var(--accent); opacity:1; text-shadow:0 0 9px color-mix(in srgb, var(--accent) 55%, transparent) }
+  16%  { color:var(--accent); opacity:.28; text-shadow:none }
+  34%  { color:var(--accent); opacity:.85 }
+  100% { color:var(--ink-3); opacity:.6; text-shadow:none }
+}
+
+/* travel rail: how much push is left before the machine jams. The detent
+   is par — cross it and the overrun draws in a different metal. The scale
+   underneath is printed on, so the notch is named even if the tour is
+   skipped. */
+.railwrap{ grid-column:1/-1; }
+.rail{
+  position:relative; height:9px; border-radius:99px;
+  /* the last three moves are drawn as a redline, so an empty rail still
+     says where the wall is */
+  background:
+    linear-gradient(90deg, transparent 0 var(--dz,78%), color-mix(in srgb, var(--sig-bad) 26%, transparent)),
+    var(--tray);
+  border:1px solid var(--tray-edge);
+  box-shadow:inset 0 1px 2px var(--tray-in-1);
+  overflow:hidden;
+}
+.rail i{ position:absolute; top:0; bottom:0; display:block; }
+/* width is the whole span the segment could ever fill; scaleX is how much of
+   it is spent — so travel animates on the compositor, never on layout */
+.rail .fill, .rail .over{
+  transform:scaleX(0); transform-origin:left center;
+  transition:transform .34s var(--ease-out), background .2s;
+}
+.rail .fill{ left:0; background:var(--accent); }
+.rail .over{ background:var(--sig-warn); }
+.cluster.danger .rail .over, .cluster.jammed .rail .over{ background:var(--sig-bad); }
+.rail .detent{
+  width:2px; margin-left:-1px; background:var(--paper); opacity:.9;
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--ink) 24%, transparent);
+}
+.scale{
+  position:relative; height:10px; margin-top:3px;
+  font-size:8px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); line-height:10px;
+}
+.scale span{ position:absolute; top:0; transition:color .2s; }
+.scale .pk{ transform:translateX(-50%); }
+.scale .jm{ right:0; }
+.cluster.danger .scale .jm, .cluster.jammed .scale .jm{ color:var(--sig-bad); }
+.cluster.danger .scale .jm{ animation:redline 1.3s ease-in-out infinite; }
+@keyframes redline{ 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+.cluster.closed .scale .pk{ color:var(--accent); }
+
+/* ---------- grid frame + rail buttons ---------- */
 .gridwrap{
   --arr: 30px;
   width:100%; margin:0 auto;
-  /* the board takes whatever height is left after the chrome, so an SE and a
+  /* the tray takes whatever height is left after the chrome, so an SE and a
      Pro Max both play without scrolling */
-  max-width:clamp(190px, calc(100dvh - 372px), 392px);
+  max-width:clamp(190px, calc(100dvh - 344px), 440px);
   display:grid;
   grid-template-columns:var(--arr) minmax(0,1fr) var(--arr);
   grid-template-rows:var(--arr) auto var(--arr);
   align-items:center; justify-items:center;
   user-select:none; -webkit-user-select:none;
 }
+/* ---------- a phone has more room than the machine was taking ----------
+   Measured at 390x844: the tray sat at 358px with 100px of empty page
+   between it and the cluster and 117px below the reset button — 217px of
+   nothing, and a machine that read under-scaled because of it. The cap is
+   still there (a 568px-tall phone must not scroll) but it is no longer what
+   decides the size on a tall one. Three moves: the page margin narrows and
+   the tray alone bleeds the last of it, the chrome that was floating in the
+   void grows into it on a dvh curve, and the leftover air is split exactly
+   in half rather than 100/117.
+   None of this touches measure(): STEP/TILE/GAP still come off
+   board.clientWidth and the ResizeObserver still re-runs them. */
+@media (max-width:619px){
+  :root{ --air:clamp(9px, 1.6dvh, 17px); }
+  .app{ padding-inline:12px; padding-bottom:calc(var(--air) + var(--safe-b)); }
+  .stage{
+    gap:clamp(15px, 3.8dvh, 32px);
+    padding:var(--air) 0 0;      /* the only asymmetry left is the safe area */
+    margin-inline:-3px;          /* the tray takes it; the panels do not */
+  }
+  .hintline, .actions{ margin-inline:3px; }
+  .cluster{ padding:clamp(9px,1.9dvh,16px) 13px; }
+  .cluster .val b{ font-size:clamp(27px, 3.6dvh, 32px); }
+  .lamps{ height:clamp(27px, 3.6dvh, 32px); }
+  /* tall enough that the swipe chip arriving and leaving never shifts the
+     two buttons under it */
+  .stage .hintline{ min-height:clamp(20px, 3.4dvh, 30px); }
+  /* .btn.sm is a 38px pill and the rule below raises these two to 44; on a
+     tall phone they can afford to be the size the thumb actually wants */
+  .actions .btn.sm{ min-height:clamp(44px, 6.4dvh, 54px); font-size:clamp(13.5px, 1.8dvh, 15px); }
+}
 @media (min-width:620px){
-  .gridwrap{ --arr:38px; max-width:clamp(220px, calc(100dvh - 350px), 440px); }
-  /* keep the whole game inside one desktop window, no scrolling */
+  .gridwrap{ --arr:38px; max-width:clamp(220px, calc(100dvh - 322px), 468px); }
+  /* keep the whole machine inside one desktop window, no scrolling */
   .stage{ gap:13px; }
-  .prompt{ padding:10px 14px; }
+  .cluster{ padding:8px 13px 10px; }
   .bar{ padding:10px 0 8px; margin-bottom:10px; }
 }
 
@@ -82,139 +298,347 @@ body{ overscroll-behavior:none; }
 .strip.h{ grid-template-columns:repeat(4,1fr); padding:0 calc(var(--gap,6px)/2); }
 .strip.v{ grid-template-rows:repeat(4,1fr); padding:calc(var(--gap,6px)/2) 0; }
 
+/* each lane ends in a button you can press instead of dragging — a detent
+   cap on the rail, not a floating chevron */
 .arr{
   appearance:none; border:0; background:transparent; padding:0; margin:0;
   display:grid; place-items:center; cursor:pointer; color:var(--ink-3);
-  border-radius:var(--r-pill); position:relative; width:100%; height:100%;
+  position:relative; width:100%; height:100%;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-  transition:color .15s, background .15s, transform .12s cubic-bezier(.22,1,.36,1);
+  /* the button itself never moves — only its cap and its mark do, so the
+     44px hit area stays exactly where the thumb last found it */
+  transition:color .13s;
 }
 .arr::after{ content:""; position:absolute; inset:-8px; } /* enlarge hit area to >=44px */
-.arr svg{ width:15px; height:15px; display:block; }
-@media (hover:hover){ .arr:hover{ color:var(--accent); background:var(--accent-soft); } }
-.arr:active{ transform:scale(.82); color:var(--accent); }
+.arr::before{
+  content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  background:var(--cap); border:1px solid var(--line); border-radius:7px;
+  box-shadow:inset 0 1px 0 var(--rail-hi);
+  transition:background .13s, border-color .13s, box-shadow .13s,
+             transform .13s var(--ease-out);
+}
+.strip.v .arr::before{ width:24px; height:32px; }
+.strip.h .arr::before{ width:32px; height:24px; }
+.arr .ms{
+  --ms-size:17px; --ms-wght:700; --ms-opsz:20; position:relative;
+  transition:font-variation-settings .2s cubic-bezier(.2,.9,.3,1),
+             translate .13s var(--ease-out);
+}
+@media (hover:hover){ .arr:hover{ color:var(--accent); } .arr:hover::before{ background:var(--accent-soft); border-color:var(--accent); } }
+/* pressing a detent seats it into the rail and shoves its mark the way the
+   lane is about to travel */
+.arr:active{ color:var(--accent); }
+.arr:active::before{
+  transform:translate(-50%,-50%) scale(.9);
+  background:var(--accent-soft); border-color:var(--accent);
+  box-shadow:inset 0 2px 4px var(--tray-in-1);
+}
+.arr:active .ms{ --ms-fill:1; }
+.arr.d-up:active    .ms{ translate:0 -2px; }
+.arr.d-down:active  .ms{ translate:0 2px; }
+.arr.d-left:active  .ms{ translate:-2px 0; }
+.arr.d-right:active .ms{ translate:2px 0; }
 .arr.armed{ color:var(--accent); }
-.arr.armed::before{
-  content:""; position:absolute; inset:20%; border-radius:var(--r-pill);
-  background:var(--accent); opacity:.14;
+.arr.armed::before{ background:var(--accent-soft); border-color:var(--accent); }
+.arr.armed .ms{ --ms-fill:1; }
+/* a focus ring shaped like the cap, not a rectangle round the whole cell */
+.arr:focus-visible{ outline:none; color:var(--accent); }
+.arr:focus-visible::before{
+  border-color:var(--accent);
+  box-shadow:inset 0 1px 0 var(--rail-hi), 0 0 0 3px var(--accent-soft);
 }
 
-/* ---------- the board: a shallow tray the beads slide inside ---------- */
+/* ---------- the tray ----------
+   A shallow recess milled with a groove between every slot, so the eye
+   reads four lanes crossed by four rails before anything moves. */
 .board{
   position:relative; width:100%; aspect-ratio:1/1;
   background:
-    linear-gradient(var(--rail) 1.5px, transparent 1.5px) 0 var(--half,50%) / 100% var(--step,25%),
-    linear-gradient(90deg, var(--rail) 1.5px, transparent 1.5px) var(--half,50%) 0 / var(--step,25%) 100%,
-    var(--paper-2);
-  border:1px solid var(--line);
+    linear-gradient(var(--rail-lo) 0 1px, var(--rail-hi) 1px 2px, transparent 2px)
+      0 calc(var(--half,50%) - 1px) / 100% var(--step,25%),
+    linear-gradient(90deg, var(--rail-lo) 0 1px, var(--rail-hi) 1px 2px, transparent 2px)
+      calc(var(--half,50%) - 1px) 0 / var(--step,25%) 100%,
+    var(--tray);
+  border:1px solid var(--tray-edge);
   border-radius:var(--r);
   overflow:hidden;
-  box-shadow:
-    inset 0 0 0 1px rgba(23,22,26,.035),
-    inset 0 2px 6px rgba(23,22,26,.07),
-    inset 0 -2px 6px rgba(23,22,26,.045);
+  box-shadow:var(--tray-sh), 0 1px 0 var(--rail-hi);
   touch-action:none;
   cursor:grab;
   transition:box-shadow .2s;
 }
-:root[data-theme="dark"] .board{ background-color:#100f14; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), inset 0 2px 8px rgba(0,0,0,.6), inset 0 -2px 8px rgba(0,0,0,.4); }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .board{ background-color:#100f14; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), inset 0 2px 8px rgba(0,0,0,.6), inset 0 -2px 8px rgba(0,0,0,.4); } }
 .board.dragging{ cursor:grabbing; }
+.board.kb{ box-shadow:var(--tray-sh), 0 0 0 3px var(--accent-soft), 0 0 0 4px var(--accent); }
 
-/* the wrap gutters: the two edges of the lane you are currently sliding.
-   They light up together so the tile leaving one is visibly the one arriving
-   at the other. */
-.gut{
-  position:absolute; pointer-events:none; opacity:0; z-index:5;
-  transition:opacity .14s;
+/* THE SIGNATURE: the fourth row lights and the machine closes. The housing
+   takes current, holds a bloom, and settles into a permanently live edge. */
+.board.closed{
+  border-color:color-mix(in srgb, var(--accent) 55%, var(--tray-edge));
+  box-shadow:var(--tray-sh),
+             0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+             0 0 26px -8px var(--accent);
 }
-.gut.on{ opacity:.55; }
-.gut.l{ left:0; width:14px; background:linear-gradient(90deg, var(--accent), transparent); }
-.gut.r{ right:0; width:14px; background:linear-gradient(270deg, var(--accent), transparent); }
-.gut.t{ top:0; height:14px; background:linear-gradient(180deg, var(--accent), transparent); }
-.gut.b{ bottom:0; height:14px; background:linear-gradient(0deg, var(--accent), transparent); }
+.board.energise{ animation:closing .95s var(--ease-out); }
+@keyframes closing{
+  0%   { box-shadow:var(--tray-sh), 0 0 0 0 transparent }
+  38%  { box-shadow:var(--tray-sh), 0 0 0 2px var(--accent), 0 0 46px 2px var(--accent) }
+  100% { box-shadow:var(--tray-sh),
+                    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+                    0 0 26px -8px var(--accent) }
+}
+/* and when it runs out of travel instead, it jams: one heavy knock, then a
+   dead housing. Losing gets a beat too. */
+.board.jammed{
+  border-color:color-mix(in srgb, var(--sig-bad) 42%, var(--tray-edge));
+  box-shadow:var(--tray-sh), 0 0 0 1px color-mix(in srgb, var(--sig-bad) 28%, transparent);
+}
+.board.clunk{ animation:clunk .5s var(--ease-out); }
+@keyframes clunk{
+  0%{ translate:0 0 } 13%{ translate:-9px 0 } 33%{ translate:6px 0 }
+  55%{ translate:-3px 0 } 76%{ translate:1px 0 } 100%{ translate:0 0 }
+}
 
-/* row highlight band */
+/* the wrap gutters: the two ends of the lane under your thumb. They light
+   together, so the bead leaving one edge is visibly the one arriving at the
+   other. Hard terminal, soft falloff — a contact, not a glow. */
+.gut{ position:absolute; pointer-events:none; opacity:0; z-index:5; transition:opacity .14s; }
+.gut.on{ opacity:.85; }
+.gut.l{ left:0;   width:15px;  background:linear-gradient(90deg,  var(--accent) 0 3px, color-mix(in srgb, var(--accent) 40%, transparent) 3px, transparent); }
+.gut.r{ right:0;  width:15px;  background:linear-gradient(270deg, var(--accent) 0 3px, color-mix(in srgb, var(--accent) 40%, transparent) 3px, transparent); }
+.gut.t{ top:0;    height:15px; background:linear-gradient(180deg, var(--accent) 0 3px, color-mix(in srgb, var(--accent) 40%, transparent) 3px, transparent); }
+.gut.b{ bottom:0; height:15px; background:linear-gradient(0deg,   var(--accent) 0 3px, color-mix(in srgb, var(--accent) 40%, transparent) 3px, transparent); }
+/* on a solved tray the two row buses stay live down the full height: every
+   row's contacts are closed at both ends at once */
+.gut.bus{
+  opacity:1; transform-origin:center top;
+  animation:busin .55s var(--ease-out) var(--bd,0s) backwards;
+}
+@keyframes busin{ from{ opacity:0; scale:1 0 } }
+
+/* ---------- the lanes ----------
+   Always visible as a shallow channel — that is the empty state doing its
+   job. When a row spells a word the channel energises and its two end
+   contacts close: a circuit, not a highlight. */
 .band{
-  position:absolute; left:2px; right:2px; border-radius:10px;
+  position:absolute; left:2px; right:2px; border-radius:9px;
   border:1.5px solid transparent; pointer-events:none;
+  background:var(--lane);
   transition:background .2s ease, border-color .2s ease, box-shadow .25s ease;
 }
+.band::before, .band::after{
+  content:''; position:absolute; top:50%; transform:translateY(-50%);
+  width:3px; height:30%; border-radius:2px;
+  background:var(--line-2); opacity:.45;
+  transition:background .2s, opacity .2s, height .25s var(--ease-out), box-shadow .25s;
+}
+.band::before{ left:-1px; }
+.band::after{ right:-1px; }
 .band.on{
   background:var(--accent-soft);
   border-color:color-mix(in srgb, var(--accent) 55%, transparent);
   box-shadow:0 0 0 1px var(--accent-soft), 0 0 18px -3px var(--accent);
 }
-.band.armed{ background:color-mix(in srgb, var(--ink) 5%, transparent); }
+.band.on::before, .band.on::after{
+  background:var(--accent); opacity:1; height:58%;
+  box-shadow:0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+/* the keyboard lane cursor is ACCENT-tinted, so it never collides with the
+   neutral tint the untouched tray uses to advertise its channels */
+.band.armed:not(.on){
+  background:color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color:color-mix(in srgb, var(--accent) 20%, transparent);
+}
+/* before the first push the channels read a little louder, so the tray
+   itself says "these four things slide" without a word of instruction */
+.board.virgin .band:not(.on):not(.armed){ background:var(--lane-arm); }
+/* the beads cover almost all of a channel, so it is the eight end contacts
+   that have to carry the empty state. On an untouched tray they are warm and
+   fully present: four lanes, terminals at both ends, waiting for current. */
+.board.virgin .band:not(.on)::before, .board.virgin .band:not(.on)::after{
+  opacity:1; background:color-mix(in srgb, var(--accent) 42%, var(--line-2));
+}
 @keyframes litpulse{ 0%{ box-shadow:0 0 0 1px var(--accent-soft), 0 0 0 0 var(--accent) } 55%{ box-shadow:0 0 0 2px var(--accent-soft), 0 0 26px 2px var(--accent) } 100%{ box-shadow:0 0 0 1px var(--accent-soft), 0 0 18px -3px var(--accent) } }
 .band.on.justlit{ animation:litpulse .5s ease-out; }
 
+/* current visibly running the length of the channel the instant it closes —
+   the beat that separates "a row turned orange" from "a circuit completed" */
+.srgw{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; pointer-events:none; }
+.srg{
+  position:absolute; top:0; bottom:0; left:-46%; width:46%; display:block; opacity:0;
+  background:linear-gradient(90deg, transparent,
+             color-mix(in srgb, var(--accent) 62%, transparent) 48%, transparent);
+}
+.band.justlit .srg{ animation:surge .52s var(--ease-out); }
+@keyframes surge{
+  0%{ opacity:0; transform:translate3d(0,0,0) } 14%{ opacity:1 }
+  86%{ opacity:.8 } 100%{ opacity:0; transform:translate3d(330%,0,0) }
+}
+/* the sting: a row you had, broken. The channel loses current and both
+   contacts drop open. It stings without punishing — nothing is taken away
+   except the light. */
+.band.justdark{ animation:opendark .34s var(--ease-out); }
+@keyframes opendark{
+  0%  { box-shadow:0 0 0 1px var(--accent-soft), 0 0 18px -3px var(--accent) }
+  26% { box-shadow:0 0 0 1.5px color-mix(in srgb, var(--ink) 20%, transparent), 0 0 10px -4px var(--ink) }
+  100%{ box-shadow:none }
+}
+.band.justdark::before, .band.justdark::after{ animation:contactopen .34s var(--ease-out); }
+@keyframes contactopen{
+  0%  { background:var(--accent); opacity:1 }
+  40% { background:var(--ink-3); opacity:1 }
+  100%{ background:var(--line-2); opacity:.45 }
+}
+
 /* column arm highlight */
-.carm{ position:absolute; top:2px; bottom:2px; border-radius:10px; pointer-events:none;
-  background:color-mix(in srgb, var(--ink) 5%, transparent); opacity:0; transition:opacity .15s; }
+.carm{ position:absolute; top:2px; bottom:2px; border-radius:9px; pointer-events:none;
+  background:color-mix(in srgb, var(--accent) 10%, transparent);
+  opacity:0; transition:opacity .15s; }
 .carm.on{ opacity:1; }
 
 /* ---------- the beads ---------- */
 .tl{
   position:absolute; top:0; left:0; display:grid; place-items:center;
-  background:var(--white); border:1px solid var(--line-2);
-  border-radius:9px; font-family:var(--font-tile); font-weight:800;
-  letter-spacing:-.01em; text-transform:uppercase; color:var(--ink);
+  background:linear-gradient(180deg, var(--bead-top), var(--bead-bot));
+  border:1px solid var(--bead-edge);
+  border-radius:8px;
+  font-family:var(--font-brand); font-variation-settings:'wdth' 100, 'wght' 700;
+  letter-spacing:.005em; text-transform:uppercase; color:var(--ink);
   will-change:transform; pointer-events:none; z-index:2;
-  box-shadow:var(--shadow-1), inset 0 0 0 1px rgba(255,255,255,.7);
-  transition:background .2s, border-color .2s, color .2s, box-shadow .2s;
+  box-shadow:var(--bead-sh), inset 0 1px 0 var(--bead-hi);
+  /* every bead state change acknowledges inside 130ms; `scale` is kept
+     independent of `transform` so the render loop still owns position */
+  transition:background .18s, border-color .12s, color .18s,
+             box-shadow .12s, scale .12s var(--ease-out);
 }
-:root[data-theme="dark"] .tl{ box-shadow:var(--shadow-1), inset 0 0 0 1px rgba(255,255,255,.05); }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tl{ box-shadow:var(--shadow-1), inset 0 0 0 1px rgba(255,255,255,.05); } }
 .tl.on{
-  border-color:color-mix(in srgb, var(--accent) 65%, transparent);
+  border-color:color-mix(in srgb, var(--accent) 70%, transparent);
   color:var(--accent); background:var(--accent-soft);
 }
-/* the lane under your finger is lifted off the tray */
-.tl.live{ box-shadow:var(--shadow-2), inset 0 0 0 1px rgba(255,255,255,.7); z-index:3; }
-:root[data-theme="dark"] .tl.live{ box-shadow:var(--shadow-2), inset 0 0 0 1px rgba(255,255,255,.07); }
-/* the bead currently straddling the wrap seam */
-.tl.wrapping{ border-color:var(--accent); border-style:dashed; }
-.tl.cursor{ box-shadow:var(--shadow-1), 0 0 0 3px var(--accent); z-index:4; }
+/* the lane under your finger is lifted out of the tray */
+.tl.live{ box-shadow:var(--bead-sh-live), inset 0 1px 0 var(--bead-hi); z-index:3; }
+/* both bodies of the bead straddling the seam, so the eye pairs them up */
+.tl.wrapping{ border-color:var(--accent); }
+.tl.cursor{ box-shadow:var(--bead-sh), inset 0 1px 0 var(--bead-hi), 0 0 0 3px var(--accent); z-index:4; }
 .tl.snapping{ transition:transform .17s cubic-bezier(.22,1,.36,1), background .2s, border-color .2s, color .2s, box-shadow .2s; }
+/* the instant a thumb lands: the bead under it seats into the recess */
+.tl.grip{ scale:.955; border-color:var(--accent); box-shadow:inset 0 2px 5px var(--tray-in-1); }
+/* the machine locking, one row at a time, top to bottom */
+.tl.seat{ animation:seat .46s var(--ease-spring) var(--sd,0ms) backwards; }
+@keyframes seat{ 0%{ scale:1 } 24%{ scale:1.075 } 54%{ scale:.965 } 100%{ scale:1 } }
+/* first paint: sixteen beads dropped into the tray on a diagonal */
+.board.boot .tl{ animation:dropin .42s var(--ease-spring) calc(var(--i,0)*40ms) backwards; }
+@keyframes dropin{ from{ opacity:0; scale:.55 } }
 
-.board.kb{ box-shadow:
-    inset 0 0 0 1px rgba(23,22,26,.035),
-    inset 0 2px 6px rgba(23,22,26,.07),
-    0 0 0 3px var(--accent-soft); }
-:root[data-theme="dark"] .board.kb{ box-shadow: inset 0 2px 8px rgba(0,0,0,.6), inset 0 -2px 8px rgba(0,0,0,.4), 0 0 0 3px var(--accent); }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .board.kb{ box-shadow: inset 0 2px 8px rgba(0,0,0,.6), inset 0 -2px 8px rgba(0,0,0,.4), 0 0 0 3px var(--accent); } }
+/* ---------- under the tray ---------- */
+.hintline{ text-align:center; font-size:12.5px; color:var(--ink-3); min-height:20px; }
+.hintline b{ color:var(--ink); font-weight:700; }
+/* the coach line arrives rather than swapping */
+.hintline .hw{ display:inline-block; animation:rise var(--dur-2) var(--ease-out); }
+/* .btn.sm is a 38px pill in the kit, which is under the thumb minimum. These
+   two are the only real controls below the tray, so they get the full 44. */
+.actions{ display:flex; gap:8px; }
+.actions .btn{ min-height:44px; }
+/* same reasoning for the coach mark's buttons, which are the first thing a
+   first-timer ever taps. Every game raises them until shared/kit.css can. */
+#tour-layer .bub .btn{ min-height:44px; }
 
-/* first-run cue — lives under the board so it never covers a letter */
+/* first-move cue — lives under the tray so it never covers a letter */
 .swipehint{
   display:inline-flex; align-items:center; gap:6px; vertical-align:middle;
-  padding:3px 11px 3px 9px; border-radius:var(--r-pill);
+  padding:4px 12px 4px 10px; border-radius:var(--r-pill);
   background:var(--accent); color:var(--accent-ink);
   font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
   box-shadow:var(--shadow-1);
   animation:sw 2.2s cubic-bezier(.45,0,.55,1) infinite;
 }
-.swipehint svg{ width:12px; height:12px; }
-@keyframes sw{ 0%,100%{transform:translateX(-11px);opacity:.45} 45%,60%{transform:translateX(11px);opacity:1} }
+.swipehint .ms{ --ms-size:14px; --ms-fill:1; --ms-wght:600; --ms-opsz:20; }
+/* only the travel is animated — the chip is fully legible with motion off */
+@keyframes sw{ 0%,100%{transform:translateX(-11px)} 45%,60%{transform:translateX(11px)} }
 
-/* ---------- footer ---------- */
-.hintline{ text-align:center; font-size:12.5px; color:var(--ink-3); min-height:19px; }
-.hintline b{ color:var(--accent); font-weight:700; }
-.actions{ display:flex; gap:8px; }
-
-.wordlist{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:12px 0 2px; }
-.wordlist span{
-  font-family:var(--font-mono); font-size:13px; letter-spacing:.16em; text-transform:uppercase;
-  background:var(--accent-soft); color:var(--accent); border-radius:var(--r-pill);
-  padding:5px 12px; font-weight:700;
-  animation:pop .3s ease-out backwards;
+/* ---------- result sheet ---------- */
+.sheet h2, .verdict{
+  font-family:var(--font-brand); font-variation-settings:'wdth' 108, 'wght' 800;
+  letter-spacing:-.02em;
 }
-.wordlist span:nth-child(2){ animation-delay:.06s }
-.wordlist span:nth-child(3){ animation-delay:.12s }
-.wordlist span:nth-child(4){ animation-delay:.18s }
+.verdict{ font-size:33px; }
+.stat .n{
+  font-family:var(--font-brand); font-variation-settings:'wdth' 110, 'wght' 800;
+  letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+}
+
+/* the finished machine, handed back: the tray with every lane closed */
+.wordlist{
+  display:grid; grid-template-columns:repeat(4, 38px); gap:4px;
+  width:max-content; margin:16px auto 4px; padding:8px;
+  background:var(--tray); border:1px solid var(--tray-edge);
+  border-radius:var(--r); box-shadow:var(--tray-sh);
+}
+.wordlist b{
+  display:grid; place-items:center; height:38px;
+  font-family:var(--font-brand); font-variation-settings:'wdth' 100, 'wght' 700;
+  font-size:18px; text-transform:uppercase;
+  background:var(--accent-soft); color:var(--accent);
+  border:1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius:7px;
+  /* the finished tray prints itself back, bead by bead */
+  animation:beadin .4s var(--ease-spring) calc(var(--i,0)*22ms + .18s) backwards;
+}
+@keyframes beadin{ from{ opacity:0; scale:.5 } }
+
+/* ---------- THE REVEAL ----------
+   A jammed tray used to hand back four anonymous grey bars and the line "none
+   of them were letters you ever saw at once" — nothing to learn, and nothing
+   to say to the colleague who solved it. A daily puzzle that never shows its
+   answer cannot be discussed, and discussion is the whole distribution model.
+   So the machine prints what it was holding: a ruled title, the tray landing
+   bead by bead, and a caption saying how many are still hidden. It is staged
+   as an event, because that is what it is. */
+.revwrap{ margin:20px 0 4px; }
+.revlbl{
+  display:flex; align-items:center; gap:9px; justify-content:center;
+  font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+  font-weight:800; color:var(--accent);
+}
+.revlbl::before, .revlbl::after{ content:''; height:1px; flex:1; }
+.revlbl::before{ background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 50%, transparent)); }
+.revlbl::after{ background:linear-gradient(270deg, transparent, color-mix(in srgb, var(--accent) 50%, transparent)); }
+/* the revealed tray gets the live edge a closed machine earns — it IS a
+   closed machine, just not the one the player built */
+.wordlist.reveal{
+  margin:11px auto 0;
+  border-color:color-mix(in srgb, var(--accent) 45%, var(--tray-edge));
+  box-shadow:var(--tray-sh), 0 0 22px -10px var(--accent);
+}
+/* slower and later than the winner's tray: this one is being handed to you,
+   not being celebrated */
+.wordlist.reveal b{ animation-delay:calc(var(--i,0)*42ms + .34s); }
+.revcap{ text-align:center; font-size:12.5px; color:var(--ink-2); margin:11px 0 0; }
+.revcap b{ color:var(--ink); font-weight:800; }
+
+/* the losing instrument: how near the machine ever got to closing.
+   A near miss has to be legible AS a near miss, not as a full stop. */
+.approach{
+  background:var(--tray); border:1px solid var(--tray-edge); border-radius:var(--r);
+  box-shadow:var(--tray-sh); padding:15px 12px 12px; margin:16px 0 4px;
+}
+.apprail{ display:flex; align-items:center; justify-content:center; gap:2px; }
+.apprail > *{ flex:0 0 24px; height:24px; display:grid; place-items:center; }
+.apprail .dot::before{
+  content:''; display:block; width:4px; height:4px; border-radius:50%;
+  background:var(--line-2); opacity:.7;
+}
+.apprail .pin{ --ms-size:21px; --ms-fill:1; color:var(--ink); }
+.apprail .flag{ --ms-size:24px; --ms-fill:1; color:var(--accent); }
+.apprail .cv{
+  --ms-size:20px; --ms-wght:700; color:var(--accent); opacity:.85;
+  animation:march .45s var(--ease-out) calc(var(--i,0)*.12s + .3s) backwards;
+}
+@keyframes march{ from{ opacity:0; translate:-10px 0 } }
+.applab{ text-align:center; font-size:13px; color:var(--ink-2); margin-top:10px; }
+.applab b{ color:var(--ink); font-weight:800; }
 
 .solrow{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); margin:5px 0; }
-.solrow .bar-{ flex:1; height:8px; background:var(--paper-2); border-radius:99px; overflow:hidden; border:1px solid var(--line); }
+.solrow .bar-{ flex:1; height:8px; background:var(--tray); border-radius:99px; overflow:hidden; border:1px solid var(--tray-edge); }
 .solrow .bar- i{ display:block; height:100%; background:var(--line-2); border-radius:99px; }
 .solrow.you .bar- i{ background:var(--accent); }
 .solrow.you{ color:var(--ink); font-weight:700; }
@@ -225,45 +649,114 @@ body{ overscroll-behavior:none; }
 /* the share block has a long third line — let it wrap rather than scroll */
 .sharegrid{ font-size:13px; letter-spacing:.01em; white-space:pre-wrap; line-height:1.5; padding:13px 12px; }
 
-.demo{ font-family:var(--font-mono); font-size:12.5px; line-height:1.55; background:var(--paper-2);
-  border:1px solid var(--line); border-radius:var(--r-sm); padding:11px 13px; white-space:pre; overflow-x:auto; }
-.demo b{ color:var(--accent); font-weight:700; }
+/* ---------- help: a diagram, not a paragraph ---------- */
+.dia{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  background:var(--tray); border:1px solid var(--tray-edge); border-radius:var(--r);
+  padding:13px 10px; box-shadow:var(--tray-sh);
+}
+.mini{ display:grid; grid-template-columns:repeat(4,1fr); gap:3px; }
+.mini b{
+  display:grid; place-items:center; width:26px; height:26px;
+  background:linear-gradient(180deg, var(--bead-top), var(--bead-bot));
+  border:1px solid var(--bead-edge); border-radius:6px;
+  box-shadow:inset 0 1px 0 var(--bead-hi);
+  font-family:var(--font-brand); font-variation-settings:'wdth' 100, 'wght' 700;
+  font-size:13px; color:var(--ink);
+}
+.mini b.on{ background:var(--accent-soft); color:var(--accent); border-color:color-mix(in srgb, var(--accent) 55%, transparent); }
+.mini b.mk{ box-shadow:inset 0 1px 0 var(--bead-hi), 0 0 0 2px var(--accent); }
+/* the arrow keeps travelling, so the eye reads the diagram left to right
+   without a caption telling it to */
+.dia .ms{
+  --ms-size:22px; --ms-wght:600; color:var(--accent); flex:0 0 auto;
+  animation:nudge 1.9s var(--ease-in-out) infinite;
+}
+@keyframes nudge{ 0%,100%{ translate:-3px 0 } 50%{ translate:3px 0 } }
+.diacap{ text-align:center; font-size:12.5px; color:var(--ink-3); margin:9px 0 2px; }
+.diacap b{ color:var(--ink); font-weight:700; }
+.lede{ font-size:16px; line-height:1.45; color:var(--ink); font-weight:600; margin:0 0 14px; text-align:center; }
+.rules ul{ padding-left:18px; margin:14px 0 0; }
+
+/* The kit adds .done only when the clipboard actually took the text, so this
+   is the one state allowed to look like a confirmation. A blocked clipboard
+   falls back to select-and-copy and never gets here. */
+#shareBtn.done{ background:var(--good); border-color:transparent; color:#fff; }
+
+/* ---------- the result button arriving in place of reset ---------- */
+@keyframes swapin{ from{ opacity:0; scale:.94 } }
+#showres.swapin{ animation:swapin .34s var(--ease-spring); }
+
+/* The kit zeroes every DURATION for a reduced-motion reader, but not the
+   DELAYS — and an entrance that fills `backwards` holds its invisible first
+   frame for the whole delay. Every staggered thing below would blink in over
+   half a second instead of simply being there, so they are switched off
+   outright: each one's resting state is the correct one. The two infinite
+   loops go too, or they would restart forever at 0.01ms and repaint for
+   nothing.
+   `.stagger` is the kit's own rule and has exactly the same fault: its
+   children hold `backwards` behind delays of up to .44s, so a result sheet
+   still reveals itself piece by piece with motion off. The real fix belongs
+   in shared/kit.css; until it lands, Shunt's two sheets are correct here. */
+@media (prefers-reduced-motion: reduce){
+  .board.boot .tl, .tl.seat, .gut.bus, .wordlist b, .wordlist.reveal b, .apprail .cv,
+  .cluster.danger .scale .jm, .swipehint, .dia .ms,
+  /* the kit opens its coach bubble on a .1s delay its own reduce block does
+     not zero, so the bubble sits invisible and then snaps in */
+  #tour-layer .bub,
+  .stagger > *{ animation:none !important; }
+}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="bar">
-    <button class="iconbtn" id="theme" aria-label="Toggle theme" title="Theme">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </button>
-    <div style="flex:1;min-width:0;text-align:center">
+  <header class="bar">
+    <a class="iconbtn back" href="../" aria-label="All games" title="All games">
+      <span class="ms" aria-hidden="true">arrow_back</span>
+    </a>
+    <div class="mark">
       <h1>Shunt</h1>
       <span class="puzz-no" id="pno"></span>
     </div>
-    <button class="iconbtn" id="help" aria-label="How to play" title="How to play">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.8-.9 1.4v.4"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
-    </button>
-  </div>
+    <div class="tools">
+      <button class="iconbtn" id="theme" type="button" aria-label="Toggle theme"></button>
+      <button class="iconbtn" id="help" type="button" aria-label="How to play" title="How to play">
+        <span class="ms" aria-hidden="true">help</span>
+      </button>
+    </div>
+  </header>
 
-  <div class="prompt">
-    <span class="k">Objective</span>
-    <span class="v" id="obj">Push rows and columns until <b>all four rows</b> spell words. Letters wrap round the edges.</span>
+  <div class="cluster" id="cluster">
+    <div class="gauge">
+      <span class="lab">Moves</span>
+      <span class="val"><b class="tick" id="pMoves">0</b><i>par <span id="pPar">6</span></i></span>
+    </div>
+    <div class="gauge right">
+      <span class="lab">Rows lit</span>
+      <span class="sr" id="lampsSr">0 of 4</span>
+      <div class="lamps" id="lamps" aria-hidden="true">
+        <span class="ms lamp">circle</span><span class="ms lamp">circle</span><span class="ms lamp">circle</span><span class="ms lamp">circle</span>
+      </div>
+    </div>
+    <div class="railwrap" aria-hidden="true">
+      <div class="rail">
+        <i class="fill" id="railFill"></i><i class="over" id="railOver"></i><i class="detent" id="railPar"></i>
+      </div>
+      <div class="scale">
+        <span class="pk" id="scalePar">par</span><span class="jm">jam</span>
+      </div>
+    </div>
   </div>
 
   <div class="stage">
-    <div class="status">
-      <div class="pip"><span class="n" id="pMoves">0</span><span class="l">Moves</span></div>
-      <div class="pip"><span class="n" id="pPar">6</span><span class="l">Par</span></div>
-      <div class="pip" id="pLitWrap"><span class="n" id="pLit">0<span style="font-size:13px;color:var(--ink-3)">/4</span></span><span class="l">Rows lit</span></div>
-    </div>
-
     <div class="gridwrap" id="gw">
       <div></div>
       <div class="strip h" id="sUp"></div>
       <div></div>
       <div class="strip v" id="sLeft"></div>
       <div class="board" id="board" tabindex="0" role="application"
-           aria-label="4 by 4 letter grid. Click a tile then use arrow keys to slide its row or column."></div>
+           aria-describedby="tray"
+           aria-label="4 by 4 letter tray. Tap a bead, then use the arrow keys to slide its row or column. Shift and an arrow key moves the cursor without spending a move. Every move is read back."></div>
       <div class="strip v" id="sRight"></div>
       <div></div>
       <div class="strip h" id="sDown"></div>
@@ -272,13 +765,17 @@ body{ overscroll-behavior:none; }
 
     <div class="hintline" id="hint"></div>
     <div class="actions">
-      <button class="btn ghost sm" id="restart" style="flex:1">Reset the letters</button>
-      <button class="btn sm" id="showres" style="flex:1;display:none">Result</button>
+      <button class="btn ghost sm" id="restart" style="flex:1"><span class="ms" aria-hidden="true">restart_alt</span>Reset the letters</button>
+      <button class="btn sm" id="showres" style="flex:1;display:none"><span class="ms" aria-hidden="true">sports_score</span>Result</button>
     </div>
-    <p class="sr" id="live" role="status" aria-live="polite"></p>
+    <!-- #board carries role="application" so the arrow keys reach the game
+         instead of a screen reader's browse mode — which means the virtual
+         buffer never sees the sixteen beads inside it. These two live OUTSIDE
+         the application, so the tray is always readable: #tray is a browsable
+         readout of all four rows, #live speaks what changed. -->
+    <p class="sr" id="tray"></p>
+    <p class="sr" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
   </div>
-
-  <div id="kbd"></div>
 </div>
 
 <script src="../shared/lex4.js"></script>
@@ -351,16 +848,26 @@ function closestApproachOf(boards,cap){
 /* ======================================================================
    puzzle selection + persistence
    ====================================================================== */
-const puz = Kit.pick(P);
-const DAY = Kit.dayNumber();
+/* The day sets which tray you OPEN on, so everyone alive today starts on the
+   same board — but finishing one, won or lost, hands you the next straight
+   away. Kit.puzzleNo is that number: the one printed on the masthead, saved
+   under and shared, and the one that honours ?d=N for review. Kit.dayNumber()
+   ignores the pin, so a pinned tray would print the wrong number. */
+const NS  = 'shunt';
+const puz = Kit.pick(P, NS);
+const DAY = Kit.puzzleNo(NS);
 const CAP = puz.par + 8;                       // hard move limit -> lose state
-const store = Kit.store('shunt');
-const seenStore = Kit.store('shunt:seen');
+const store = Kit.store(NS);
 
 let S = null; // session state
 
+/* Bumped when the SHAPE of a saved session changes. v2 is the first build in
+   which S.trail holds one entry per MOVE rather than one per slide; a v1 save
+   would draw an emoji story with fewer squares than the score above it, so it
+   is discarded rather than half-believed. */
+const SAVE_V = 2;
 function freshState(){
-  return { day:DAY, grid:puz.start.split(''), moves:0, resets:0,
+  return { v:SAVE_V, day:DAY, grid:puz.start.split(''), moves:0, resets:0,
            trail:[litMask(puz.start.split(''))], hist:[puz.start], done:null };
 }
 /* closest the player ever got, measured once at the end */
@@ -369,7 +876,7 @@ function closestApproach(){
 }
 (function load(){
   const s = store.get();
-  if(s && s.day===DAY && s.puz===puz.start){ S = s; }
+  if(s && s.v===SAVE_V && s.day===DAY && s.puz===puz.start){ S = s; }
   else { S = freshState(); S.puz = puz.start; }
 })();
 function save(){ store.set(S); }
@@ -384,7 +891,11 @@ let STEP=0, TILE=0, GAP=6;
 
 const bands=[], carms=[], guts={};
 for(let r=0;r<4;r++){
-  const b=document.createElement('div'); b.className='band'; board.appendChild(b); bands.push(b);
+  const b=document.createElement('div'); b.className='band';
+  /* the surge rides inside its own clip so it can run the length of the
+     channel without escaping past the end contacts */
+  b.innerHTML='<i class="srgw"><i class="srg"></i></i>';
+  board.appendChild(b); bands.push(b);
 }
 for(let c=0;c<4;c++){
   const a=document.createElement('div'); a.className='carm'; board.appendChild(a); carms.push(a);
@@ -399,7 +910,11 @@ for(let c=0;c<4;c++){
 const CELLS=[];
 for(let i=0;i<16;i++){
   const trio=[];
-  for(let k=0;k<3;k++){ const t=document.createElement('div'); t.className='tl'; board.appendChild(t); trio.push(t); }
+  for(let k=0;k<3;k++){
+    const t=document.createElement('div'); t.className='tl';
+    t.style.setProperty('--i', (i>>2)+(i&3));   // diagonal wave on first paint
+    board.appendChild(t); trio.push(t);
+  }
   CELLS.push(trio);
 }
 
@@ -412,7 +927,7 @@ function measure(){
   gw.style.setProperty('--gap', GAP+'px');
   board.style.setProperty('--step', STEP+'px');
   board.style.setProperty('--half', (STEP/2)+'px');
-  const fs = Math.round(TILE*0.52);
+  const fs = Math.round(TILE*0.5);
   for(const trio of CELLS) for(const t of trio){
     t.style.width=TILE+'px'; t.style.height=TILE+'px'; t.style.fontSize=fs+'px';
   }
@@ -427,13 +942,51 @@ const slotX=c=>c*STEP+GAP/2, slotY=r=>r*STEP+GAP/2;
    ====================================================================== */
 let drag=null;      // {isRow, idx, off, preview, steps}
 let cursor={r:0,c:0}, kbMode=false;
-let prevMask=null, lastLit=-1;
+let prevMask=null, lastLamps=-1, lastMoves=-1;
 const el = {
   moves: document.getElementById('pMoves'),
-  lit: document.getElementById('pLit'),
-  litWrap: document.getElementById('pLitWrap'),
-  movePip: document.querySelector('.status .pip')
+  cluster: document.getElementById('cluster'),
+  fill: document.getElementById('railFill'),
+  over: document.getElementById('railOver'),
+  lampsSr: document.getElementById('lampsSr'),
+  lamps: [...document.querySelectorAll('#lamps .lamp')]
 };
+/* One vocabulary for the hand, matched to the one for the eye. A detent is a
+   whisper, a closing circuit is a single solid pulse, an opening one is two
+   thin ticks, the machine closing is a burst-and-thunk, a jam is a knock. */
+const HAP = {
+  touch:  4,
+  detent: 6,
+  commit: 9,
+  lit:    16,
+  dark:   [4,30,4],
+  litHard:[12,40,22],
+  darkHard:[6,26,6,26,6],
+  closed: [12,55,12,55,12,55,10,70,34],
+  jam:    [30,60,18,45,10],
+  reset:  [6,30,6,30,6,30,16]
+};
+const BURST = ['#f0762f','#b23b0b','#e0a92b','#a8620b','#f7c9a8'];
+
+/* Restart an animation on an element that may already be playing it. A class
+   has to be seen as absent by a style recalc before re-adding it will retrigger
+   the keyframes — so the whole batch is queued and ONE forced layout serves all
+   of it. Eight separate reflows inside a drag frame is exactly the kind of
+   thrash that makes a phone stutter. */
+const replayQ=[]; let replayPending=false;
+function replay(node, cls, drop){
+  if(drop) node.classList.remove(drop);
+  node.classList.remove(cls);
+  replayQ.push(node, cls);
+  if(replayPending) return;
+  replayPending = true;
+  queueMicrotask(()=>{
+    replayPending = false;
+    void document.body.offsetWidth;            // one recalc for every queued node
+    for(let i=0;i<replayQ.length;i+=2) replayQ[i].classList.add(replayQ[i+1]);
+    replayQ.length = 0;
+  });
+}
 let arrows=[];      // filled once the edge chevrons exist
 
 function render(){
@@ -484,7 +1037,14 @@ function render(){
 
   bands.forEach((b,r)=>{
     const on=(mask>>r&1)===1;
-    if(on && prevMask!==null && !((prevMask>>r)&1)) { b.classList.remove('justlit'); void b.offsetWidth; b.classList.add('justlit'); }
+    if(prevMask!==null){
+      const was=((prevMask>>r)&1)===1;
+      /* a channel closing and a channel opening are categorically different
+         events, and both happen the instant the detent is crossed — under the
+         thumb, not after the release */
+      if(on && !was) replay(b,'justlit','justdark');
+      else if(!on && was) replay(b,'justdark','justlit');
+    }
     b.classList.toggle('on', on);
     b.classList.toggle('armed', kbMode && !drag && cursor.r===r);
   });
@@ -504,23 +1064,94 @@ function render(){
   guts.t.classList.toggle('on', gOn && !drag.isRow);
   guts.b.classList.toggle('on', gOn && !drag.isRow);
 
+  /* ---- the instrument cluster ---- */
   const n = popcount(mask), left = CAP - S.moves;
-  if(el.moves.textContent!=String(S.moves)) el.moves.textContent = S.moves;
-  if(lastLit!==n){ el.lit.innerHTML = n+'<span class="sub">/4</span>'; lastLit=n; }
-  el.litWrap.classList.toggle('hot', n>=3);
-  el.movePip.classList.toggle('danger', !S.done && left<=3);
-  /* announce only settled positions — narrating every frame of a drag would
-     make a screen reader unusable */
-  if(!drag && !S.done){
-    const say = `${n} of 4 rows spell words, ${left} moves left`;
-    if(live_.textContent!==say) live_.textContent = say;
+  if(lastLamps!==mask){                      // one lamp per row, top row first
+    const was = lastLamps<0 ? 0 : lastLamps;
+    for(let r=0;r<4;r++){
+      const on=(mask>>r&1)===1;
+      el.lamps[r].classList.toggle('lit', on);
+      if(lastLamps>=0 && on!==(((was>>r)&1)===1)) replay(el.lamps[r], on?'strike':'out', on?'out':'strike');
+    }
+    el.lampsSr.textContent = n+' of 4';
+    lastLamps = mask;
   }
+  if(lastMoves!==S.moves){
+    const first = lastMoves<0;
+    lastMoves = S.moves;
+    el.moves.textContent = S.moves;
+    if(!first) replay(el.moves,'odo');
+    /* both segments are already their full possible width; only the scale
+       changes, so travel animates on the compositor */
+    const sx = v => 'scaleX('+Math.max(0, Math.min(1, v)).toFixed(4)+')';
+    el.fill.style.transform = sx(Math.min(S.moves, puz.par)/puz.par);
+    el.over.style.transform = sx(Math.max(0, S.moves - puz.par)/(CAP - puz.par));
+  }
+  el.cluster.classList.toggle('hot', n>=3 && !S.done);
+  el.cluster.classList.toggle('danger', !S.done && left<=3);
+  board.classList.toggle('virgin', S.moves===0 && !S.done);
+  /* Nothing is announced from here. render() runs on every frame of a drag,
+     and the live region used to carry a bare count that never named a letter
+     or a row — so two Shift+Arrow presses moved the armed lane and left #live
+     byte identical. Speech is driven from the settled events below instead. */
 
   for(const a of arrows){
     a.classList.toggle('armed', kbMode && !drag && (
       (a.dataset.kind==='row' && +a.dataset.idx===cursor.r) ||
       (a.dataset.kind==='col' && +a.dataset.idx===cursor.c)));
   }
+}
+
+/* ======================================================================
+   WHAT THE TRAY SAYS, OUT LOUD
+   The tiles are transforms inside a role="application" box: there is nothing
+   in the accessibility tree for a screen reader to read, and the old live
+   region only ever carried a count — it never named a letter or a row, so a
+   player using one could not know what the board said. Two elements fix that,
+   both outside the application: #tray is a browsable readout of all four rows
+   that is repainted on every settled position, and #live speaks the thing
+   that just changed. Drag frames are never narrated — only settled ones.
+   ====================================================================== */
+const trayEl = document.getElementById('tray');
+const spell = w => w.toUpperCase().split('').join(' ');
+/* "Dirt" is read as a word; "DIRT" and "d i r t" are read as four letters.
+   A row that spells something has earned being pronounced. */
+const wordCase = w => w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+function rowSpeech(r, g){ const w=rowStr(g||S.grid, r); return isWord(w) ? wordCase(w) : spell(w); }
+function colSpeech(c, g){ g=g||S.grid; const o=[]; for(let r=0;r<4;r++) o.push(g[r*4+c].toUpperCase()); return o.join(' '); }
+let sayTick = 0;
+function say(msg){
+  /* A live region only speaks when its text CHANGES, so two identical
+     announcements in a row would be silent — which is exactly what happens
+     when a cursor wraps back onto a lane it already visited. The zero-width
+     space forces the change and is not itself spoken. */
+  live_.textContent = msg + '\u200B'.repeat(sayTick++ & 1);
+}
+function paintTray(){
+  trayEl.textContent = 'Tray: ' + [0,1,2,3].map(r=>`row ${r+1} ${rowSpeech(r)}`).join(', ') + '.';
+}
+function statusTail(){
+  const n = popcount(litMask(S.grid)), left = Math.max(0, CAP - S.moves);
+  /* The move that ends the game must not be read back as if play continues —
+     "4 of 4 rows lit, 8 moves left" is the wrong sentence for the win. */
+  if(n===4) return 'All four rows lit. The tray is closed.';
+  if(left===0) return `${n} of 4 rows lit, and the tray has jammed.`;
+  return `${n} of 4 rows lit, ${left} move${left===1?'':'s'} left.`;
+}
+function announceMove(isRow, idx){
+  paintTray();
+  /* A row push changes one row, so name it. A column push reaches into all
+     four, so all four are read back — that is the rule that bites, and it is
+     invisible without this. */
+  const what = isRow
+    ? `Row ${idx+1} now ${isWord(rowStr(S.grid,idx)) ? 'spells' : 'reads'} ${rowSpeech(idx)}.`
+    : `Column ${idx+1} moved. Rows now ${[0,1,2,3].map(r=>rowSpeech(r)).join(', ')}.`;
+  say(`${what} ${statusTail()}`);
+}
+function announceCursor(axis){
+  say(axis==='col'
+    ? `Cursor on column ${cursor.c+1}, ${colSpeech(cursor.c)}.`
+    : `Cursor on row ${cursor.r+1}, ${rowSpeech(cursor.r)}.`);
 }
 
 /* ======================================================================
@@ -550,12 +1181,21 @@ function doSlide(isRow, idx, k){
     drag=null;
     S.grid = after; S.moves += cost;
     const m = litMask(after);
-    S.trail.push(m); S.hist.push(key(after));
+    /* ONE SQUARE PER MOVE, not per slide. A two-cell drag costs two moves, so
+       it leaves two squares — otherwise the emoji story and the number printed
+       above it are describing different games, and the par divider lands
+       wherever the slides happened to fall rather than on par. Invariant:
+       S.trail.length - 1 === S.moves, always. */
+    for(let t=0;t<cost;t++) S.trail.push(m);
+    S.hist.push(key(after));
     render();
     busy=false;
-    Kit.haptic(8);
-    if(popcount(m)>popcount(before)) Kit.haptic(18);
-    save();
+    /* one call only — a second navigator.vibrate cancels the first, so the
+       old pair of calls threw the plain commit tick away */
+    const a=popcount(m), b=popcount(before);
+    if(a<4) Kit.haptic(a>b ? HAP.litHard : (a<b ? HAP.darkHard : HAP.commit));
+    save();                                 // a==4 belongs to setClosed()
+    announceMove(isRow, idx);               // settled, so it is safe to speak
     checkEnd();
     if(queue.length && !S.done){ const q=queue.shift(); doSlide(q[0],q[1],q[2]); }
     else queue.length=0;
@@ -567,28 +1207,88 @@ function tilesInLane(isRow, idx){
   return out;
 }
 
+/* ======================================================================
+   THE SIGNATURE MOMENT — the fourth row lighting.
+   Four channels are already live; what closes is the machine. The two row
+   buses run down the full height of the tray, the housing takes current and
+   blooms, and the sixteen beads seat one row at a time from the top. The
+   whole thing is class-and-keyframe, so with motion off it lands instantly
+   in exactly the same end state.
+   ====================================================================== */
+function setBus(on){
+  ['l','r'].forEach((k,n)=>{
+    const g=guts[k];
+    if(on){ g.style.top='0px'; g.style.height='100%'; g.style.setProperty('--bd',(n*0.09)+'s'); }
+    g.classList.toggle('bus', on);
+  });
+}
+function setClosed(animate){
+  board.classList.add('closed');
+  el.cluster.classList.add('closed');
+  setBus(true);
+  if(!animate) return;                       // a reopened day does not re-fire
+  replay(board,'energise');
+  setTimeout(()=>board.classList.remove('energise'), 1000);
+  for(let i=0;i<16;i++){
+    const t=CELLS[i][0];
+    t.style.setProperty('--sd', ((i>>2)*70)+'ms');
+    t.classList.remove('seat');
+  }
+  void board.offsetWidth;
+  for(let i=0;i<16;i++) CELLS[i][0].classList.add('seat');
+  setTimeout(()=>{ for(let i=0;i<16;i++) CELLS[i][0].classList.remove('seat'); }, 1000);
+  Kit.haptic(HAP.closed);
+}
+function setJam(animate){
+  board.classList.add('jammed');
+  el.cluster.classList.add('jammed');
+  if(!animate) return;
+  replay(board,'clunk');
+  setTimeout(()=>board.classList.remove('clunk'), 620);
+  Kit.haptic(HAP.jam);
+}
+
 function checkEnd(){
   if(S.done) return;
-  if(solved(S.grid)){ S.done={win:true, moves:S.moves, best:0}; save(); setTimeout(()=>endScreen(),420); return; }
+  if(solved(S.grid)){
+    S.done={win:true, moves:S.moves, best:0}; save();
+    setClosed(true); render();               // drops 'hot', settles the hint
+    /* confetti is for par, not for finishing. Anything over par gets the
+       machine closing and nothing more — it has to stay worth earning. */
+    if(S.moves<=puz.par){
+      const r=board.getBoundingClientRect();
+      setTimeout(()=>Kit.burst({x:r.left+r.width/2, y:r.top+r.height/2, n:54, colors:BURST}), 380);
+    }
+    setTimeout(()=>endScreen(), 1050);       // let the machine close first
+    return;
+  }
   if(S.moves>=CAP){
-    S.done={win:false, moves:S.moves, best:null}; save(); updateHint();
+    S.done={win:false, moves:S.moves, best:null}; save();
+    setJam(true); render();
     /* the closest-approach search is the one expensive thing in the game.
        Run it after the final board has painted, never in front of it. */
-    setTimeout(()=>{ S.done.best=closestApproach(); save(); endScreen(); },420);
+    setTimeout(()=>{ S.done.best=closestApproach(); save(); endScreen(); },780);
   }
 }
 
 /* ======================================================================
    pointer drag
    ====================================================================== */
-let pd=null, rafId=0;
+let pd=null, rafId=0, gripped=null;
+/* the bead under the thumb seats immediately — the touch is acknowledged
+   long before the axis is even known */
+function ungrip(){ if(gripped){ gripped.classList.remove('grip'); gripped=null; } }
 board.addEventListener('pointerdown', e=>{
   if(busy || S.done) return;
   const rect=board.getBoundingClientRect();
   const px=e.clientX-rect.left, py=e.clientY-rect.top;
   const c=Math.max(0,Math.min(3,Math.floor(px/STEP))), r=Math.max(0,Math.min(3,Math.floor(py/STEP)));
-  pd={ x:e.clientX, y:e.clientY, r, c, axis:null, id:e.pointerId, moved:false };
+  pd={ x:e.clientX, y:e.clientY, r, c, axis:null, id:e.pointerId, moved:false, det:0 };
   cursor={r,c};
+  ungrip();
+  gripped = CELLS[r*4+c][0];
+  gripped.classList.add('grip');
+  Kit.haptic(HAP.touch);
   try{ board.setPointerCapture(e.pointerId); }catch(err){}
   e.preventDefault();
 });
@@ -599,6 +1299,7 @@ board.addEventListener('pointermove', e=>{
     if(Math.abs(dx)<5 && Math.abs(dy)<5) return;
     pd.axis = Math.abs(dx)>Math.abs(dy) ? 'h' : 'v';
     board.classList.add('dragging');
+    ungrip();
     if(kbMode){ kbMode=false; board.classList.remove('kb'); }
   }
   pd.moved=true;
@@ -614,18 +1315,28 @@ board.addEventListener('pointermove', e=>{
   const prev = drag ? drag.mask : -1;
   const preview = shiftLane(S.grid, isRow, idx, steps);
   drag = { isRow, idx, off, steps, preview, mask:litMask(preview) };
-  if(prev>=0 && drag.mask!==prev && popcount(drag.mask)>popcount(prev)) Kit.haptic(14);
+  /* THE DETENT. Every slot the lane rides over gets its own tick, so the
+     beads feel like they have mass and the rail feels like it has notches. */
+  if(steps!==pd.det){ pd.det=steps; Kit.haptic(HAP.detent); }
+  if(prev>=0 && drag.mask!==prev){
+    const a=popcount(drag.mask), b=popcount(prev);
+    if(a>b) Kit.haptic(HAP.lit);          // one solid pulse: a circuit closed
+    else if(a<b) Kit.haptic(HAP.dark);    // two thin ticks: a circuit opened
+  }
   if(!rafId) rafId = requestAnimationFrame(()=>{ rafId=0; if(drag) render(); });
 });
 function endDrag(e){
   if(!pd || (e && e.pointerId!==pd.id)) return;
+  ungrip();
   board.classList.remove('dragging');
   if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
   const d=drag; pd=null;
   if(!d){ // tap: park the lane cursor here, ready for the arrow keys
     kbMode=true; board.classList.add('kb');
     try{ board.focus({preventScroll:true}); }catch(err){}
-    render(); return;
+    render();
+    say(`Cursor on row ${cursor.r+1} column ${cursor.c+1}. Row ${cursor.r+1} ${rowSpeech(cursor.r)}.`);
+    return;
   }
   drag=null;
   const k=d.steps;
@@ -648,21 +1359,19 @@ board.addEventListener('pointerup', endDrag);
 board.addEventListener('pointercancel', endDrag);
 
 /* ======================================================================
-   edge arrow buttons
+   rail buttons — one detent cap at each end of every lane
    ====================================================================== */
-const SVG={
-  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
-  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
-  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
-  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
-};
+const GLYPH={ up:'expand_less', down:'expand_more', left:'chevron_left', right:'chevron_right' };
 function mkArrows(mount, dirName, kind){
   for(let i=0;i<4;i++){
     const b=document.createElement('button');
-    b.className='arr'; b.type='button'; b.innerHTML=SVG[dirName];
+    b.className='arr d-'+dirName; b.type='button';
+    b.innerHTML=Kit.icon(GLYPH[dirName], {size:17, wght:700});
     b.dataset.kind=kind; b.dataset.idx=i;
     const label = kind==='row' ? `Slide row ${i+1} ${dirName}` : `Slide column ${i+1} ${dirName}`;
     b.setAttribute('aria-label', label);
+    /* the detent answers the finger, not the click */
+    b.addEventListener('pointerdown', ()=>{ if(!S.done && !busy) Kit.haptic(HAP.detent); });
     b.addEventListener('click', ()=>{
       if(kind==='row'){ cursor.r=i; doSlide(true,i, dirName==='right'?1:-1); }
       else { cursor.c=i; doSlide(false,i, dirName==='down'?1:-1); }
@@ -681,28 +1390,34 @@ arrows = [...document.querySelectorAll('.arr')];
    ====================================================================== */
 document.addEventListener('keydown', e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
-  if(document.querySelector('.scrim')) return;
+  if(document.querySelector('.scrim')||document.getElementById('tour-layer')) return;
   const k=e.key;
   const tag = e.target && e.target.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA') return;
   if(!/^Arrow/.test(k)) return;
+  if(S.done) return;             // a finished tray has no lanes left to arm
   /* Tab is left alone on purpose — it has to keep reaching the help, theme and
-     restart buttons. WASD is the second lane cursor for people who want it. */
+     restart buttons. Shift+arrow parks the lane cursor for free. */
   e.preventDefault();
   if(!kbMode){ kbMode=true; board.classList.add('kb'); render(); }
   if(e.shiftKey){
-    if(k==='ArrowLeft') cursor.c=(cursor.c+3)%4;
-    if(k==='ArrowRight') cursor.c=(cursor.c+1)%4;
+    let axis='row';
+    if(k==='ArrowLeft'){ cursor.c=(cursor.c+3)%4; axis='col'; }
+    if(k==='ArrowRight'){ cursor.c=(cursor.c+1)%4; axis='col'; }
     if(k==='ArrowUp') cursor.r=(cursor.r+3)%4;
     if(k==='ArrowDown') cursor.r=(cursor.r+1)%4;
-    render(); return;
+    render();
+    /* the armed lane moved and nothing said so — the whole point of the
+       free cursor is knowing which lane you are about to spend a move on */
+    announceCursor(axis);
+    return;
   }
   if(k==='ArrowLeft') doSlide(true,cursor.r,-1);
   if(k==='ArrowRight') doSlide(true,cursor.r,1);
   if(k==='ArrowUp') doSlide(false,cursor.c,-1);
   if(k==='ArrowDown') doSlide(false,cursor.c,1);
 });
-board.addEventListener('focus', ()=>{ kbMode=true; board.classList.add('kb'); render(); });
+board.addEventListener('focus', ()=>{ if(S.done) return; kbMode=true; board.classList.add('kb'); render(); });
 board.addEventListener('blur', ()=>{ kbMode=false; board.classList.remove('kb'); render(); });
 
 /* ======================================================================
@@ -713,14 +1428,22 @@ board.addEventListener('blur', ()=>{ kbMode=false; board.classList.remove('kb');
    A │ is dropped in where par ran out, so "went long" is visible at a glance
    without ever naming a letter. */
 const SQ=['⬜','🟨','🟧','🟥','🟩'];
+/* How many squares fit on one line of the share block on the narrowest phone
+   we support. A jammed tray is par+8 moves and a two-cell drag can overshoot
+   by one, so the worst case today is 15 squares and a divider — inside this.
+   The guard is here for the day somebody authors a par-9 puzzle. */
+const ART_MAX = 16;
 function trailArt(){
   const sq = S.trail.slice(1).map(m=>SQ[popcount(m)]);
-  if(sq.length>puz.par) sq.splice(puz.par,0,'│');
-  let art = sq.join('');
-  if(sq.length>16){                     // keep it inside one tweet line
-    art = sq.slice(0,7).join('')+'…'+sq.slice(-8).join('');
+  if(sq.length<=ART_MAX){
+    if(sq.length>puz.par) sq.splice(puz.par,0,'│');
+    return sq.join('');
   }
-  return art;
+  /* Too long for one line. Par stays whole on the left and the overrun gives
+     up its middle, so the divider is still exactly at par — it is the only
+     thing in the picture that has to be trusted. */
+  const keep = Math.max(2, ART_MAX - puz.par - 1);
+  return sq.slice(0, puz.par).join('') + '│…' + sq.slice(sq.length - keep).join('');
 }
 function whichSolution(){ return puz.sols.findIndex(s=>s.b===key(S.grid)); }
 const PCTS = puz.sols.map(s=>s.pct);
@@ -729,25 +1452,76 @@ const COMMONEST = PCTS.filter(p=>p===Math.max(...PCTS)).length===1 ? Math.max(..
 const isRarest = i => i>=0 && puz.sols.length>1 && puz.sols[i].pct===RAREST;
 function awayText(n){ return n>4 ? '5+ moves' : (n===1 ? '1 move' : n+' moves'); }
 
-function shareText(){
+/* THE WIDTH BUDGET. The share block is 326px wide on a 360px phone and the old
+   line 3 — "Solution 1 of 2 · 60% of par routes · the popular one" — was 53
+   characters and drew 420px into it. Every line below is built to sit inside
+   30 monospace characters; a qualifier that will not fit gets its own short
+   line instead, which is still well inside the six-line budget. */
+function shareLines(){
   const win = S.done && S.done.win;
-  const head = `SHUNT #${DAY} · ${win? S.moves+' move'+(S.moves===1?'':'s') : 'out of moves'} (par ${puz.par})`;
-  const art = trailArt();
-  let line3;
+  const L = [];
+  L.push(`SHUNT #${DAY} · ${win ? S.moves+' move'+(S.moves===1?'':'s') : 'jammed'} (par ${puz.par})`);
+  L.push(trailArt());
   if(win){
-    const i=whichSolution();
-    if(i<0) line3 = `Found a way home the ${puz.sols.length}-solution map doesn't have`;
-    else if(puz.sols.length===1) line3 = `The only solution · found it in ${S.moves}`;
+    const i = whichSolution();
+    if(i<0) L.push('A route par never touches');
+    else if(puz.sols.length===1) L.push('The only solution there is');
     else {
-      const s=puz.sols[i];
-      const tag = isRarest(i) ? ' · the rare one'
-                : (s.pct===COMMONEST ? ' · the popular one' : '');
-      line3 = `Solution ${i+1} of ${puz.sols.length} · ${s.pct}% of par routes${tag}`;
+      const s = puz.sols[i];
+      L.push(`Solution ${i+1}/${puz.sols.length} · ${s.pct}% of routes`);
+      if(isRarest(i)) L.push('The rare one');
+      else if(s.pct===COMMONEST) L.push('The popular one');
     }
   } else {
-    line3 = `Closest approach ${awayText(S.done.best)} · ${puz.sols.length} solution${puz.sols.length===1?'':'s'} were there`;
+    L.push(`Closest approach: ${awayText(S.done.best)}`);
+    L.push(puz.sols.length===1 ? '1 solution was in there'
+                               : `${puz.sols.length} solutions were in there`);
   }
-  return `${head}\n${art}\n${line3}\nsfun.games/shunt`;
+  L.push('sfun.games/shunt');
+  return L;
+}
+function shareText(){ return shareLines().join('\n'); }
+
+/* How near the machine ever got to closing, drawn as travel it did not make.
+   One chevron between you and the flag is the whole pitch of a losing day. */
+function approachArt(n){
+  /* A fixed six-slot track, so two losing days are comparable at a glance:
+     dots are ground you never needed, the marker is where the machine got to,
+     and every chevron between it and the flag is a push you did not have. */
+  const away = Math.max(1, Math.min(5, n));
+  let track='';
+  for(let k=0;k<5-away;k++) track += '<i class="dot" aria-hidden="true"></i>';
+  track += '<span class="ms pin" aria-hidden="true">radio_button_checked</span>';
+  for(let k=0;k<away;k++) track += `<span class="ms cv" style="--i:${k}" aria-hidden="true">chevron_right</span>`;
+  const said = n<=1 ? '<b>One slide</b> from a finished board, at your closest.'
+             : (n<=4 ? `<b>${n} slides</b> from a finished board, at your closest.`
+                     : 'Never within <b>five slides</b> of a finished board.');
+  return `<div class="approach">
+    <div class="apprail">${track}<span class="ms flag" aria-hidden="true">sports_score</span></div>
+    <div class="applab">${said}</div>
+  </div>`;
+}
+
+/* THE REVEAL — what the tray was actually holding.
+   Only solution #1, and only on a jam. Showing every solution would empty the
+   puzzle of its afterlife; showing none of them left the player with nothing
+   to learn and nothing to say. One tray, printed back in full, and a caption
+   that names exactly how much is still hidden. */
+function revealArt(){
+  const s = puz.sols[0].b;
+  const rows = [0,1,2,3].map(r=>s.slice(r*4,r*4+4).toUpperCase());
+  const said = rows.map(w=>w.charAt(0)+w.slice(1).toLowerCase()).join(', ');
+  const others = puz.sols.length-1;
+  let k=0;
+  const cap = others===0
+    ? 'The only way this tray ever closed.'
+    : `That is <b>1 of ${puz.sols.length}</b>. The other ${others===1?'one is':others+' are'} still in there.`;
+  return `<div class="revwrap">
+    <div class="revlbl">What was in the tray</div>
+    <div class="wordlist reveal" role="img" aria-label="Solution 1 of ${puz.sols.length}: ${said}">${
+      rows.map(w=>w.split('').map(ch=>`<b style="--i:${k++}">${ch}</b>`).join('')).join('')}</div>
+    <p class="revcap">${cap}</p>
+  </div>`;
 }
 
 function endScreen(){
@@ -756,24 +1530,32 @@ function endScreen(){
   const rows=[0,1,2,3].map(r=>rowStr(S.grid,r).toUpperCase());
   let body='';
   if(win){
-    body += `<div class="wordlist">${rows.map(w=>`<span>${w}</span>`).join('')}</div>`;
+    let k=0;
+    /* sixteen loose <b>s are sixteen stuttered letters to a screen reader.
+       The tray is one picture of four words, so it is announced as one. */
+    const said = rows.map(w=>w.charAt(0)+w.slice(1).toLowerCase()).join(', ');
+    body += `<div class="wordlist" role="img" aria-label="Finished tray: ${said}">${
+      rows.map(w=>w.split('').map(ch=>`<b style="--i:${k++}">${ch}</b>`).join('')).join('')}</div>`;
+  } else {
+    body += approachArt(S.done.best) + revealArt();
   }
   const stats = `<div class="statrow">
-    <div class="stat"><span class="n">${S.moves}</span><span class="l">Moves</span></div>
+    <div class="stat"><span class="n tick" id="stMoves">0</span><span class="l">Moves</span></div>
     <div class="stat"><span class="n">${puz.par}</span><span class="l">Par</span></div>
     <div class="stat"><span class="n">${puz.sols.length}</span><span class="l">Solution${puz.sols.length===1?'':'s'}</span></div>
   </div>`;
 
   let solTable='';
   if(puz.sols.length>1){
-    solTable = `<div class="seclbl">Every par-${puz.par} solution</div>` +
+    solTable = `<div class="soltbl"><div class="seclbl">Every par-${puz.par} solution</div>` +
       puz.sols.map((s,n)=>`<div class="solrow ${n===i?'you':''}">
         <span class="nm">${n===i?'YOURS':'#'+(n+1)}</span>
         <span class="bar-"><i style="width:${Math.max(4,s.pct)}%"></i></span>
         <span class="pct">${s.pct}%</span></div>`).join('');
     solTable += `<div class="hint" style="margin-top:8px;text-align:left">Share of every shortest route that ends on each solution. ${
       isRarest(i) ? '<b style="color:var(--accent)">You found the rarest one.</b>'
-      : (win ? 'Letters hidden — the others are still out there.' : 'None of them were letters you ever saw at once.')}</div>`;
+      : (win ? 'Letters hidden — the others are still out there.'
+             : '<b style="color:var(--accent)">#1 is the tray above.</b> The rest keep their letters.')}</div></div>`;
   }
 
   let verdict, sub;
@@ -785,127 +1567,187 @@ function endScreen(){
     if(i<0) sub += ' And you found a way home that par never touches.';
     if(S.resets) sub += ` (${S.resets} reset${S.resets>1?'s':''}.)`;
   } else {
-    verdict='Out of moves.';
-    const b=S.done.best;
-    sub = b<=1 ? 'At your closest you were <b>one slide</b> from finishing.'
-        : (b<=4 ? `Your closest approach was <b>${b} slides</b> from a solution.`
-                : 'The board never came close to lining up.');
+    /* a loss that was one push away is a different result from a loss that
+       never got near, and the verdict has to say which one it was */
+    verdict = S.done.best<=1 ? 'One slide short.' : 'Out of moves.';
+    sub = S.done.best<=1
+      ? 'You had it. One more push in the right lane and the machine closes.'
+      : `${S.moves} moves spent, and the tray never lined up.`;
+    if(S.resets) sub += ` (${S.resets} reset${S.resets>1?'s':''}.)`;
   }
 
-  Kit.sheet(`
-    <h2 class="verdict">${verdict}</h2>
+  /* One anatomy for all five result sheets: verdict, one line of context, the
+     game's own hero, then the shared tail — stats, the share block, the share
+     button, the way on to the next puzzle, the way back to the board. The
+     solution table is Shunt's evidence, so it belongs above the tail, not
+     inside it. */
+  Kit.sheet(`<div class="stagger">
+    <h2 class="verdict" id="resTitle">${verdict}</h2>
     <p class="sub">${sub}</p>
-    ${body}${stats}${solTable}
+    ${body}${solTable}${stats}
     <div class="sharegrid" id="sg">${Kit.esc(shareText())}</div>
-    <button class="btn primary wide" id="shareBtn">Share result</button>
-    <div class="hint" style="margin-top:12px">Next puzzle in <span id="cd" style="font-family:var(--font-mono)">--:--:--</span></div>
-    <button class="btn ghost wide" data-close style="margin-top:10px">Close</button>
-  `, { onOpen(el){
-      const t=Kit.countdown(el.querySelector('#cd'));
-      el.querySelector('#shareBtn').addEventListener('click', ev=> Kit.share(shareText(), ev.currentTarget));
-      /* stop the clock when the sheet goes away (DOMNodeRemoved is dead) */
-      const scrim=el.parentNode;
-      const mo=new MutationObserver(()=>{ if(!scrim.isConnected){ clearInterval(t); mo.disconnect(); } });
-      mo.observe(document.body,{childList:true});
+    <button class="btn primary wide" id="shareBtn"><span class="ms" aria-hidden="true">share</span>Share result</button>
+    <div style="margin-top:12px">${Kit.nextButton(NS, 'Next tray')}</div>
+    <button class="btn ghost wide" data-close style="margin-top:10px">Back to the tray</button>
+  </div>`, { onOpen(el){
+      el.setAttribute('aria-labelledby','resTitle');
+      /* the number that matters lands rather than appears — timed to arrive
+         just after the stat row has finished rising */
+      setTimeout(()=>Kit.count(el.querySelector('#stMoves'), S.moves, {ms:620}), 260);
+      /* Kit.share owns the button's feedback now, and drives it from what
+         actually happened — copied, handed to the share sheet, dismissed, or
+         fallen back to select-and-copy. Hand it the button; painting a
+         "Copied" state here would be a claim this code cannot verify. */
+      el.querySelector('#shareBtn')
+        .addEventListener('click', (ev)=> Kit.share(shareText(), ev.currentTarget));
   }});
-  document.getElementById('showres').style.display='';
+  const sr=document.getElementById('showres');
+  if(sr.style.display==='none'){ sr.style.display=''; replay(sr,'swapin'); }
   document.getElementById('restart').style.display='none';
   updateHint();
 }
 
 /* ======================================================================
-   help
+   help — one sentence, then a diagram, then the three things that bite
    ====================================================================== */
-const HELP = `
-<ul style="padding-left:18px;margin:0 0 12px">
-  <li><b>Get all four rows spelling words at once.</b></li>
-  <li><b>Push a row</b> sideways, <b>a column</b> up or down. Letters wrap — what leaves the right comes back on the left.</li>
-  <li>A row that spells a word <b>lights up</b> while your thumb is still moving.</li>
-  <li>The catch: a column push reaches into <b>all four rows</b>. Fixing row 3 will break row 1.</li>
-  <li><b>No undo</b> — pushing back is just another move. Score is moves against <b>par</b>, the true minimum.</li>
-</ul>
-<div class="demo">push row 2 right →
-
- P L U M ✓       P L U M ✓
- A T E D   →    <b>D A T E</b> ✓
- R I C E ✓       R I C E ✓
- N O S E ✓       N O S E ✓
-                 all four — solved</div>
-<div class="hint" style="margin-top:10px;text-align:left">Desktop: drag with the mouse, or tap a tile and use the arrow keys. Shift+arrows moves the lane cursor for free.</div>`;
+function mini(rows, lit, mark){
+  return '<div class="mini">'+rows.map((w,r)=>w.split('').map((ch,c)=>{
+    const cls = (lit.indexOf(r)>=0 ? 'on' : '') + (mark && mark[0]===r && mark[1]===c ? ' mk' : '');
+    return `<b class="${cls.trim()}">${ch}</b>`;
+  }).join('')).join('')+'</div>';
+}
+const HELP =
+  `<p class="lede">Make all four rows spell words at once.</p>
+   <div class="dia">
+     ${mini(['PLUM','ATED','RICE','NOSE'],[0,2,3],[1,3])}
+     ${Kit.icon('east',{size:22,wght:600})}
+     ${mini(['PLUM','DATE','RICE','NOSE'],[0,1,2,3],[1,0])}
+   </div>
+   <p class="diacap">Row 2 pushed <b>right</b>. The D falls off the end and comes back round the front — and the last lamp lights.</p>
+   <ul>
+     <li>Push a <b>row</b> sideways or a <b>column</b> up and down. Everything wraps.</li>
+     <li>A column push reaches into <b>all four rows</b> — fixing the bottom breaks the top.</li>
+     <li><b>No undo.</b> Pushing back is just another move. Par is the true minimum.</li>
+   </ul>
+   <div class="hint" style="margin-top:12px;text-align:left">Desktop: drag with the mouse, or tap a bead and use the arrow keys. Shift+arrow moves the lane cursor for free.</div>`;
 function openHelp(){
-  Kit.sheet(`<h2>How to play</h2><div class="rules">${HELP}</div>
+  /* the kit's dialog has no accessible name of its own — point it at the
+     heading it already has, or a screen reader announces a nameless dialog */
+  Kit.sheet(`<h2 id="helpTitle">How to play</h2><div class="rules">${HELP}</div>
     <button class="btn primary wide" data-close style="margin-top:18px">Got it</button>`,
-    { onOpen(el){ el.scrollTop=0; requestAnimationFrame(()=>{ el.scrollTop=0; }); } });
+    { onOpen(el){ el.setAttribute('aria-labelledby','helpTitle'); } });
 }
 document.getElementById('help').addEventListener('click', openHelp);
 
 /* ======================================================================
    chrome
    ====================================================================== */
-const themeBtn=document.getElementById('theme');
-const tstore=Kit.store('theme');
-if(tstore.get()) document.documentElement.dataset.theme=tstore.get();
-themeBtn.addEventListener('click',()=>{
-  const cur=document.documentElement.dataset.theme ||
-    (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
-  const next=cur==='dark'?'light':'dark';
-  document.documentElement.dataset.theme=next; tstore.set(next);
-});
+Kit.themeToggle(document.getElementById('theme'));
+
 /* Reset puts the letters back. It does NOT put the moves back — otherwise
    "no undo" is a lie and everybody shoots par. */
 document.getElementById('restart').addEventListener('click',()=>{
   if(S.done||busy) return;
   if(S.moves===0){ Kit.toast('Nothing to reset yet'); return; }
-  Kit.sheet(`<h2>Reset the letters?</h2>
+  Kit.sheet(`<h2 id="rsTitle">Reset the letters?</h2>
     <p class="sub">The grid goes back to the start. Your <b>${S.moves} spent move${S.moves===1?'':'s'}</b> stay spent — you would have <b>${CAP-S.moves}</b> left.</p>
-    <button class="btn primary wide" id="rsY">Reset the letters</button>
+    <button class="btn primary wide" id="rsY"><span class="ms" aria-hidden="true">restart_alt</span>Reset the letters</button>
     <button class="btn ghost wide" data-close style="margin-top:10px">Keep playing</button>`,
     { onOpen(el, close){
+      el.setAttribute('aria-labelledby','rsTitle');
       el.querySelector('#rsY').addEventListener('click',()=>{
         const spent=S.moves, resets=(S.resets||0)+1, hist=S.hist, trail=S.trail;
         S=freshState(); S.puz=puz.start;
-        S.moves=spent; S.resets=resets; S.hist=hist.concat([puz.start]); S.trail=trail.concat([litMask(puz.start.split(''))]);
+        /* A reset spends no move, so it leaves no square: the trail carries
+           over untouched or trail.length-1 would drift past S.moves. */
+        S.moves=spent; S.resets=resets; S.hist=hist.concat([puz.start]); S.trail=trail;
         save(); kbMode=false; board.classList.remove('kb'); prevMask=null; render();
+        /* the tray is re-loaded: the same sixteen beads dropped back in.
+           prevMask was cleared above so no row reads this as "you broke it" —
+           the lamps still go out one by one, which is the honest signal. */
+        replay(board,'boot');
+        setTimeout(()=>board.classList.remove('boot'), 1000);
+        Kit.haptic(HAP.reset);
         close(); Kit.toast('Letters reset · '+(CAP-S.moves)+' moves left');
+        paintTray(); say('Letters reset. '+statusTail());
         checkEnd();
       });
     }});
 });
 document.getElementById('showres').addEventListener('click', endScreen);
 
+/* The line under the tray is a coach, not a readout: the cluster owns the
+   numbers, so this stays quiet until it has something to say. */
+const hintEl=document.getElementById('hint');
+let lastHint=null;
+/* render() runs every frame of a drag; rewriting this line every frame was a
+   DOM mutation per frame for identical text. Only real changes touch the DOM,
+   and when they do the new line rises in rather than swapping. */
+function setHint(html){
+  if(html===lastHint) return;
+  lastHint=html;
+  hintEl.innerHTML = html ? `<span class="hw">${html}</span>` : '';
+}
 function updateHint(){
-  const h=document.getElementById('hint');
-  if(S.done){ h.innerHTML = S.done.win? 'Solved. Come back tomorrow.' : 'Out of moves. Come back tomorrow.'; return; }
+  /* No wall and no clock: the result card is one tap away and it hands you the
+     next tray, so this line points at it rather than at midnight. */
+  if(S.done){ setHint(S.done.win? 'Solved. <b>Result</b> has the next puzzle.'
+                                : 'Out of moves. <b>Result</b> has the next puzzle.'); return; }
   const left=CAP-S.moves;
   const n=popcount(litMask(S.grid));
-  if(n===3) h.innerHTML = `<b>Three rows lit.</b> Now don't break them.`;
-  else if(left<=3) h.innerHTML = `<b>${left} move${left===1?'':'s'} left.</b>`;
-  else if(S.moves===0) h.innerHTML = cueOn ? CUE : `Push any row or column · ${left} moves`;
-  else h.innerHTML = `${left} moves left`;
+  if(left<=3) setHint(`<b>${left} move${left===1?'':'s'} left.</b>`);
+  else if(n===3) setHint(`<b>Three rows lit.</b> Now don't break them.`);
+  else if(S.moves===0) setHint(cueOn ? CUE : 'Push any row or column — letters wrap');
+  else if(left<=5) setHint(`${left} moves left`);
+  else setHint('');
 }
 const _render=render;
 render=function(){ _render(); updateHint(); };
 
 /* ---- first-move cue: a self-explanatory game still needs one nudge ---- */
-const CUE = '<span class="swipehint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M12 7l5 5-5 5"/></svg>push a row</span>';
+const CUE = '<span class="swipehint">'+Kit.icon('swipe',{size:14,fill:1,wght:600})+'push a row</span>';
 let cueOn=false;
 function showCue(){ if(S.moves>0||S.done) return; cueOn=true; updateHint(); }
 function killCue(){ if(cueOn){ cueOn=false; updateHint(); } }
 
-/* first-visit help */
-if(!seenStore.get() && !S.done){ seenStore.set(1); setTimeout(openHelp,260); }
+/* ---- onboarding: three coach marks, one sentence each ---- */
+function startTour(){
+  Kit.tour([
+    { el:board, text:'Drag any <b>row</b> sideways, or any <b>column</b> up and down. Letters wrap: what leaves one edge arrives at the other.' },
+    { sel:'.cluster .gauge.right', place:'below', pad:8, round:11,
+      text:'A row that spells a word <b>lights its lamp</b>. Get all four lit at once.' },
+    { sel:'.cluster .railwrap', place:'below', pad:9, round:11,
+      text:'Every push spends a move. The notch is <b>par</b> — the fewest that can possibly work. The far end is where the tray jams.' }
+  ], { doneLabel:'Play', onDone(){ showCue(); } });
+}
 
 /* boot */
 document.getElementById('pno').textContent = 'No. '+DAY;
+document.getElementById('pPar').textContent = puz.par;
+const PARPCT = (puz.par/CAP*100).toFixed(2)+'%';
+document.getElementById('railPar').style.left  = PARPCT;
+document.getElementById('scalePar').style.left = PARPCT;
+document.getElementById('railFill').style.width = PARPCT;   // scaled, never resized
+document.getElementById('railOver').style.left = PARPCT;
+document.getElementById('railOver').style.width = (100-puz.par/CAP*100).toFixed(2)+'%';
+document.querySelector('.rail').style.setProperty('--dz', ((CAP-3)/CAP*100).toFixed(2)+'%');
 new ResizeObserver(measure).observe(board);
 measure();
+paintTray();                                 // the tray is readable from move 0
+/* sixteen beads dropped into the recess on a diagonal — the tray asserting
+   that it is full of loose parts before a word of instruction */
+board.classList.add('boot');
+setTimeout(()=>board.classList.remove('boot'), 1200);
 if(S.done){
   if(!S.done.win && (S.done.best===null||S.done.best===undefined)){ S.done.best=closestApproach(); save(); }
+  if(S.done.win) setClosed(false); else setJam(false);
   document.getElementById('showres').style.display='';
   document.getElementById('restart').style.display='none';
-  setTimeout(endScreen, 340);           // a finished day reopens its card
+  setTimeout(endScreen, 620);           // a finished day reopens its card
+} else if(Kit.once('shunt:tour')){
+  setTimeout(startTour, 780);
 } else {
-  setTimeout(showCue, 900);
+  setTimeout(showCue, 1000);
 }
 board.addEventListener('pointerdown', killCue, {once:true});
 window.addEventListener('load', measure);

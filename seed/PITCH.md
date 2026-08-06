@@ -115,7 +115,7 @@ thrown one out for exactly this reason (see the rejection notes in
 
 Wordle's share grid is a shape everyone can produce. Two people who both got it
 in four have functionally the same picture. In SEED, the branching factor at
-every rung is real — puzzle #9 alone offers 45 legal words across 21 reachable
+every rung is real — puzzle #9 alone offers 57 legal words across 22 reachable
 racks, and each choice changes what the next letter can attach to — so two
 players who both reach a 9 almost certainly walked different roads to get
 there. `verify.js` measures this per puzzle and refuses a rotation where fewer
@@ -240,6 +240,7 @@ currently passing on the ten shipped puzzles):
 | **Half the rotation** scores branching ≥ 10 | A couple of thin, gentle days make good Mondays. A rotation of them is a quiz. |
 | Every reachable rack's full word list ships | Otherwise the game rejects a correct answer, which is unforgivable. |
 | Zero blocklisted junk in the shipped set | Hand-curated; verify asserts every blocklist entry still exists in the lexicon so the list can't rot. |
+| Zero common words missing from the shipped set | The mirror list. `ALLOWLIST` restores what the frequency cut dropped — participles, agent nouns, plain plurals — and verify asserts no entry there is redundant, so it can't rot either. |
 
 **Difficulty curve.** Three dials, and they're independent, which is what makes
 a year of content possible:
@@ -337,8 +338,11 @@ content.
 This is why `verify.js` re-derives the maximum from the raw lexicon rather than
 trusting build.js — but it is only ever as right as the lexicon. A word the
 lexicon doesn't have is a word the game will reject, and rejecting someone's
-correct answer is the fastest way to lose them. That risk is bounded by the
-frequency filter, not eliminated by it.
+correct answer is the fastest way to lose them. A frequency filter cuts
+inflections before it cuts stems, so the shipped lexicon knew `erasing` but not
+`searing`: every rack across all ten puzzles was swept for that class of hole
+and the 52 words it had dropped are hand-restored in `ALLOWLIST`. The risk is
+bounded by that sweep and by the blocklist, not by the frequency filter alone.
 
 ---
 
@@ -348,10 +352,11 @@ frequency filter, not eliminated by it.
 node search.js --n 26    # propose new (seed, queue) pairs, ranked by branching
 node build.js            # regenerate puzzles.js from the raw lexicon
 node build.js --dump     # every rack, every word the game will ever accept
-node verify.js           # 246 assertions; exit 0 means shippable
+node verify.js           # 248 assertions; exit 0 means shippable
 ```
 
-`verify.js` shares nothing with `build.js` except the hand-curated blocklist —
+`verify.js` shares nothing with `build.js` except the two hand-curated word
+lists (blocklist and allowlist) —
 reachability, the maximum, the witness replay and the greedy trap are all
 re-derived from the raw lexicon, because importing build's own walk to check
 build's own output would prove nothing.

@@ -23,9 +23,9 @@
   --accent-soft: #d9ece5;
   --accent-ink:  #ffffff;
 
-  --good:       #2e7d4f;
+  --good:       #2a7449;
   --good-soft:  #dcefe2;
-  --warn:       #b8860b;
+  --warn:       #8a6508;
   --warn-soft:  #f7ecd0;
   --bad:        #b3402f;
   --bad-soft:   #f7e0da;
@@ -173,7 +173,12 @@ button { font: inherit; color: inherit; }
 
 /* ---------- buttons ---------- */
 .btn {
-  appearance: none; border: 1px solid var(--line-2);
+  /* 1.5px on every variant, including the filled ones where it is transparent.
+     .btn.tonal needs a 1.5px rule to read as deliberate, and with border-box a
+     thicker border on one variant made the two stacked buttons on every result
+     sheet 47.8px and 48.8px — a pixel apart, which reads as sloppy in exactly
+     the screenshot this product exists to produce. */
+  appearance: none; border: 1.5px solid var(--line-2);
   background: var(--white); color: var(--ink);
   border-radius: var(--r-pill); padding: 12px 20px;
   font-size: 15px; font-weight: 600; cursor: pointer;

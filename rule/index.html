@@ -4,124 +4,264 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Rule — Superfun Daily</title>
-<meta name="description" content="One hidden rule. Six clues. Six probes. Crack it in as few as you dare.">
+<meta name="description" content="One hidden rule. Six words as evidence. Six probes. One call.">
 <link rel="stylesheet" href="../shared/fonts.css">
 <link rel="stylesheet" href="../shared/icons.css">
 <link rel="stylesheet" href="../shared/kit.css">
 <link rel="stylesheet" href="font.css">
 <style>
+/* ============================================================
+   THE RULE — the bench.
+   Surface language: ruled lab stock, a violet margin rule, hairlines
+   tinted with the accent so every card in the game looks like it came
+   off the same pad. Display face is Space Grotesk, driven from the
+   'wght' axis, and it appears only on the wordmark, the verdict, the
+   printed rule and the one number that matters.
+   ============================================================ */
 :root{
   --accent:#5b46c9;
   --accent-soft:#e2ddf7;
   --accent-ink:#fff;
+  /* the near miss gets its own semantic: not the rust of a bust, not the
+     green of a crack — the amber of a reading that came in one off.
+     Dark enough to clear 4.5:1 on --warn-soft: the 10px MISSED tag and the
+     sting line are the two places a losing player reads most carefully. */
+  --warn:#8f6100;
+
+  --font-brand:'Space Grotesk', var(--font-display);
+
+  /* ruled stock: a sheet a shade warmer than plain white, hairlines and a
+     margin rule tinted with the accent rather than drawn in grey */
+  --stock:#fffdf9;
+  --hair:rgba(91,70,201,.13);
+  --margin-rule:rgba(91,70,201,.30);
+
+  /* MOTION SIGNATURE — INSTRUMENTATION.
+     Nothing in this game overshoots. Every curve is decelerate-only, so a
+     result lands and stays landed: a needle coming to rest, not a spring.
+     --beat is the single measured pause the bench takes before it answers,
+     and it is the same length everywhere it appears. */
+  --ease-settle:cubic-bezier(.2,.86,.26,1);
+  --beat:720ms;
 }
 /* Dark needs a lighter accent AND a dark ink on top of it, or every filled
    pill turns into white-on-lavender mush. Same for the good/bad semantics —
-   the kit's light-mode green and rust go muddy on a near-black paper. */
+   the kit's light-mode green and rust go muddy on a near-black paper.
+   Every dark branch restates --accent-soft: setting it on :root above
+   out-cascades the kit's own dark value. */
 @media (prefers-color-scheme: dark){
   :root{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c;
-         --good:#4cb782; --bad:#e2664e; }
+         --good:#4cb782; --bad:#e97057; --warn:#e2ac3a; --warn-soft:#3a2f12;
+         --stock:#211f2a; --hair:rgba(165,150,242,.16); --margin-rule:rgba(165,150,242,.34); }
 }
 :root[data-theme="dark"]{ --accent:#a596f2; --accent-soft:#2b2350; --accent-ink:#16112c;
-                          --good:#4cb782; --bad:#e2664e; }
+                          --good:#4cb782; --bad:#e97057; --warn:#e2ac3a; --warn-soft:#3a2f12;
+                          --stock:#211f2a; --hair:rgba(165,150,242,.16); --margin-rule:rgba(165,150,242,.34); }
 :root[data-theme="light"]{ --accent:#5b46c9; --accent-soft:#e2ddf7; --accent-ink:#fff;
-                           --good:#2e7d4f; --bad:#b3402f; }
+                           --good:#2e7d4f; --bad:#b3402f; --warn:#8f6100; --warn-soft:#f7ecd0;
+                           --stock:#fffdf9; --hair:rgba(91,70,201,.13); --margin-rule:rgba(91,70,201,.30); }
 
-/* ---------- layout tweaks ---------- */
+/* ---------- shell ---------- */
 .app{ padding-bottom: calc(8px + var(--safe-b)); }
 /* On a phone the shell is exactly one screen and the board scrolls inside it,
    so the keyboard and CALL IT are never pushed below the fold. */
 @media (max-width:619px){ .app{ height:100dvh; } }
 /* min-height:0 is load-bearing: without it the flex item refuses to shrink
    below its content and the on-screen keyboard gets shoved off the phone. */
-.stage{ justify-content:flex-start; gap:12px; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-.prompt{ padding:9px 13px; }
-.prompt .v{ font-size:13.5px; }
-.bar{ margin-bottom:10px; }
-.bar h1{ font-weight:800; letter-spacing:.14em; }
+/* scrollbar-gutter reserves nothing where scrollbars overlay (every phone)
+   and reserves the gutter where they do not, so a classic scrollbar never
+   lands on top of the section rule's right-hand reading */
+.stage{ justify-content:flex-start; gap:12px; min-height:0; overflow-y:auto;
+        -webkit-overflow-scrolling:touch; scrollbar-gutter:stable; }
+/* NOTHING IN THE STAGE ABSORBS THE SQUEEZE.
+   Flex items default to `0 1 auto`, so on a 360x740 phone with all six probes
+   spent the notebook was the thing that gave: clientHeight 150 against a
+   scrollHeight of 216, overflow:hidden, and .stage reporting scrollHeight ===
+   clientHeight — no overflow, no scrollbar, nothing to find. Rows 05 and 06
+   laid out below the container's bottom edge and were simply never painted.
+   The player spent all six probes, could read four, and was then asked to
+   name three words from evidence that was not on the screen.
+   The stage is the scroller and it always was; every child now keeps its
+   intrinsic height so there is something for it to scroll. */
+.stage > *{ flex:0 0 auto; }
 
-/* micro-label: the one caps style used everywhere */
-.mic{ font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+/* ---------- app bar + wordmark lockup ----------
+   BALANCED FLANKS. Both sides are pinned to the same width, so the wordmark
+   sits on the bar's TRUE centre line rather than in the middle of whatever
+   space the buttons happened to leave. 90px is two 44px thumb targets plus
+   the 2px between them; the left flank pads out to match with empty space
+   rather than a third button. Clear air either side of the lockup is then
+   (barWidth - 180 - lockupWidth) / 2, which is a number you can check. */
+.bar{ gap:14px; margin-bottom:10px; }
+.bar .side{ flex:0 0 90px; display:flex; align-items:center; gap:2px; }
+.bar .side.end{ justify-content:flex-end; }
+.mark{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.mark h1{
+  flex:none; margin:0; display:flex; align-items:baseline; gap:.32em;
+  font-family:var(--font-brand);
+  /* the lockup gives a little back on a 320px phone so that clear air is
+     real rather than nominal; 5.3vw reaches the full 19px by 359px and the
+     clamp holds it there for every wider screen */
+  font-size:clamp(16.5px, 5.3vw, 19px); line-height:1;
+  text-transform:uppercase; white-space:nowrap;
+  font-variation-settings:'wght' 700; font-weight:normal; letter-spacing:0;
+}
+/* em, not px, so THE keeps its proportion to RULE as the lockup scales.
+   .553em is 10.5px at the full 19px — the size it has always been. */
+.mark h1 .a{
+  font-size:.553em; letter-spacing:.26em; color:var(--ink-3);
+  font-variation-settings:'wght' 400;
+}
+.mark h1 .b{ letter-spacing:.055em; }
+.mark .puzz-no{
+  font-family:var(--font-mono); font-size:9px; font-weight:600; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); line-height:1;
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 
-/* ---------- evidence board ---------- */
+/* ---------- section rule: the one header pattern ---------- */
+.sect{ display:flex; align-items:center; gap:8px; }
+.sect .lab{
+  display:flex; align-items:center; gap:5px;
+  font-size:9.5px; font-weight:800; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-2);
+}
+.sect .lab .ms{ --ms-size:14px; --ms-wght:500; color:var(--ink-3); }
+.sect .ln{ flex:1; height:1px; background:var(--line); }
+/* the right-hand reading is where "3 PROBES LEFT" lives — the one number the
+   whole game is played against, so it takes --ink-2 rather than the quieter
+   --ink-3 the label beside it uses: a status reading has to be readable, not
+   atmospheric. (--ink-3 has since been darkened in the kit to clear 4.5:1,
+   which only widens the margin; the split still reads as a hierarchy.) */
+.sect .meta{
+  font-family:var(--font-mono); font-size:9.5px; font-weight:600; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-2); white-space:nowrap;
+}
+
+/* ---------- evidence: two specimen cards ---------- */
 .board{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 .col{
   background:var(--white); border:1px solid var(--line); border-radius:var(--r);
-  padding:9px 11px 10px; box-shadow:var(--shadow-1);
-  border-top:3px solid var(--good);
+  padding:9px 11px 9px; box-shadow:var(--shadow-1);
+  border-top:2px solid var(--good);
 }
 .col.no{ border-top-color:var(--bad); }
 .col h3{
-  margin:0 0 7px; font-size:9.5px; font-weight:800; letter-spacing:.13em;
-  text-transform:uppercase; color:var(--good); display:flex; gap:5px; align-items:center;
+  margin:0 0 5px; font-size:9px; font-weight:800; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--good);
+  display:flex; gap:4px; align-items:center; white-space:nowrap;
 }
 .col.no h3{ color:var(--bad); }
-.col h3 .gl{ font-size:11px; line-height:1; }
+.col h3 .ms{ --ms-size:13px; --ms-fill:1; --ms-wght:600; }
 .col .w{
   font-family:var(--font-mono); font-size:13.5px; font-weight:500; letter-spacing:.04em;
-  padding:2.5px 0; color:var(--ink); white-space:nowrap;
+  padding:4px 0; color:var(--ink); white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis;
 }
+.col .w + .w{ border-top:1px solid var(--hair); }
 
-/* ---------- lab notebook ---------- */
-.nb-head{
-  display:flex; align-items:center; gap:9px; margin-top:2px;
-  font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3);
+/* ---------- THE NOTEBOOK ----------
+   Six numbered lines on ruled stock with a margin rule. Every line that has
+   not been spent is still drawn — an empty stamp slot on a ruled line — so
+   the price of a probe is on screen before you pay it. */
+.nb{
+  position:relative; background:var(--stock);
+  border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow-1); overflow:hidden;
 }
-.nb-head .rule-line{ flex:1; height:1px; background:var(--line); }
-.nb-head .left{ font-family:var(--font-mono); font-weight:700; color:var(--ink-2); letter-spacing:.08em; }
-.note{ display:flex; flex-direction:column; gap:5px; }
-.entry{
-  display:flex; align-items:center; gap:11px;
-  background:var(--white); border:1px solid var(--line);
-  border-left:3px solid var(--line-2);
-  border-radius:10px; padding:7px 11px 7px 10px; min-height:38px;
+.nb::before{
+  content:''; position:absolute; top:0; bottom:0; left:36px; width:1px;
+  background:var(--margin-rule); pointer-events:none;
+}
+.line{
+  position:relative;
+  display:grid; grid-template-columns:36px minmax(0,1fr) auto;
+  align-items:center; gap:0 12px;
+  min-height:36px; padding-right:11px;
+  border-bottom:1px solid var(--hair);
+}
+.line:last-child{ border-bottom:0; }
+/* the row's own contents stay above the ink wash pseudo-element below */
+.line > span{ position:relative; z-index:1; }
+.line .n{
+  font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:.02em;
+  color:var(--ink-3); text-align:right; padding-right:9px;
+  transition:color var(--dur-2);
+}
+.line .w{
   font-family:var(--font-mono); font-size:15px; font-weight:600; letter-spacing:.07em;
-  animation:drop .22s cubic-bezier(.2,.9,.3,1);
-  transition:border-color .25s, background .25s;
+  color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-@keyframes drop{ from{ opacity:0; transform:translateY(-8px) } }
-.entry .n{
-  font-family:var(--font-mono); font-size:10px; color:var(--ink-3);
-  letter-spacing:.02em; font-weight:700; min-width:15px;
+.line.yes .n{ color:var(--good); }
+.line.no  .n{ color:var(--bad); }
+.line.wait .n{ color:var(--accent); }
+.line.wait .w{ color:var(--ink-2); }
+
+/* the instrument reporting: a stamped readout, not an emoji */
+.chip{
+  min-width:62px; height:24px; padding:0 8px; border-radius:7px;
+  display:inline-flex; align-items:center; justify-content:center; gap:4px;
+  font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:.12em;
+  border:1px solid transparent; background:var(--paper-2); color:var(--ink-3);
 }
-.entry .w{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-/* the verdict chip — the ✅/❌ rhythm that runs down the log */
-.entry .res{
-  margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:8px;
-  display:grid; place-items:center; font-family:var(--font-ui); font-size:14px;
-  line-height:1; background:var(--paper-2); color:var(--ink-3);
+.chip .ms{ --ms-size:15px; --ms-fill:1; --ms-wght:600; }
+.line.yes .chip{ background:var(--good-soft); color:var(--good); }
+.line.no  .chip{ background:var(--bad-soft);  color:var(--bad); }
+.line.wait .chip{ background:transparent; border-color:var(--accent); color:var(--accent); }
+.line.wait .chip .ms{ --ms-fill:0; }
+/* an unspent line */
+.chip.empty{
+  background:transparent; border:1px dashed var(--line-2); opacity:.55;
 }
-.entry.yes{ border-left-color:var(--good); }
-.entry.no{ border-left-color:var(--bad); }
-.entry.yes .res{ background:var(--good-soft); animation:land .3s cubic-bezier(.2,1.6,.4,1); }
-.entry.no  .res{ background:var(--bad-soft);  animation:land .3s cubic-bezier(.2,1.6,.4,1); }
-@keyframes land{ 0%{ transform:scale(.4); opacity:0 } 60%{ transform:scale(1.18) } 100%{ transform:scale(1) } }
-/* the beat of suspense */
-.entry.pending{ border-left-color:var(--accent); background:var(--paper-2); }
-.entry.pending .w{ color:var(--ink-2); }
-.entry.pending .res{ background:transparent; display:flex; align-items:center; justify-content:center; }
-.entry.pending .res span{
-  display:inline-block; width:4px; height:4px; border-radius:50%; margin:0 1px;
-  background:var(--accent); animation:think 1s infinite;
-}
-.entry.pending .res span:nth-child(2){ animation-delay:.16s }
-.entry.pending .res span:nth-child(3){ animation-delay:.32s }
-@keyframes think{ 0%,60%,100%{ opacity:.22; transform:translateY(0) } 30%{ opacity:1; transform:translateY(-2px) } }
-/* unwritten lines of the log */
-.entry.ghost{
-  background:transparent; border-style:dashed; border-color:var(--line);
-  border-left-width:3px; min-height:28px; padding-top:3px; padding-bottom:3px;
-  animation:none; color:var(--ink-3);
-}
-.entry.ghost .dots{ flex:1; border-bottom:1px dotted var(--line-2); height:0; opacity:.7; }
-.entry.ghost .eg{
-  font-family:var(--font-mono); font-size:11.5px; font-weight:500;
-  letter-spacing:.04em; color:var(--ink-3); overflow:hidden;
-  text-overflow:ellipsis; white-space:nowrap;
+.line.ghost .n{ opacity:.5; }
+.line.ghost .dot{ height:0; border-bottom:1px dotted var(--line-2); opacity:.6; }
+.line.ghost .eg{
+  font-family:var(--font-mono); font-size:11.5px; font-weight:500; letter-spacing:.04em;
+  color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
-/* ---------- tray ---------- */
+/* ---------- the bench taking a reading ----------
+   Everything below is the motion signature made literal. A probe is WRITTEN
+   onto the line, a traverse bar crosses the ruled line for exactly one --beat
+   while the instrument thinks, then the stamp comes down and the ink soaks
+   into the row. Pass settles clean; fail settles and then recoils once. */
+@keyframes nb-write{ from{ opacity:0; transform:translateY(-5px) } }
+.line.fresh .w{ animation:nb-write .3s var(--ease-settle) both; }
+
+/* the traverse: a hairline crossing the line, left to right, for one beat */
+.line.wait::after{
+  content:''; position:absolute; left:36px; right:0; bottom:-1px; height:2px;
+  background:var(--accent); opacity:.55; transform-origin:left;
+  animation:traverse var(--beat) linear both;
+  pointer-events:none;
+}
+@keyframes traverse{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+
+/* the stamp coming down — decelerate only, no bounce back */
+@keyframes stamp-down{
+  0%  { opacity:0; transform:scale(1.5) }
+  40% { opacity:1 }
+  100%{ opacity:1; transform:scale(1) }
+}
+.line.landed .chip{ animation:stamp-down .26s var(--ease-settle) both; }
+/* the ink soaking into the paper */
+.line.landed::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:var(--wash, transparent);
+  animation:soak .75s var(--ease-out) both;
+}
+.line.landed.yes{ --wash:var(--good-soft); }
+.line.landed.no { --wash:var(--bad-soft);  }
+@keyframes soak{ from{ opacity:1 } to{ opacity:0 } }
+/* the categorical difference: a FAIL recoils once, a PASS never moves */
+@keyframes recoil{
+  0%{ transform:translateX(0) } 22%{ transform:translateX(-3px) }
+  55%{ transform:translateX(2px) } 80%{ transform:translateX(-1px) }
+  100%{ transform:translateX(0) }
+}
+.line.landed.no .w{ animation:recoil .32s var(--ease-out) .2s both; }
+
+/* ---------- the bench: input + commitment ---------- */
 .tray{
   display:flex; flex-direction:column; gap:9px; padding-top:10px;
   position:sticky; bottom:0; background:var(--paper); z-index:2;
@@ -132,38 +272,113 @@
 }
 @media (max-width:619px){ .tray{ margin-top:auto; } }
 .slot{
-  height:50px; border:2px dashed var(--line-2); border-radius:12px;
-  display:flex; align-items:center; justify-content:center; background:transparent;
-  font-family:var(--font-mono); font-size:20px; letter-spacing:.16em; font-weight:700;
-  transition:border-color .15s, background .15s;
+  height:52px; border:1.5px dashed var(--line-2); border-radius:12px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  background:var(--white); padding:0 12px;
+  font-family:var(--font-mono); font-size:20px; letter-spacing:.15em; font-weight:700;
+  color:var(--ink); overflow:hidden;
+  transition:border-color var(--dur-1), box-shadow var(--dur-2), background var(--dur-1);
 }
-.slot.filled{ border-style:solid; border-color:var(--accent); background:var(--white); }
-.slot .ph{ font-size:11px; letter-spacing:.13em; color:var(--ink-3); font-family:var(--font-ui); font-weight:700; text-transform:uppercase; text-align:center; }
-.slot .car{ color:var(--accent); animation:blink 1s steps(2,start) infinite; font-weight:400; margin-left:-.08em; }
-.key.wide{ font-size:9.5px; letter-spacing:.02em; font-weight:800; padding:0 2px; }
-.deskhint{ display:none; }
-@media (min-width:620px){ .deskhint{ display:block; text-align:center; font-size:12px; color:var(--ink-3); } }
+/* gap:0 while filled — the letters are flex items now, and the slot's 8px
+   gap (which spaces the placeholder glyph from its label) would otherwise be
+   added on top of the tracking and push a 14-letter probe out of the box */
+.slot.filled{
+  border-style:solid; border-color:var(--accent); gap:0;
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+/* each letter is set onto the slot rather than appearing in it */
+.slot .ch{ display:inline-block; }
+.slot .ch.new{ animation:key-set .17s var(--ease-settle) both; }
+@keyframes key-set{ from{ opacity:0; transform:translateY(-6px) } }
+/* before the first probe the bench asks for one — three breaths, then it
+   stops asking. Text and dashed border carry it when motion is off. */
+.slot.idle{ animation:bench-ask 2.4s var(--ease-in-out) 3; }
+/* a rejected probe must still shake even while the bench is idling for one */
+.slot.idle.shake{ animation:shake .4s; }
+@keyframes bench-ask{
+  0%,100%{ box-shadow:0 0 0 0 rgba(0,0,0,0); border-color:var(--line-2) }
+  45%    { box-shadow:0 0 0 4px var(--accent-soft); border-color:var(--accent) }
+}
+/* --ink-2, not the quieter --ink-3: the slot's label is not decoration, it is
+   the instruction ("type anything", "out of probes — time to call it") */
+.slot .ph{
+  font-family:var(--font-ui); font-size:10.5px; font-weight:800; letter-spacing:.13em;
+  color:var(--ink-2); text-transform:uppercase; text-align:center;
+}
+.slot .ms{ --ms-size:17px; --ms-wght:500; color:var(--ink-3); flex:0 0 auto; }
+/* the cursor is drawn, not typed — a ▌ character renders differently in every
+   font fallback, a 9px bar is the same instrument cursor everywhere */
+.slot .car{
+  flex:0 0 auto; width:9px; height:25px; border-radius:2px;
+  background:var(--accent); margin-left:1px;
+  animation:blink 1s steps(2,start) infinite;
+}
 @keyframes blink{ 50%{opacity:0} }
-.trayrow{ display:flex; align-items:center; gap:10px; }
-.pips{ display:flex; gap:5px; align-items:center; }
-.pip{ width:9px; height:9px; border-radius:50%; background:var(--accent); transition:background .3s, transform .3s, box-shadow .3s; }
-.pip.spent{ background:transparent; box-shadow:inset 0 0 0 1.5px var(--line-2); transform:scale(.72); }
-.plab{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:800; }
-.plab b{ color:var(--ink-2); font-family:var(--font-mono); }
-.callit{
-  margin-left:auto; background:var(--white); color:var(--accent);
-  border:1.5px solid var(--accent); font-weight:800; letter-spacing:.1em;
-  padding:11px 17px; font-size:13px; text-transform:uppercase;
-  box-shadow:0 0 0 0 var(--accent-soft);
-}
-.callit:active{ background:var(--accent); color:var(--accent-ink); }
-.callit.urge{ animation:danger 1.6s ease-in-out infinite; }
-@keyframes danger{ 50%{ box-shadow:0 0 0 6px var(--accent-soft) } }
+/* the kit zeroes every duration under reduced motion; an infinite blink at
+   0.01ms can settle on the hidden half of its own keyframe, so pin it on */
+@media (prefers-reduced-motion: reduce){ .slot .car{ animation:none; opacity:1; } }
 
-/* ---------- call screen ---------- */
+.callit{
+  width:100%; background:var(--white); color:var(--accent);
+  border:1.5px solid var(--accent); border-radius:var(--r-pill);
+  font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+  padding:12px 16px; font-size:12.5px;
+}
+.callit .ms{ --ms-size:18px; --ms-fill:0; }
+.callit:active{ background:var(--accent); color:var(--accent-ink); }
+.callit:active .ms{ --ms-fill:1; }
+/* out of probes: the button stops asking and starts telling */
+.callit.urge{ background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+.callit.urge .ms{ --ms-fill:1; }
+
+/* ---------- the keyboard, rebuilt as bench keys ----------
+   Mono caps on the same warm stock as the notebook, and every press tints
+   accent instead of grey — the one large surface that was still pure kit. */
+.kbd{ gap:6px; padding-top:12px; }
+.kbd-row{ gap:5px; }
+.key{
+  font-family:var(--font-mono); font-weight:700; font-size:16px; letter-spacing:.01em;
+  height:49px; border-radius:9px; background:var(--stock); color:var(--ink);
+  transition:background .1s var(--ease-out), color .1s var(--ease-out),
+             transform .08s var(--ease-out), box-shadow .1s;
+}
+.key:active{
+  transform:scale(.93); background:var(--accent-soft); color:var(--accent);
+  box-shadow:none;
+}
+.key.act{ background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+.key.act:active{ background:var(--accent); color:var(--accent-ink); filter:brightness(.9); }
+.key.wide{ font-size:9.5px; letter-spacing:.06em; font-weight:800; padding:0 2px; font-family:var(--font-ui); }
+.deskhint{ display:none; }
+/* Gated exactly like .kbd in shared/kit.css, and for the same reason. Width
+   alone is the wrong question: a tablet is over 620px and has no hardware
+   keyboard, so the bench keys stay on screen there — and a hint that says
+   "type any letters" beside a keyboard the player is looking at is noise at
+   best and a wild goose chase at worst. The hint appears only where the keys
+   are actually gone, which is the same condition that removes them. */
+@media (min-width:620px) and (hover:hover) and (pointer:fine){
+  /* the only on-screen statement that a physical keyboard works here, and the
+     on-screen one is hidden at this width — it has to be readable, not faint */
+  .deskhint{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-size:12px; color:var(--ink-2);
+  }
+  .deskhint .ms{ --ms-size:15px; }
+}
+
+/* ---------- the call ---------- */
 .callhead{ text-align:center; }
-.callhead .t{ font-family:var(--font-display); font-size:26px; font-weight:800; letter-spacing:-.025em; margin:0; }
+.callhead .t{
+  font-family:var(--font-brand); font-size:27px; font-variation-settings:'wght' 700;
+  font-weight:normal; letter-spacing:-.025em; margin:0;
+}
 .callhead .s{ font-size:13px; color:var(--ink-2); margin:3px 0 0; }
+.callhead .s b{ color:var(--ink); }
+/* the kit's .btn.sm lands at ~38px; the case file is a real thumb target */
+.callhead .btn.sm{ min-height:44px; }
+/* and so are the coach mark's, which are the first buttons a first-timer ever
+   taps. Every game in the suite raises them here until shared/kit.css can. */
+#tour-layer .bub .btn{ min-height:44px; }
 .callbar{
   position:sticky; bottom:0; z-index:2; padding:10px 0 2px; background:var(--paper);
   display:flex; flex-direction:column; gap:7px;
@@ -174,51 +389,135 @@
 }
 .cands{ display:flex; flex-direction:column; gap:7px; }
 .cand{
+  position:relative; overflow:hidden;
   display:flex; align-items:center; gap:12px; width:100%;
-  min-height:50px; padding:0 13px; text-align:left; cursor:pointer;
+  min-height:50px; padding:0 13px; text-align:left;
   background:var(--white); border:1.5px solid var(--line-2); border-radius:12px;
   font-family:var(--font-mono); font-weight:700; letter-spacing:.06em;
   font-size:clamp(13px,4vw,17px); color:var(--ink);
   touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-  transition:background .14s, border-color .14s, transform .1s;
+  transition:background var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out),
+             transform .09s var(--ease-out);
 }
-.cand:active{ transform:scale(.99); }
-.cand .box{
-  width:23px; height:23px; flex:0 0 23px; border-radius:7px;
-  border:2px solid var(--line-2); display:grid; place-items:center;
-  font-size:13px; color:transparent; font-family:var(--font-ui);
+button.cand{ cursor:pointer; }
+button.cand:active{ transform:scale(.985); }
+button.cand:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+/* Selection rides the FILL axis: the same mark drawn hollow, then drawn
+   solid. One glyph interpolating beats two icons swapping. */
+.cand .box{ width:26px; height:26px; flex:0 0 26px; display:grid; place-items:center; }
+.cand .box .ms{
+  --ms-size:25px; --ms-fill:0; --ms-wght:400; color:var(--line-2);
+  transition:font-variation-settings .28s var(--ease-settle), color .2s var(--ease-out);
 }
 .cand.sel{ border-color:var(--accent); background:var(--accent-soft); }
-.cand.sel .box{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
-.cand .mk{ margin-left:auto; font-size:11px; letter-spacing:.08em; font-family:var(--font-ui); font-weight:800; text-transform:uppercase; }
+.cand.sel .box .ms{ --ms-fill:1; color:var(--accent); }
+.cand .mk{
+  margin-left:auto; display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; letter-spacing:.09em; font-family:var(--font-ui); font-weight:800;
+  text-transform:uppercase; white-space:nowrap;
+}
+.cand .mk .ms{ --ms-size:15px; --ms-fill:1; }
 .cand.right{ border-color:var(--good); background:var(--good-soft); }
-.cand.right .box{ background:var(--good); border-color:var(--good); color:var(--paper); }
+.cand.right .box .ms{ --ms-fill:1; color:var(--good); }
 .cand.right .mk{ color:var(--good); }
 .cand.wrong{ border-color:var(--bad); background:var(--bad-soft); }
-.cand.wrong .box{ background:var(--bad); border-color:var(--bad); color:var(--paper); }
+.cand.wrong .box .ms{ --ms-fill:1; color:var(--bad); }
 .cand.wrong .mk{ color:var(--bad); }
-.cand.missed{ border-style:dashed; border-color:var(--good); }
-.cand.missed .mk{ color:var(--good); }
-.cand.dud{ opacity:.5; }
-.counter{ text-align:center; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:800; }
-.counter b{ color:var(--accent); font-size:15px; font-family:var(--font-display); font-weight:800; }
+/* the one you walked past — amber, not green: this is the near miss */
+.cand.missed{ border-style:dashed; border-color:var(--warn); background:var(--warn-soft); }
+.cand.missed .box .ms{ --ms-fill:0; --ms-wght:600; color:var(--warn); }
+.cand.missed .mk{ color:var(--warn); }
+.cand.dud{ opacity:.45; }
+
+/* ---------- THE SIGNATURE MOMENT ----------
+   Eight specimens read one at a time: a traverse crosses the tile, then the
+   tile resolves. `.live` scopes every one-shot to the resolve itself, so
+   re-opening a finished day shows a marked-up board without replaying it. */
+.cand.reading::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(90deg, transparent, var(--accent-soft) 45%, transparent);
+  animation:specimen-scan .34s linear both;
+}
+@keyframes specimen-scan{ from{ transform:translateX(-101%) } to{ transform:translateX(101%) } }
+.cand.live .mk{ animation:mark-in .24s var(--ease-settle) both; }
+@keyframes mark-in{ from{ opacity:0; transform:translateX(7px) } }
+.cand.live.wrong{ animation:recoil .34s var(--ease-out) both; }
+.cand.live.missed{ animation:missed-in .42s var(--ease-settle) both; }
+@keyframes missed-in{ from{ opacity:.25 } to{ opacity:1 } }
+.cand.live.dud{ animation:dud-out .42s var(--ease-out) both; }
+@keyframes dud-out{ from{ opacity:1 } to{ opacity:.45 } }
+/* on a 2-of-3 result the tile you walked past asks to be looked at twice */
+.cand.aim::before{
+  content:''; position:absolute; inset:1px; border-radius:10px;
+  border:2px solid var(--warn); pointer-events:none;
+  animation:aim 1.3s var(--ease-out) 2 both; animation-delay:.35s;
+}
+@keyframes aim{ 0%{ opacity:0 } 18%{ opacity:1 } 100%{ opacity:0 } }
+
+/* the readout that replaces the lock button while the bench works */
+.scanbar{ display:flex; flex-direction:column; gap:9px; padding:6px 0 4px; }
+.scanbar .lbl{
+  font-family:var(--font-mono); font-size:10.5px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); text-align:center;
+}
+.scanbar .trk{ height:3px; border-radius:2px; background:var(--accent-soft); overflow:hidden; }
+.scanbar .trk i{
+  display:block; height:100%; background:var(--accent);
+  transform:scaleX(0); transform-origin:left; transition:transform .15s linear;
+}
+.counter{
+  text-align:center; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-2); font-weight:800;
+}
+.counter b{
+  color:var(--accent); font-size:15px; font-family:var(--font-brand);
+  font-variation-settings:'wght' 700; font-weight:normal;
+  display:inline-block;
+}
+/* the kit's bump rides --ease-spring; nothing in this game springs */
+.counter b.tick.bump{ animation:bump .26s var(--ease-settle); }
+.tick.bump{ animation-timing-function:var(--ease-settle); }
 
 /* ---------- result ---------- */
 .res-wrap{ display:flex; flex-direction:column; gap:12px; }
+.vhead{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px; }
 .verdict{
-  margin:2px 0 0; font-size:clamp(34px,10.5vw,44px); font-weight:800;
+  margin:0; font-family:var(--font-brand); font-size:clamp(34px,10.5vw,46px);
+  font-variation-settings:'wght' 700; font-weight:normal;
   letter-spacing:-.035em; line-height:1;
 }
 .verdict.win{ color:var(--good); }
 .verdict.lose{ color:var(--bad); }
-.scoreline{ text-align:center; margin:0; font-size:14.5px; color:var(--ink-2); }
-.scoreline b{ color:var(--ink); font-weight:700; }
-.tier{
-  display:inline-block; padding:4px 12px; border-radius:var(--r-pill);
-  background:var(--accent); color:var(--accent-ink);
-  font-size:10.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+.verdict.near{ color:var(--warn); }
+/* the stamped verdict — ink on paper, slightly off-square */
+.stamp{
+  position:relative; display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-brand); font-variation-settings:'wght' 700; font-weight:normal;
+  font-size:12px; letter-spacing:.17em; text-transform:uppercase;
+  padding:7px 15px; border:2px solid currentColor; border-radius:8px;
+  transform:rotate(-2.2deg); color:var(--good);
 }
-.tier.lose{ background:var(--bad); color:var(--paper); }
+.stamp::before{
+  content:''; position:absolute; inset:3px; border:1px solid currentColor;
+  border-radius:4px; opacity:.5;
+}
+.stamp.lose{ color:var(--bad); }
+.stamp.near{ color:var(--warn); }
+.stamp .ms{ --ms-size:16px; --ms-fill:1; }
+/* the stamp is pressed onto the page a beat after the verdict word lands —
+   straight down, no rebound. This is the moment the case closes. */
+.stamp.press{ animation:stamp-press .32s var(--ease-settle) both .3s; }
+@keyframes stamp-press{
+  0%  { opacity:0; transform:rotate(-11deg) scale(2.05) }
+  45% { opacity:1 }
+  100%{ opacity:1; transform:rotate(-2.2deg) scale(1) }
+}
+.scoreline{ margin:0; font-size:14px; color:var(--ink-2); }
+.scoreline .num{
+  font-family:var(--font-brand); font-variation-settings:'wght' 700; font-weight:normal;
+  font-size:21px; letter-spacing:-.02em; color:var(--ink); margin:0 1px;
+  display:inline-block; font-variant-numeric:tabular-nums lining-nums;
+}
 
 /* the sting / the victory lap — one sentence, the thing you say out loud */
 .sting{
@@ -226,30 +525,45 @@
   padding:10px 13px; font-size:13.5px; line-height:1.5; color:var(--ink-2); text-align:center;
 }
 .sting b{ font-family:var(--font-mono); font-weight:700; color:var(--ink); letter-spacing:.04em; }
-.sting .hi{ color:var(--accent); }
+.sting .hi{ color:var(--accent); font-weight:600; }
+.sting.near{ background:var(--warn-soft); border-color:var(--warn); }
+.sting.near .hi{ color:var(--warn); }
 
-/* ---------- THE REVEAL — the screenshot ---------- */
+/* ---------- THE REVEAL — the screenshot ----------
+   The rule finally printed on the pad, set like a journal headline. */
 .reveal{
-  background:var(--white); border:1px solid var(--line); border-radius:var(--r-lg);
-  padding:18px 16px 14px; box-shadow:var(--shadow-2); position:relative; overflow:hidden;
+  background:var(--stock); border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:17px 16px 14px; box-shadow:var(--shadow-2); position:relative; overflow:hidden;
 }
+/* the card rules itself off, then prints */
 .reveal::before{
-  content:''; position:absolute; inset:0 0 auto 0; height:3px;
-  background:linear-gradient(90deg,var(--accent),var(--good));
+  content:''; position:absolute; inset:0 0 auto 0; height:3px; background:var(--accent);
+  transform-origin:left; animation:rule-off .46s var(--ease-settle) both .22s;
+}
+@keyframes rule-off{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+.reveal::after{
+  content:''; position:absolute; inset:5px 0 auto 0; height:1px; background:var(--hair);
 }
 .reveal .kick{
+  display:flex; align-items:center; gap:8px;
   font-size:9.5px; font-weight:800; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--accent); display:flex; align-items:center; gap:8px;
+  color:var(--accent);
 }
-.reveal .kick::after{ content:''; flex:1; height:1px; background:var(--accent-soft); }
-.reveal .rule{
-  font-family:var(--font-display); font-size:clamp(22px,6.3vw,27px); line-height:1.16;
-  margin:8px 0 8px; font-weight:800; letter-spacing:-.028em; text-wrap:balance;
+.reveal .kick .ms{ --ms-size:15px; --ms-fill:1; }
+.reveal .kick .ln{ flex:1; height:1px; background:var(--accent-soft); }
+.reveal .kick .who{ color:var(--ink-3); font-family:var(--font-mono); font-weight:600; letter-spacing:.11em; }
+.reveal .headline{
+  font-family:var(--font-brand); font-size:clamp(23px,6.6vw,29px); line-height:1.14;
+  margin:9px 0 8px; font-variation-settings:'wght' 640; font-weight:normal;
+  letter-spacing:-.03em; text-wrap:balance;
+  animation:print .5s var(--ease-out) both .42s;
 }
+/* the rule is printed onto the card, left to right, once */
+@keyframes print{ from{ clip-path:inset(0 100% -20% 0) } to{ clip-path:inset(0 -4% -20% 0) } }
+/* a long rule steps down a size rather than eating the card */
+.reveal .headline.long{ font-size:clamp(19px,5.3vw,23px); line-height:1.2; letter-spacing:-.022em; }
 /* rules that name a letter set read better as a headline + a key strip */
-.reveal .rulekeys{
-  display:flex; flex-wrap:wrap; gap:4px; margin:0 0 10px;
-}
+.reveal .rulekeys{ display:flex; flex-wrap:wrap; gap:4px; margin:0 0 10px; }
 .reveal .rulekeys span{
   font-family:var(--font-mono); font-size:12.5px; font-weight:700; letter-spacing:.06em;
   color:var(--accent); background:var(--accent-soft); border-radius:6px;
@@ -257,17 +571,19 @@
 }
 .reveal .rulekeys span.sep{ background:transparent; color:var(--ink-3); min-width:0; padding:3px 0; }
 .reveal .detail{ font-size:13.5px; color:var(--ink-2); line-height:1.55; margin:0; }
-.reveal .detail em{ font-style:normal; color:var(--ink); font-weight:700; }
 
 .evgroup{ margin:16px -16px 0; padding:0 16px; }
 .evgroup h4{
-  margin:0 0 5px; font-size:9.5px; font-weight:800; letter-spacing:.13em;
-  text-transform:uppercase; color:var(--good); display:flex; align-items:baseline; gap:6px;
+  margin:0 0 4px; font-size:9.5px; font-weight:800; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--good); display:flex; align-items:center; gap:5px;
 }
+.evgroup h4 .ms{ --ms-size:14px; --ms-fill:1; }
 .evgroup h4 .ct{ color:var(--ink-3); font-weight:700; letter-spacing:.08em; }
 .evgroup h4 .why{ margin-left:auto; color:var(--ink-3); font-weight:700; letter-spacing:.06em; }
 .evgroup.bad h4{ color:var(--bad); }
-.evrow{ display:flex; align-items:center; gap:9px; padding:6px 0; border-top:1px solid var(--line); }
+/* wrap rather than clip: a 14-letter probe with a long reason beside it is
+   wider than a phone, and .reveal has overflow:hidden to hide the evidence */
+.evrow{ display:flex; flex-wrap:wrap; align-items:center; gap:9px; padding:6px 0; border-top:1px solid var(--hair); }
 .evgroup.bad .evrow{ padding:4.5px 0; }
 .evrow .word{
   font-family:var(--font-mono); font-size:14.5px; letter-spacing:.08em;
@@ -285,34 +601,157 @@
   color:var(--accent); font-weight:800; text-align:right; white-space:nowrap;
 }
 .evgroup.bad .evrow .tag{ color:var(--ink-3); font-weight:700; letter-spacing:.07em; }
+/* no opacity on top of --ink-3: at 8.5px this is already the quietest text in
+   the game, and a .75 on top of the token took it under 2.5:1. The kit has
+   since darkened --ink-3 to clear 4.5:1, which this line inherits for free —
+   the provenance tag is meant to be recessive, not unreadable. */
 .evrow .src{
   font-size:8.5px; color:var(--ink-3); letter-spacing:.11em; text-transform:uppercase;
-  font-weight:700; flex:0 0 auto; opacity:.75;
+  font-weight:700; flex:0 0 auto;
 }
 .evrow .src::before{ content:'· '; }
 /* when every failing word fails for the same reason, say it once and go dense */
-.evchips{ display:flex; flex-wrap:wrap; gap:5px; padding-top:6px; border-top:1px solid var(--line); }
+.evchips{ display:flex; flex-wrap:wrap; gap:5px; padding-top:6px; border-top:1px solid var(--hair); }
 .evchips span{
   font-family:var(--font-mono); font-size:12px; font-weight:500; letter-spacing:.05em;
   color:var(--ink-2); background:var(--paper-2); border:1px solid var(--line);
   border-radius:var(--r-pill); padding:3px 9px;
 }
-.next{ text-align:center; font-size:12px; color:var(--ink-3); }
-.next b{ font-family:var(--font-mono); color:var(--ink-2); letter-spacing:.06em; font-weight:700; }
-.sharegrid{ font-size:15px; letter-spacing:.04em; text-align:left; margin:0; padding:13px 15px; }
+/* The paste preview, and it has to be a preview: white-space:pre, so what is
+   on screen is exactly what lands in the bubble, line for line. It used to be
+   pre-wrap, which hid the real problem — the verdict line ran 50 characters
+   and 415px against a 256px box at 320px wide, and the box quietly folded it
+   onto a second line rather than admitting it. Every line is now capped at 29
+   characters (240px here), so nothing wraps in the preview and nothing wraps
+   in a message bubble either. */
+.sharegrid{
+  font-size:13.5px; letter-spacing:.02em; text-align:left; margin:0;
+  padding:13px 15px; white-space:pre; overflow-x:auto;
+  background:var(--stock); line-height:1.45;
+}
+/* Kit.share adds .done only on a clipboard write that really landed, so this
+   green is a reading and not a reflex. A blocked clipboard falls back to the
+   select-and-copy label instead, and the button stays accent. */
+#shareBtn.done{ background:var(--good); border-color:transparent; }
 
 /* ---------- sheets ---------- */
-.rules code{
+.sheet .lede{
+  text-align:center; font-family:var(--font-brand); font-variation-settings:'wght' 500;
+  font-weight:normal; font-size:17px; letter-spacing:-.015em; color:var(--ink-2);
+  margin:0 0 16px; line-height:1.3;
+}
+.sheet h2{ font-family:var(--font-brand); font-variation-settings:'wght' 700; font-weight:normal; }
+/* the diagram that replaces the paragraph */
+.demo{
+  display:grid; grid-template-columns:1fr 1fr; gap:9px;
+  background:var(--stock); border:1px solid var(--line); border-radius:var(--r);
+  padding:11px; box-shadow:var(--shadow-1);
+}
+.dcol{ display:flex; flex-direction:column; gap:4px; }
+.dh{
+  display:flex; align-items:center; gap:4px;
+  font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+}
+.dh .ms{ --ms-size:13px; --ms-fill:1; }
+.dh.good{ color:var(--good); } .dh.bad{ color:var(--bad); }
+.dcol b{
+  font-family:var(--font-mono); font-size:13.5px; font-weight:500; letter-spacing:.05em;
+  color:var(--ink); padding:3px 0; border-top:1px solid var(--hair);
+}
+.dcol b em{
+  font-style:normal; color:var(--accent); font-weight:800;
+  background:var(--accent-soft); border-radius:3px; padding:1px 2px;
+}
+.dwhy{
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  margin:11px 0 0; font-size:13.5px; color:var(--ink-2); text-align:center;
+}
+.dwhy .ms{ --ms-size:17px; --ms-fill:1; color:var(--accent); }
+.dwhy em{ font-style:normal; color:var(--ink); font-weight:700; }
+.dnote{ text-align:center; font-size:12px; color:var(--ink-3); margin:5px 0 0; }
+.steps{ list-style:none; margin:18px 0 0; padding:0; display:flex; flex-direction:column; gap:12px; }
+.steps li{ display:flex; gap:11px; align-items:flex-start; font-size:14px; color:var(--ink-2); line-height:1.45; }
+.steps li b{ color:var(--ink); font-weight:700; }
+.steps li > .ms{
+  --ms-size:20px; --ms-fill:1; --ms-wght:500; color:var(--accent);
+  flex:0 0 24px; margin-top:1px; text-align:center;
+}
+.steps code{
   font-family:var(--font-mono); background:var(--paper-2); padding:1px 5px;
-  border-radius:5px; font-size:13px; letter-spacing:.04em;
+  border-radius:5px; font-size:13px; letter-spacing:.04em; color:var(--ink);
 }
 .warn-box{
+  display:flex; gap:9px; align-items:flex-start;
   background:var(--bad-soft); border:1px solid var(--bad); border-radius:var(--r);
-  padding:11px 13px; font-size:13.5px; color:var(--ink); line-height:1.5; margin:14px 0 4px;
+  padding:11px 13px; font-size:13.5px; color:var(--ink); line-height:1.45; margin:16px 0 4px;
 }
+.warn-box .ms{ --ms-size:19px; --ms-fill:1; color:var(--bad); flex:0 0 auto; }
+.warn-box b{ font-weight:700; }
 .sheet .btnrow{ display:flex; gap:9px; margin-top:16px; }
 .sheet .btnrow .btn{ flex:1; }
-.danger{ background:var(--bad); color:#fff; border-color:transparent; }
+/* the same reasoning as --accent-ink above: a filled pill in dark mode needs
+   dark ink on it. Hard-coded white on the dark-mode rust was 3.4:1 — on the
+   one button in the game you cannot take back. --paper is 5.3:1 light,
+   5.5:1 dark. */
+.danger{ background:var(--bad); color:var(--paper); border-color:transparent; }
+.danger .ms{ --ms-fill:1; }
+/* the commitment has to feel irreversible: the button seals shut, holds for
+   a beat, and only then does the board change under you */
+.danger.sealed{ background:var(--ink); color:var(--paper); pointer-events:none; }
+.danger.sealed .ms{ --ms-fill:1; }
+.sheet .btnrow.sealing .btn.ghost{ opacity:.3; pointer-events:none; }
+.lockline{
+  text-align:center; font-size:13.5px; color:var(--ink-2); margin:13px 0 0;
+}
+.lockline .num{
+  font-family:var(--font-brand); font-variation-settings:'wght' 700; font-weight:normal;
+  font-size:19px; color:var(--ink); letter-spacing:-.02em;
+}
+.streakrow{ display:flex; justify-content:center; margin-top:12px; }
+/* .res-wrap is a gap:12px flex column, so the kit's 14px statrow margin would
+   stack on top of the gap and open a 26px hole in the middle of the tail */
+.res-wrap .statrow{ margin:0; }
+.stat .n{
+  font-family:var(--font-brand); font-variation-settings:'wght' 700;
+  font-weight:normal; letter-spacing:-.03em;
+}
+.stat .l{ white-space:nowrap; }
+
+/* Short phones (SE, mini) AND the 360x740 / 320x740 Android band. The tier
+   used to stop at 720px, which left a 740px phone paying full-height rows for
+   a board that did not fit: 66px of overflow with all six probes spent, so
+   the evidence columns had to scroll off the top before line 06 could come
+   into view. At the compact rhythm the same board overflows by 10px — every
+   notebook line and both evidence cards are on screen at once, with the keys
+   still a 45px thumb target. */
+@media (max-height:780px) and (max-width:619px){
+  .line{ min-height:32px; }
+  .col{ padding:8px 10px 8px; }
+  .col .w{ padding:3px 0; }
+  .slot{ height:48px; }
+  .stage{ gap:10px; }
+  .key{ height:45px; }
+}
+/* tall phones: the pad gets generous rather than stopping short above the
+   bench, which is what the leftover space read as before */
+@media (min-height:800px) and (max-width:619px){
+  .line{ min-height:42px; }
+  .col .w{ padding:5px 0; }
+}
+
+/* The kit zeroes every animation DURATION under reduced motion but leaves
+   delays alone, so anything that starts life hidden and waits its turn would
+   sit invisible for its whole delay and then snap in. Everything staged in
+   this file therefore drops its delay too, and the specimen scan tightens up
+   so the sequence still reads as a sequence without being a performance. */
+@media (prefers-reduced-motion: reduce){
+  .stamp.press, .reveal::before, .reveal .headline, .line.landed.no .w,
+  .res-wrap.stagger > *, .cands.stagger > *, .slot.idle,
+  /* the kit opens its coach bubble on a .1s delay its own reduce block leaves
+     alone, so the bubble sits invisible for a tenth of a second and snaps in */
+  #tour-layer .bub{ animation-delay:0s !important; }
+  .cand.aim::before, .slot.idle{ animation:none !important; }
+}
 
 @media (min-width:620px){
   .stage{ overflow:visible; }
@@ -331,22 +770,31 @@
 
 <div class="app">
   <div class="bar">
-    <button class="iconbtn" id="statsBtn" aria-label="Statistics">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M5 20V10M12 20V4M19 20v-6"/>
-      </svg>
-    </button>
-    <h1>The Rule</h1>
-    <button class="iconbtn" id="helpBtn" aria-label="How to play">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.9 2.9 0 1 1 3.4 3.2v1.4"/><circle cx="12" cy="17.4" r=".9" fill="currentColor" stroke="none"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="prompt">
-    <span class="k" id="caseNo">Case #1</span>
-    <span class="v" id="objective">One hidden rule governs every word. Three obey it, three break it. Work out what it is.</span>
+    <div class="side">
+      <a class="iconbtn" href="../" aria-label="All games" title="All games">
+        <span class="ms" aria-hidden="true">arrow_back</span>
+      </a>
+    </div>
+    <div class="mark">
+      <h1><span class="a">The</span><span class="b">Rule</span></h1>
+      <span class="puzz-no" id="caseNo">Case 1</span>
+    </div>
+    <!-- Two utilities, and they are the suite's two: theme, then help, in that
+         order in all five games. The lab record used to sit here as a third
+         and a four-button bar cannot leave a centred two-part wordmark 12px of
+         air at 320px — so the record moved into the help sheet, where it is
+         still reachable at any point in a case.
+         Re-measured at 320px with the three that remain: clearance from the
+         wordmark lockup to the nearest button is 16.95px on the right and
+         62.94px on the left, and 14.00px on the right in the worst case (the
+         sub-line running the full width of the lockup, "Case 8888 · the
+         call"). Both sides clear the 12px floor. -->
+    <div class="side end">
+      <button class="iconbtn" id="themeBtn" type="button" aria-label="Toggle theme"></button>
+      <button class="iconbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">
+        <span class="ms" aria-hidden="true">help</span>
+      </button>
+    </div>
   </div>
 
   <div class="stage" id="stage"></div>
@@ -362,17 +810,24 @@
   'use strict';
 
   var MAX_PROBES = 6;
-  var DAY = Kit.dayNumber();
-  var P = Kit.pick(PUZZLES);
+  var BEAT_MS = 720;      // the measured pause; mirrors --beat in the CSS
+  /* The day sets the case you OPEN on; closing one — cracked or busted —
+     hands you the next straight away. Kit.puzzleNo is that number: the one
+     on the masthead, in the save key and in the share line, and the only one
+     that honours ?d=N for review. Kit.dayNumber() ignores the pin. */
+  var DAY = Kit.puzzleNo('rule');
+  var P = Kit.pick(PUZZLES, 'rule');
   var PIDX = (DAY - 1) % PUZZLES.length;
 
   var stage = document.getElementById('stage');
   var kbdMount = document.getElementById('kbd');
   var live = document.getElementById('live');
+  var caseNoEl = document.getElementById('caseNo');
+
+  var ic = Kit.icon;
 
   /* ---------------- state / persistence ---------------- */
   var db = Kit.store('rule');
-  var seenDb = Kit.store('rule:seen');
   var statsDb = Kit.store('rule:stats');
 
   function loadAll() { return db.get() || {}; }
@@ -429,50 +884,151 @@
   }
   function say(msg) { live.textContent = msg; }
 
+  /* One header pattern for the whole game: label · hairline · reading. */
+  function sect(iconName, label, meta) {
+    var s = el('div', 'sect');
+    var lab = el('span', 'lab');
+    lab.innerHTML = ic(iconName, { size: 14 }) + Kit.esc(label);
+    s.appendChild(lab);
+    s.appendChild(el('i', 'ln'));
+    var m = el('span', 'meta', meta || '');
+    s.appendChild(m);
+    s.metaEl = m;
+    return s;
+  }
+
+  function setCase(suffix) {
+    caseNoEl.textContent = 'Case ' + DAY + (suffix ? ' · ' + suffix : '');
+  }
+
+  function calm() {
+    try { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+  }
+
+  /* Kit.count drives a figure with requestAnimationFrame, which stops dead on
+     a backgrounded or throttled tab — the reading is then left frozen on the
+     count's starting zero, so a 2-of-3 near miss renders as "0 of 3 right".
+     Reproduced on a hidden tab. Every count here lands on the truth whether
+     or not anyone watched it arrive. */
+  function tally(node, to, ms) {
+    if (!node) return;
+    Kit.count(node, to, { ms: ms });
+    setTimeout(function () { node.textContent = String(to); }, ms + 350);
+  }
+
+  /* ---------------- haptics with intent ----------------
+     Five different events must not feel like the same event. A keypress is
+     a tick you barely register; a PASS is one clean confirm; a FAIL is two
+     short knocks; a commitment is a single heavy thud. */
+  function hap(kind) {
+    switch (kind) {
+      case 'key':    Kit.haptic(4); break;
+      case 'submit': Kit.haptic(9); break;
+      case 'pass':   Kit.haptic(17); break;
+      case 'fail':   Kit.haptic(9); setTimeout(function () { Kit.haptic(9); }, 95); break;
+      case 'pick':   Kit.haptic(7); break;
+      case 'unpick': Kit.haptic(4); break;
+      case 'commit': Kit.haptic(36); break;
+      case 'win':    Kit.haptic(20); setTimeout(function () { Kit.haptic(48); }, 130); break;
+      case 'near':   Kit.haptic(14); setTimeout(function () { Kit.haptic(28); }, 150); break;
+      case 'lose':   Kit.haptic(13); setTimeout(function () { Kit.haptic(13); }, 105);
+                     setTimeout(function () { Kit.haptic(13); }, 210); break;
+      default:       Kit.haptic(6);
+    }
+  }
+
   /* ---------------- input ---------------- */
   var cur = '';
   var busy = false;
 
   var kb = Kit.keyboard(kbdMount, onKey, { enterLabel: 'PROBE' });
+  // the kit ships a ⌫ character on the backspace key; every other mark in
+  // this file is a Material Symbol, so this one is too
+  (function () {
+    var bk = kbdMount.querySelector('[data-key="BACK"]');
+    if (bk) bk.innerHTML = ic('backspace', { size: 19 });
+  })();
+
+  /* The kit's global key handler calls preventDefault() on ENTER so a probe
+     can be sent with nothing focused. preventDefault() on an ENTER keydown is
+     also exactly what cancels a focused button's activation, so with the kit
+     handler in place every button in the game — Lock it in, Case file, Share,
+     Got it, Next case — is dead to the ENTER key on a physical keyboard.
+     Kit.keyboard hands back destroy() for precisely this; the replacement is
+     the kit's own mapping with one rule added: a focused control owns ENTER.
+     Every render leaves focus on <body>, so type-then-ENTER is unchanged, and
+     the bench keys are exempt because ENTER there still means "probe". */
+  kb.destroy();
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    // a sheet or a coach mark owns the keyboard while it is up: letters must
+    // not land in a slot nobody can see behind the scrim
+    if (document.querySelector('.scrim, #tour-layer')) return;
+    if (e.key === 'Enter') {
+      if (t && t.closest && !t.closest('#kbd') &&
+          t.closest('button, a[href], [role="button"]')) return;   // let it click
+      onKey('ENTER'); e.preventDefault();
+    } else if (e.key === 'Backspace') { onKey('BACK'); e.preventDefault(); }
+    else if (/^[a-zA-Z]$/.test(e.key)) { onKey(e.key.toUpperCase()); e.preventDefault(); }
+  });
 
   function onKey(k) {
     if (S.phase !== 'probe' || busy) return;
+    // out of probes the slot is showing "time to call it" — typing into it
+    // would put characters somewhere the player can no longer see them
+    if (S.probes.length >= MAX_PROBES && k !== 'ENTER') return;
     if (k === 'ENTER') { submitProbe(); return; }
-    if (k === 'BACK') { cur = cur.slice(0, -1); paintSlot(); return; }
+    if (k === 'BACK') {
+      if (cur) { cur = cur.slice(0, -1); hap('key'); paintSlot(); }
+      return;
+    }
     if (/^[A-Z]$/.test(k)) {
       if (cur.length >= 14) return;
       cur += k;
-      paintSlot();
+      hap('key');
+      paintSlot(true);
     }
   }
 
   function submitProbe() {
     var w = cur;
-    if (w.length < 3) { Kit.toast('Three letters or more'); Kit.flash(slotEl, 'shake'); return; }
+    // out of probes the slot is empty and unfillable, so the length check
+    // would answer "three letters or more" to a question nobody asked
     if (S.probes.length >= MAX_PROBES) { Kit.toast('No probes left — call it'); return; }
+    if (w.length < 3) { Kit.toast('Three letters or more'); Kit.flash(slotEl, 'shake'); return; }
     var dupe = S.probes.some(function (p) { return p.w === w; }) ||
                P.pass.indexOf(w) >= 0 || P.fail.indexOf(w) >= 0;
     if (dupe) { Kit.toast('Already on the board'); Kit.flash(slotEl, 'shake'); return; }
 
     busy = true;
     var rec = { w: w, ok: null };
+    var at = S.probes.length;
     S.probes.push(rec);
     cur = '';
     paintSlot();
-    renderNote();
-    renderTray();          // the pip burns down the instant you commit
-    Kit.haptic(6);
+    renderNote({ fresh: at });      // the word is written onto the line…
+    renderMeter();                  // …and the line burns down at once
+    revealLine(at);                 // …and the line it was written on is on screen
+    if (callBtn) callBtn.disabled = true;   // the bench is mid-reading
+    hap('submit');
     say('Testing ' + w);
 
+    // BEAT_MS matches --beat in the stylesheet: the traverse bar finishes
+    // crossing the ruled line exactly as the stamp comes down.
     setTimeout(function () {
       rec.ok = !!P.pred(w);
       busy = false;
       saveDay();
-      renderNote();
-      renderTray();
-      Kit.haptic(rec.ok ? 14 : 26);
+      renderNote({ landed: at });
+      renderMeter();
+      revealLine(at);
+      if (callBtn) callBtn.disabled = false;
+      hap(rec.ok ? 'pass' : 'fail');
       say(w + (rec.ok ? ' passes' : ' fails'));
-    }, 720);
+    }, BEAT_MS);
   }
 
   /* ---------------- screens ---------------- */
@@ -482,146 +1038,214 @@
     if (S.phase === 'probe') renderProbe();
     else if (S.phase === 'call') renderCall();
     else renderResult();
+    // .stage is the scroller on a phone, so window.scrollTo would do nothing
+    stage.scrollTop = 0;
+    window.scrollTo(0, 0);
+    // …except on a board that reopens mid-case: the last line the bench wrote
+    // has to be on screen, not below the fold waiting to be found
+    if (S.phase === 'probe' && S.probes.length) revealLine(S.probes.length - 1);
   }
 
   /* ---- probe screen ---- */
-  var slotEl, noteEl, pipsEl, callBtn, nbHead, nbLeft;
+  var slotEl, noteEl, callBtn, nbSect, trayEl;
+
+  /* The notebook is six fixed rows and the stage is the scroller, so on a
+     740px phone the last rows can start life below the fold. A scroll you have
+     to discover is the same bug as a row that never paints, one tap further
+     away: nobody should have to go looking for evidence they already paid six
+     probes for. Every line the bench writes is put on screen, clear of the
+     sticky tray, whether it was just written or was already there when the
+     board reopened. */
+  function revealLine(i) {
+    if (!noteEl) return;
+    var row = noteEl.children[i];
+    if (!row) return;
+    function run() {
+      var scrolls = getComputedStyle(stage).overflowY === 'auto' &&
+                    stage.scrollHeight - stage.clientHeight > 1;
+      var box = scrolls ? stage.getBoundingClientRect()
+        : { top: 0, bottom: (window.innerHeight || document.documentElement.clientHeight) };
+      /* The floor is the top edge of the tray, read off the tray itself rather
+         than derived from the stage height — .stage carries 8px of vertical
+         padding the sticky tray parks above, and subtracting a height instead
+         of measuring an edge left the last row 2px behind the slot. The tray
+         is sticky only while the stage is the scroller; on desktop it is
+         static and covers nothing. */
+      var floor = box.bottom;
+      if (trayEl && getComputedStyle(trayEl).position === 'sticky') {
+        floor = Math.min(floor, trayEl.getBoundingClientRect().top);
+      }
+      var r = row.getBoundingClientRect();
+      var d = 0;
+      if (r.bottom > floor - 6) d = r.bottom - (floor - 6);
+      else if (r.top < box.top + 6) d = r.top - (box.top + 6);
+      if (!d) return;
+      if (scrolls) stage.scrollTop += d; else window.scrollBy(0, d);
+    }
+    run();
+    // once more after layout has settled (web fonts, the stamp arriving)
+    requestAnimationFrame(run);
+  }
 
   function renderProbe() {
-    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · ' + Kit.dateLabel();
+    setCase('');
+
+    stage.appendChild(sect('find_in_page', 'Evidence', 'One hidden rule'));
 
     var board = el('div', 'board');
-    function col(cls, glyph, head, words) {
+    function col(cls, iconName, head, words) {
       var c = el('div', 'col ' + cls);
       var h = el('h3');
-      h.appendChild(el('span', 'gl', glyph));
-      h.appendChild(document.createTextNode(head));
+      h.innerHTML = ic(iconName, { size: 13, fill: 1 }) + Kit.esc(head);
       c.appendChild(h);
       words.forEach(function (w) { c.appendChild(el('div', 'w', w)); });
       return c;
     }
-    board.appendChild(col('', '✅', 'Follows the rule', P.pass));
-    board.appendChild(col('no', '❌', 'Breaks it', P.fail));
+    board.appendChild(col('', 'check_circle', 'Follows the rule', P.pass));
+    board.appendChild(col('no', 'cancel', 'Breaks it', P.fail));
     stage.appendChild(board);
 
-    nbHead = el('div', 'nb-head');
-    nbHead.appendChild(el('span', null, 'Notebook'));
-    nbHead.appendChild(el('span', 'rule-line'));
-    nbLeft = el('span', 'left');
-    nbHead.appendChild(nbLeft);
-    stage.appendChild(nbHead);
+    nbSect = sect('menu_book', 'Notebook', '');
+    stage.appendChild(nbSect);
 
-    noteEl = el('div', 'note');
+    noteEl = el('div', 'nb');
     stage.appendChild(noteEl);
     renderNote();
 
-    // tray
-    var tray = el('div', 'tray');
+    // the bench: one input, one commitment
+    trayEl = el('div', 'tray');
     slotEl = el('div', 'slot');
-    tray.appendChild(slotEl);
+    trayEl.appendChild(slotEl);
 
-    var row = el('div', 'trayrow');
-    var pw = el('div', 'trayrow');
-    pw.style.gap = '7px';
-    pw.appendChild(el('span', 'plab', 'Probes'));
-    pipsEl = el('div', 'pips');
-    pw.appendChild(pipsEl);
-    row.appendChild(pw);
-
-    callBtn = el('button', 'btn callit', 'Call it');
+    callBtn = el('button', 'btn callit');
     callBtn.type = 'button';
+    callBtn.innerHTML = ic('gavel', { size: 18 }) + 'Call it';
     callBtn.addEventListener('click', confirmCall);
-    row.appendChild(callBtn);
-    tray.appendChild(row);
-    tray.appendChild(el('div', 'deskhint', 'Type any letters, then press Enter to probe.'));
-    stage.appendChild(tray);
+    trayEl.appendChild(callBtn);
+
+    var dh = el('div', 'deskhint');
+    dh.innerHTML = 'Type any letters, then ' + ic('keyboard_return', { size: 15 }) + ' to probe.';
+    trayEl.appendChild(dh);
+    stage.appendChild(trayEl);
 
     paintSlot();
-    renderTray();
+    renderMeter();
   }
 
-  function paintSlot() {
+  /* `landed` marks the character just typed so only that one animates in —
+     rebuilding the whole string with an entrance would replay the word. */
+  function paintSlot(landed) {
     if (!slotEl) return;
     slotEl.innerHTML = '';
+    slotEl.classList.remove('idle');
+    if (S.probes.length >= MAX_PROBES) {
+      slotEl.classList.remove('filled');
+      slotEl.innerHTML = ic('front_hand', { size: 17 }) +
+        '<span class="ph">Out of probes — time to call it</span>';
+      return;
+    }
     if (!cur) {
       slotEl.classList.remove('filled');
-      slotEl.appendChild(el('span', 'ph', 'TYPE ANYTHING — EVEN NONSENSE'));
+      slotEl.innerHTML = ic('experiment', { size: 17 }) +
+        '<span class="ph">Type anything — even nonsense</span>';
+      // before the very first probe the bench asks, three times, then stops
+      if (!S.probes.length) slotEl.classList.add('idle');
     } else {
       slotEl.classList.add('filled');
-      slotEl.appendChild(document.createTextNode(cur));
-      slotEl.appendChild(el('span', 'car', '▌'));
+      for (var i = 0; i < cur.length; i++) {
+        slotEl.appendChild(el('span', 'ch' + (landed && i === cur.length - 1 ? ' new' : ''), cur[i]));
+      }
+      slotEl.appendChild(el('span', 'car'));
     }
   }
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-  /* The bench log. Six numbered lines, ruled and waiting; each probe fills
-     one in and the ✅/❌ chip lands after a beat. The unwritten lines stay
-     visible so the cost of a probe is always on screen. */
-  function renderNote() {
+  /* THE NOTEBOOK. Six numbered lines on ruled stock. Each probe writes one
+     and the readout stamps after a beat; the lines you have not spent stay
+     drawn, empty stamp slot and all, so the cost is always on screen. */
+  /* opts.fresh  — index of a line just written (the word is set onto it)
+     opts.landed — index of a line whose reading just came back (stamp down)
+     Every other row is rebuilt inert, so no entrance ever replays across the
+     whole log when a single line changes. */
+  function renderNote(opts) {
     if (!noteEl) return;
+    opts = opts || {};
     noteEl.innerHTML = '';
     for (var i = 0; i < MAX_PROBES; i++) {
       var p = S.probes[i];
       if (!p) {
-        var g = el('div', 'entry ghost');
+        var g = el('div', 'line ghost');
         g.appendChild(el('span', 'n', pad2(i + 1)));
         // the first blank line doubles as the teaching prompt
-        if (i === 0 && !S.probes.length) g.appendChild(el('span', 'eg', 'CRATE · AAAA · ZZTOP · anything'));
-        else g.appendChild(el('span', 'dots'));
+        if (i === 0 && !S.probes.length) g.appendChild(el('span', 'eg', 'CRATE · AAAA · anything'));
+        else g.appendChild(el('span', 'dot'));
+        g.appendChild(el('span', 'chip empty'));
         noteEl.appendChild(g);
         continue;
       }
-      var row = el('div', 'entry ' + (p.ok === null ? 'pending' : (p.ok ? 'yes' : 'no')));
+      var cls = 'line ' + (p.ok === null ? 'wait' : (p.ok ? 'yes' : 'no'));
+      if (opts.fresh === i) cls += ' fresh';
+      if (opts.landed === i) cls += ' landed';
+      var row = el('div', cls);
       row.appendChild(el('span', 'n', pad2(i + 1)));
       row.appendChild(el('span', 'w', p.w));
-      var res = el('span', 'res');
-      if (p.ok === null) { res.innerHTML = '<span></span><span></span><span></span>'; }
-      else { res.textContent = p.ok ? '✅' : '❌'; }
+      var res = el('span', 'chip');
+      if (p.ok === null) res.innerHTML = ic('hourglass_top', { size: 15 });
+      else res.innerHTML = ic(p.ok ? 'check_circle' : 'cancel', { size: 15, fill: 1 }) +
+                           (p.ok ? 'PASS' : 'FAIL');
       row.appendChild(res);
       noteEl.appendChild(row);
     }
   }
 
-  function renderTray() {
-    if (!pipsEl) return;
-    var used = S.probes.length, left = MAX_PROBES - used;
-    pipsEl.innerHTML = '';
-    // filled pips are what you have LEFT — the meter drains rightward
-    for (var i = 0; i < MAX_PROBES; i++) {
-      pipsEl.appendChild(el('div', 'pip' + (i >= left ? ' spent' : '')));
-    }
-    if (nbLeft) nbLeft.textContent = left + ' left';
+  /* Probes left lives in exactly one place — the notebook's own header. */
+  function renderMeter() {
+    var left = MAX_PROBES - S.probes.length;
+    if (nbSect) nbSect.metaEl.textContent = left + ' probe' + (left === 1 ? '' : 's') + ' left';
     if (callBtn) callBtn.classList.toggle('urge', left === 0);
-    if (left === 0 && slotEl) {
-      slotEl.innerHTML = '';
-      slotEl.classList.remove('filled');
-      slotEl.appendChild(el('span', 'ph', 'Out of probes — time to call it'));
-    }
+    if (left === 0) paintSlot();
   }
 
   /* ---- the call ---- */
   function confirmCall() {
+    if (busy) return;
+    hap('submit');
     var used = S.probes.filter(function (p) { return p.ok !== null; }).length;
     Kit.sheet(
       '<h2>Call it?</h2>' +
-      '<p class="sub">You think you know the rule.</p>' +
+      '<p class="lede">You think you know the rule.</p>' +
       '<div class="rules">You will be shown <b>8 fresh words</b>. Tap the <b>three</b> that follow the rule — exactly three, no more, no fewer.</div>' +
-      '<div class="warn-box"><b>You get one call.</b> No second try, no hints. Miss a single word and you are busted for the day.</div>' +
-      '<div class="rules" style="margin-top:12px;text-align:center">Your score locks in at <b>' + used +
-      ' probe' + (used === 1 ? '' : 's') + '</b>.</div>' +
+      '<div class="warn-box">' + ic('warning', { size: 19, fill: 1 }) +
+      '<span><b>You get one call.</b> No second try, no hints. Miss a single word and you are busted for the day.</span></div>' +
+      '<p class="lockline">Your score locks in at <span class="num">' + used + '</span> probe' +
+      (used === 1 ? '' : 's') + '.</p>' +
       '<div class="btnrow">' +
       '<button class="btn ghost" data-close type="button">Not yet</button>' +
-      '<button class="btn danger" id="goCall" type="button">Call it</button>' +
+      '<button class="btn danger" id="goCall" type="button">' + ic('gavel', { size: 19 }) + 'Call it</button>' +
       '</div>',
       { onOpen: function (sheetEl, close) {
-          sheetEl.querySelector('#goCall').addEventListener('click', function () {
-            close();
-            S.phase = 'call';
-            S.calledAt = used;
-            saveDay();
-            render();
-            window.scrollTo(0, 0);
+          /* Kit.sheet marks the dialog but cannot name it — a dialog with no
+             accessible name is announced as a bare "dialog". Every sheet in
+             this file names itself here, the way Chains does. */
+          sheetEl.setAttribute('aria-label', 'Call it?');
+          var go = sheetEl.querySelector('#goCall');
+          go.addEventListener('click', function () {
+            // the commitment is meant to be irreversible, so it is allowed to
+            // take a beat: the button seals, holds, and only then does the
+            // board change underneath you.
+            if (go.classList.contains('sealed')) return;
+            go.classList.add('sealed');
+            go.parentNode.classList.add('sealing');
+            go.innerHTML = ic('done_all', { size: 19, fill: 1 }) + 'Sealed';
+            hap('commit');
+            setTimeout(function () {
+              close();
+              S.phase = 'call';
+              S.calledAt = used;
+              saveDay();
+              render();
+            }, calm() ? 140 : 420);
           });
         } }
     );
@@ -635,38 +1259,43 @@
       if (p.ok === null) return;
       (p.ok ? yes : no).push(p.w + ' *');
     });
-    function colHTML(list, cls, glyph, head) {
-      return '<div class="col ' + cls + '"><h3><span class="gl">' + glyph + '</span>' + head + '</h3>' +
+    function colHTML(list, cls, iconName, head) {
+      return '<div class="col ' + cls + '"><h3>' + ic(iconName, { size: 13, fill: 1 }) + head + '</h3>' +
         list.map(function (w) { return '<div class="w">' + Kit.esc(w) + '</div>'; }).join('') + '</div>';
     }
-    return '<h2>Case file</h2><p class="sub">Everything you know. * = your probe.</p>' +
-      '<div class="board">' + colHTML(yes, '', '✅', 'Follows the rule') + colHTML(no, 'no', '❌', 'Breaks it') + '</div>' +
+    return '<h2>Case file</h2><p class="lede">Everything you know. * marks your probes.</p>' +
+      '<div class="board">' + colHTML(yes, '', 'check_circle', 'Follows the rule') +
+      colHTML(no, 'no', 'cancel', 'Breaks it') + '</div>' +
       '<button class="btn primary wide" data-close type="button" style="margin-top:16px">Back to the call</button>';
   }
 
   function renderCall() {
-    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · the call';
-    document.getElementById('objective').textContent =
-      'Tap the three that follow the rule. One shot, no second try.';
+    setCase('the call');
 
     var head = el('div', 'callhead');
     head.appendChild(el('p', 't', 'Name the three.'));
     var sub = el('p', 's');
     sub.innerHTML = 'Eight new words. Exactly <b>three</b> follow the hidden rule.';
     head.appendChild(sub);
-    var cf = el('button', 'btn ghost sm', 'Check the case file');
+    var cf = el('button', 'btn ghost sm');
     cf.type = 'button';
-    cf.style.marginTop = '8px';
-    cf.addEventListener('click', function () { Kit.sheet(caseFileHTML()); });
+    cf.innerHTML = ic('find_in_page', { size: 17 }) + 'Case file';
+    cf.style.marginTop = '10px';
+    cf.addEventListener('click', function () {
+      hap('key');
+      Kit.sheet(caseFileHTML(),
+        { onOpen: function (sheetEl) { sheetEl.setAttribute('aria-label', 'Case file'); } });
+    });
     head.appendChild(cf);
     stage.appendChild(head);
 
-    var list = el('div', 'cands');
+    var list = el('div', 'cands stagger');
     CANDS.forEach(function (w) {
       var b = el('button', 'cand');
       b.type = 'button';
       b.dataset.w = w;
-      var box = el('span', 'box', '✓');
+      var box = el('span', 'box');
+      box.innerHTML = ic('check_circle', { size: 25 });
       b.appendChild(box);
       b.appendChild(document.createTextNode(w));
       b.setAttribute('aria-pressed', 'false');
@@ -678,10 +1307,11 @@
     // the commit bar stays under your thumb no matter how far you scroll
     var bar = el('div', 'callbar');
     var counter = el('div', 'counter');
+    counter.setAttribute('aria-live', 'polite');
     bar.appendChild(counter);
-    var lock = el('button', 'btn primary wide', 'Lock it in');
+    var lock = el('button', 'btn primary wide');
     lock.type = 'button';
-    lock.addEventListener('click', lockIn);
+    lock.addEventListener('click', function () { lockIn(bar); });
     bar.appendChild(lock);
     stage.appendChild(bar);
 
@@ -691,88 +1321,150 @@
         b.classList.toggle('sel', on);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
-      counter.innerHTML = '<b>' + S.picks.length + '</b> of 3 chosen';
+      counter.innerHTML = '<b class="tick">' + S.picks.length + '</b> of 3 chosen';
       lock.disabled = S.picks.length !== 3;
-      lock.textContent = S.picks.length === 3 ? 'Lock it in — no takebacks' : 'Pick ' + (3 - S.picks.length) + ' more';
+      lock.innerHTML = S.picks.length === 3
+        ? ic('gavel', { size: 19 }) + 'Lock it in — no takebacks'
+        : 'Pick ' + (3 - S.picks.length) + ' more';
     }
-    window.__paintCall = paint;
+    paintCall = paint;
     paint();
   }
+  var paintCall = function () {};
 
   function togglePick(w) {
+    if (S.phase !== 'call') return;   // never edit a call that has been read
     var i = S.picks.indexOf(w);
-    if (i >= 0) S.picks.splice(i, 1);
+    if (i >= 0) { S.picks.splice(i, 1); hap('unpick'); }
     else {
       if (S.picks.length >= 3) { Kit.toast('Three only — deselect one first'); return; }
       S.picks.push(w);
+      hap('pick');
     }
-    Kit.haptic(6);
     saveDay();
-    window.__paintCall();
+    paintCall();
+    var c = stage.querySelector('.counter b');
+    if (c) Kit.flash(c, 'bump');
   }
 
-  function lockIn() {
+  /* ---- THE SIGNATURE MOMENT ----
+     Eight specimens go through the bench one at a time. Each gets a traverse,
+     then resolves right / wrong / missed, and the readout counts them off.
+     Only when the last one has settled does the verdict land. */
+  var justFinished = false;
+
+  function lockIn(bar) {
     if (S.picks.length !== 3) return;
     var right = S.picks.filter(function (w) { return P.pred(w); });
     S.won = right.length === 3;
     S.hits = right.length;
     S.phase = 'done';
+    justFinished = true;
     saveDay();
     recordResult(S.won, S.calledAt);
+    hap('commit');
 
-    // resolve the tiles in place before the verdict lands
     var tiles = Array.prototype.slice.call(stage.querySelectorAll('.cand'));
     stage.querySelectorAll('.btn').forEach(function (b) { b.disabled = true; });
+    // the specimens are buttons, not .btn — without this they stay tappable
+    // for the ~1.9s of the scan and a tap would edit S.picks after the
+    // verdict has already been scored off it
+    tiles.forEach(function (b) { b.disabled = true; });
+
+    // the lock button becomes the instrument's readout
+    var scan = el('div', 'scanbar');
+    scan.innerHTML = '<div class="lbl">Reading specimen 1 / ' + tiles.length + '</div>' +
+                     '<div class="trk"><i></i></div>';
+    if (bar) { bar.innerHTML = ''; bar.appendChild(scan); }
+    var lbl = scan.querySelector('.lbl'), fill = scan.querySelector('.trk i');
+
+    // still a sequence when motion is reduced, just not a performance
+    var STEP = calm() ? 60 : 150;
     tiles.forEach(function (b, i) {
       setTimeout(function () {
+        b.classList.add('reading');
+        if (lbl) lbl.textContent = 'Reading specimen ' + (i + 1) + ' / ' + tiles.length;
+        if (fill) fill.style.transform = 'scaleX(' + ((i + 1) / tiles.length) + ')';
+      }, STEP * i);
+      setTimeout(function () {
+        b.classList.remove('reading');
+        b.classList.add('live');
         markTile(b);
-        Kit.haptic(8);
-      }, 90 * i);
+        var w = b.dataset.w, picked = S.picks.indexOf(w) >= 0, pass = P.pred(w);
+        if (picked && pass) Kit.haptic(16);
+        else if (picked) { Kit.haptic(8); setTimeout(function () { Kit.haptic(8); }, 80); }
+        else if (pass) Kit.haptic(11);
+      }, STEP * i + 200);
     });
-    setTimeout(function () { render(); window.scrollTo(0, 0); }, 90 * tiles.length + 620);
-    say(S.won ? 'Cracked it' : 'Busted — ' + right.length + ' of 3');
+
+    var total = STEP * tiles.length + 200;
+    setTimeout(function () {
+      if (lbl) lbl.textContent = S.won ? 'Three for three' : S.hits + ' of 3 confirmed';
+    }, total + 60);
+    setTimeout(function () { render(); }, total + 640);
+    // the spoken verdict has to be the verdict on screen, near miss included
+    say(S.won ? 'Cracked it'
+              : (right.length === 2 ? 'One off — 2 of 3' : 'Busted — ' + right.length + ' of 3'));
+  }
+
+  function mark(b, iconName, label) {
+    var m = el('span', 'mk');
+    m.innerHTML = ic(iconName, { size: 15, fill: 1 }) + label;
+    b.appendChild(m);
   }
 
   function markTile(b) {
     var w = b.dataset.w, picked = S.picks.indexOf(w) >= 0, pass = P.pred(w);
+    var box = b.querySelector('.box');
     b.classList.remove('sel');
-    if (picked && pass) { b.classList.add('right'); b.appendChild(el('span', 'mk', 'correct')); }
-    else if (picked && !pass) { b.classList.add('wrong'); b.appendChild(el('span', 'mk', 'wrong')); }
-    else if (!picked && pass) { b.classList.add('missed'); b.appendChild(el('span', 'mk', 'missed')); }
+    if (picked && pass) { b.classList.add('right'); mark(b, 'check_circle', 'correct'); }
+    else if (picked && !pass) {
+      b.classList.add('wrong');
+      if (box) box.innerHTML = ic('cancel', { size: 25, fill: 1 });
+      mark(b, 'cancel', 'wrong');
+    } else if (!picked && pass) { b.classList.add('missed'); mark(b, 'visibility_off', 'missed'); }
     else { b.classList.add('dud'); }
   }
 
   /* ---- result + reveal ---- */
   /* A bare "3 probes" means nothing to someone who has not played. The tier
      word is what makes the number legible in a feed — and on a loss it is
-     the joke. Short forms, because it rides in the share line. */
+     the joke.
+     These ride in the share line, which has a hard budget: 30 monospace
+     columns, so nothing wraps in a message bubble. 'ALL SIX, STILL WRONG'
+     alone was 20 of them and pushed its line to 50 characters. The tier idea
+     survives; the words got shorter. Longest line the block can now produce
+     is 29 characters. */
   function shareTier(used, won) {
     if (!won) {
-      if (used === 0) return 'PURE HUBRIS';
-      if (used <= 2) return 'TOO SOON';
-      if (used <= 5) return 'NOT ENOUGH';
-      return 'ALL SIX, STILL WRONG';
+      if (used === 0) return 'PURE HUBRIS';   // 11
+      if (used <= 2) return 'TOO SOON';       // 8
+      if (used <= 5) return 'NOT ENOUGH';     // 10
+      return 'SIX AND OUT';                   // 11 — spent the lot, still out
     }
     if (used === 0) return 'LEGENDARY';
     if (used === 1) return 'SURGICAL';
     if (used <= 3) return 'CLEAN';
     if (used === 4) return 'SOLID';
-    if (used === 5) return 'CLOSE ONE';
+    if (used === 5) return 'CLUTCH';
     return 'SQUEAKER';
   }
 
+  /* The stamp on the result screen. Same tiers, said in full — a screen has
+     room a message bubble does not — but never a different verdict from the
+     one the share line carries. */
   function tierFor(used, won) {
     if (!won) {
       if (used === 0) return 'Pure hubris';
-      if (used <= 2) return 'Called it far too soon';
+      if (used <= 2) return 'Called far too soon';
       if (used <= 5) return 'Not enough evidence';
-      return 'All six probes. Still wrong.';
+      return 'Six and out';
     }
     if (used === 0) return 'Legendary';
     if (used === 1) return 'Surgical';
     if (used <= 3) return 'Clean';
     if (used === 4) return 'Solid';
-    if (used === 5) return 'Close one';
+    if (used === 5) return 'Clutch';
     return 'Squeaker';
   }
 
@@ -802,11 +1494,10 @@
 
   /* The evidence, re-sorted so it becomes obvious in hindsight: words that
      failed (or passed) for the same reason sit next to each other. */
-  function evGroup(cls, glyph, head, rows) {
+  function evGroup(cls, iconName, head, rows) {
     var g = el('div', 'evgroup ' + cls);
     var h = el('h4');
-    h.appendChild(el('span', 'gl', glyph));
-    h.appendChild(document.createTextNode(head));
+    h.innerHTML = ic(iconName, { size: 14, fill: 1 }) + Kit.esc(head);
     h.appendChild(el('span', 'ct', rows.length + (rows.length === 1 ? ' word' : ' words')));
     g.appendChild(h);
 
@@ -833,12 +1524,19 @@
 
   /* One sentence, in plain English, naming the exact word that decided it.
      On a bust this is the sting; on a win it is the victory lap. */
-  function stingLine() {
-    var d = el('div', 'sting');
+  function stingLine(near) {
+    var d = el('div', 'sting' + (near ? ' near' : ''));
     var tagOf = function (w) { return Kit.esc(P.ev(w).tag); };
     var mono = function (w) { return '<b>' + Kit.esc(w) + '</b>'; };
     var wrongs = S.picks.filter(function (w) { return !P.pred(w); });
     var missed = CANDS.filter(function (w) { return P.pred(w) && S.picks.indexOf(w) < 0; });
+
+    // one word between you and the case — say exactly that, and nothing else
+    if (near && missed.length) {
+      d.innerHTML = 'One word in it. ' + mono(missed[0]) + ' was <span class="hi">' +
+                    tagOf(missed[0]) + '</span> — and you had ' + mono(wrongs[0]) + ' instead.';
+      return d;
+    }
 
     if (!S.won) {
       var parts = [];
@@ -867,64 +1565,71 @@
   }
 
   function renderResult() {
-    document.getElementById('caseNo').textContent = 'Case #' + DAY + ' · closed';
-    document.getElementById('objective').textContent = S.won
-      ? 'You called it and you were right. Here is what you were looking at all along.'
-      : 'One call, and it got away. Here is what you were looking at all along.';
+    setCase('closed');
 
     var used = S.calledAt || 0;
-    var wrap = el('div', 'res-wrap');
+    var near = !S.won && S.hits === 2;      // the "I was SO close" case
+    var tone = S.won ? 'win' : (near ? 'near' : 'lose');
+    var wrap = el('div', 'res-wrap stagger');
 
-    var v = el('h2', 'verdict ' + (S.won ? 'win' : 'lose'), S.won ? 'CRACKED IT' : 'BUSTED');
-    wrap.appendChild(v);
+    var vhead = el('div', 'vhead');
+    vhead.appendChild(el('h2', 'verdict ' + tone,
+      S.won ? 'CRACKED IT' : (near ? 'ONE OFF' : 'BUSTED')));
+
+    var stamp = el('div', 'stamp press' + (S.won ? '' : (near ? ' near' : ' lose')));
+    stamp.innerHTML = ic(S.won ? 'verified' : 'gavel', { size: 16, fill: 1 }) +
+                      Kit.esc(tierFor(used, S.won));
+    vhead.appendChild(stamp);
 
     var sl = el('p', 'scoreline');
     sl.innerHTML = S.won
-      ? 'Called it on <b>' + used + ' probe' + (used === 1 ? '' : 's') + '</b>.' +
-        (used === 0 ? ' Cold. No probes at all.' : '')
-      : 'You got <b>' + S.hits + ' of 3</b>. Called on ' + used + ' probe' + (used === 1 ? '' : 's') + '.';
-    wrap.appendChild(sl);
+      ? 'Called it on <span class="num tick" id="bignum">' + used + '</span> probe' +
+        (used === 1 ? '' : 's') + '.'
+      : '<span class="num tick" id="bignum">' + S.hits + '</span> of 3 right, on <span class="num">' +
+        used + '</span> probe' + (used === 1 ? '' : 's') + '.';
+    vhead.appendChild(sl);
+    wrap.appendChild(vhead);
 
-    var tw = el('div'); tw.style.textAlign = 'center';
-    tw.appendChild(el('span', 'tier' + (S.won ? '' : ' lose'), tierFor(used, S.won)));
-    wrap.appendChild(tw);
-
-    // the call, resolved — the sting or the victory lap.
-    // Only what you touched and what you should have: the other five
-    // near-misses are laid out in full inside the reveal below.
-    var head = el('div', 'nb-head');
-    head.appendChild(el('span', null, S.won ? 'Your call — all three' : 'Your call'));
-    head.appendChild(el('span', 'rule-line'));
-    wrap.appendChild(head);
+    // the call, resolved. Only what you touched and what you should have:
+    // the other near-misses are laid out in full inside the reveal below.
+    wrap.appendChild(sect('gavel', 'Your call', S.won ? 'Three for three' : 'Marked up'));
 
     var list = el('div', 'cands');
     CANDS.filter(function (w) { return S.picks.indexOf(w) >= 0 || P.pred(w); }).forEach(function (w) {
       var b = el('div', 'cand');
       b.dataset.w = w;
-      b.appendChild(el('span', 'box', '✓'));
+      var box = el('span', 'box');
+      box.innerHTML = ic('check_circle', { size: 25 });
+      b.appendChild(box);
       b.appendChild(document.createTextNode(w));
       markTile(b);
+      // one word between you and the case: point at it, twice, then stop
+      if (near && b.classList.contains('missed')) b.classList.add('aim');
       list.appendChild(b);
     });
     wrap.appendChild(list);
 
-    // the sentence you say out loud — names the word that killed you
-    wrap.appendChild(stingLine());
+    // the sentence you say out loud — names the word that decided it
+    wrap.appendChild(stingLine(near));
 
     // ---- THE REVEAL ----
     var rev = el('div', 'reveal');
-    rev.appendChild(el('div', 'kick', 'Today’s rule was'));
+    var kick = el('div', 'kick');
+    kick.innerHTML = ic('fingerprint', { size: 15, fill: 1 }) + 'The rule' +
+                     '<i class="ln"></i><span class="who">Case ' + DAY + '</span>';
+    rev.appendChild(kick);
+
     // "…: Q W E R T / A S D F G" reads far better as a headline plus a key strip
     var m = /^(.*?):\s*([A-Z][A-Z\s/]*)\.?$/.exec(P.rule);
+    var headText = m ? m[1] + '.' : P.rule;
+    // a long rule steps down a size instead of eating the whole card
+    rev.appendChild(el('div', 'headline' + (headText.length > 52 ? ' long' : ''), headText));
     if (m) {
-      rev.appendChild(el('div', 'rule', m[1] + '.'));
       var keys = el('div', 'rulekeys');
       m[2].trim().split(/\s+/).forEach(function (k) {
         keys.appendChild(el('span', k === '/' ? 'sep' : null, k));
       });
       rev.appendChild(keys);
-    } else {
-      rev.appendChild(el('div', 'rule', P.rule));
     }
     rev.appendChild(el('p', 'detail', P.detail));
 
@@ -940,88 +1645,216 @@
     S.probes.forEach(function (p) { if (p.ok !== null) add(p.w, 'probe'); });
     CANDS.forEach(function (w) { add(w, 'call'); });
 
-    rev.appendChild(evGroup('', '✅', 'Obeys it', yes));
-    rev.appendChild(evGroup('bad', '❌', 'Breaks it', no));
+    rev.appendChild(evGroup('', 'check_circle', 'Obeys it', yes));
+    rev.appendChild(evGroup('bad', 'cancel', 'Breaks it', no));
     wrap.appendChild(rev);
+
+    /* From here down this screen runs the suite's tail, in the suite's order:
+       the stats, the share block, the share button, the way on to the next
+       puzzle. The Rule is the one game whose result is the page rather than a
+       bottom sheet — the case does not leave the bench, it closes on it — so
+       there is no "back to the board" at the end of it; everything the board
+       held is already printed above. The numbers themselves are the lab
+       record's, so the reading here and the reading behind the bar button can
+       never disagree. */
+    var rec = stats();
+    var srow = el('div', 'statrow');
+    var hits = (S.hits == null) ? (S.won ? 3 : 0) : S.hits;
+    srow.innerHTML =
+      '<div class="stat"><span class="n">' + used + '</span><span class="l">Probes</span></div>' +
+      '<div class="stat"><span class="n">' + hits + '/3</span><span class="l">Correct</span></div>' +
+      '<div class="stat"><span class="n">' + (rec.best === null ? '–' : rec.best) +
+        '</span><span class="l">Fewest</span></div>';
+    wrap.appendChild(srow);
 
     // what you will actually paste
     var sg = el('div', 'sharegrid');
     sg.textContent = shareText();
     wrap.appendChild(sg);
 
-    var sh = el('button', 'btn primary wide', S.won ? 'Share the flex' : 'Share the damage');
+    var sh = el('button', 'btn primary wide');
     sh.type = 'button';
-    sh.addEventListener('click', function () { Kit.share(shareText(), sh); });
+    sh.id = 'shareBtn';
+    sh.innerHTML = ic('share', { size: 19 }) +
+      (S.won ? 'Share the flex' : (near ? 'Share the near miss' : 'Share the damage'));
+    sh.addEventListener('click', function () {
+      hap('pick');
+      /* The button is handed over: Kit.share restores the label with innerHTML
+         so the symbol survives, and paints the confirmation from what actually
+         happened. The bench never reports a reading it did not take — least of
+         all about itself. */
+      Kit.share(shareText(), sh);
+    });
     wrap.appendChild(sh);
 
-    var nx = el('div', 'next');
-    nx.innerHTML = 'Next rule in <b id="cd">--:--:--</b>';
-    wrap.appendChild(nx);
+    /* No lockout and no countdown: a closed case hands you the next one on
+       the spot. Kit.nextButton is delegated at the document, so rendering it
+       is all this screen has to do. */
+    var nxHost = el('div');
+    nxHost.innerHTML = Kit.nextButton('rule', 'Next case');
+    wrap.appendChild(nxHost.firstChild);
 
     stage.appendChild(wrap);
-    var cd = document.getElementById('cd');
-    if (cdTimer) clearInterval(cdTimer);
-    cdTimer = Kit.countdown(cd);
-  }
-  var cdTimer = null;
 
-  /* ---------------- share ---------------- */
+    /* ---- the landing ----
+       The number that matters counts up to itself; the stamp comes down on
+       top of it. Confetti is only ever for a cracked case, and the haptic
+       for a one-off near miss is deliberately not the haptic for a bust. */
+    var big = document.getElementById('bignum');
+    tally(big, S.won ? used : S.hits, 520);
+
+    if (justFinished) {
+      justFinished = false;
+      setTimeout(function () { hap(S.won ? 'win' : (near ? 'near' : 'lose')); }, 330);
+      if (S.won) {
+        setTimeout(function () {
+          var r = stamp.getBoundingClientRect();
+          Kit.burst({
+            x: r.left + r.width / 2,
+            y: r.top + r.height / 2,
+            n: used <= 3 ? 58 : 34,
+            colors: ['#5b46c9', '#a596f2', '#c9bdf7', '#2e7d4f', '#efe9ff']
+          });
+        }, 340);
+      }
+    }
+  }
+
+  /* ---------------- share ----------------
+     Four lines at most (three on a nought-probe call), and every one of them
+     inside 30 monospace columns so it lands in a bubble without folding.
+     The savings came from saying each thing once: line 2 already draws the
+     probe count as ✅/❌, so the verdict line stops spelling "on 6 probes"
+     out beside it, and "ONE OFF" already means 2/3 so it stops printing the
+     fraction. Measured longest output: 29 characters. */
   function shareText() {
     var used = S.calledAt || 0;
-    var lines = ['THE RULE #' + DAY];
+    var lines = ['THE RULE #' + DAY];                        // 13–15
     if (used > 0) {
       var story = S.probes.map(function (p) { return p.ok ? '✅' : '❌'; }).join('');
-      lines.push('🔬 ' + story);
+      lines.push('🔬 ' + story);                             // ≤ 15 cols
     }
     var tier = shareTier(used, S.won);
     if (S.won) {
       // the 👑 line already says everything; anywhere else the tier word is
       // what tells a non-player whether the number was good
       lines.push(used === 0
-        ? '👑 CRACKED IT COLD · 0 probes'
-        : '🧠 CRACKED IT · ' + used + ' probe' + (used === 1 ? '' : 's') + ' · ' + tier);
+        ? '👑 CRACKED IT COLD · 0 probes'                    // 29
+        : '🧠 CRACKED IT IN ' + used + ' · ' + tier);        // ≤ 29
+    } else if (S.hits === 2) {
+      // the near miss is half the reason anyone posts this game; the artifact
+      // has to carry it or the story dies on the way to the group chat.
+      // "ONE OFF" is the 2/3, so the fraction does not get printed twice.
+      lines.push('😩 ONE OFF · ' + tier);                    // ≤ 24
     } else {
-      lines.push('💀 BUSTED · ' + S.hits + '/3 on ' + used +
-                 ' probe' + (used === 1 ? '' : 's') + ' · ' + tier);
+      lines.push('💀 BUSTED · ' + S.hits + '/3 · ' + tier);  // ≤ 29
     }
-    lines.push('sfun.games/rule');
+    lines.push('sfun.games/rule');                            // 15
     return lines.join('\n');
   }
 
-  /* ---------------- sheets ---------------- */
-  var HELP =
-    '<ul style="padding-left:18px;margin:0">' +
-    '<li>One <b>hidden rule</b> decides everything. Three words obey it, three break it. That is your whole opening evidence.</li>' +
-    '<li><b>Probe it.</b> Type any string of letters — a real word, or deliberate nonsense — and get an instant ✅ or ❌. ' +
-    'Testing <code>AAAA</code> to check for double letters is not cheating, it is good science.</li>' +
-    '<li>You get <b>6 probes</b>.</li>' +
-    '<li><b>Call it</b> whenever you like. You will see 8 fresh words and must tap the <b>three</b> that follow the rule — exactly three.</li>' +
-    '<li>You get <b>one call</b>. Three right and you cracked it. Anything else and you are busted.</li>' +
-    '<li>Your score is <b>how many probes you spent</b>. Calling on 0 is legendary. Calling on 6 is a squeaker.</li>' +
-    '</ul>';
+  /* ---------------- help ----------------
+     Leads with the one sentence that makes it click, then shows the game
+     happening rather than describing it. The example rule is deliberately
+     one that never appears in the puzzle set. */
+  function helpHTML() {
+    return '<h2>How to play</h2>' +
+      '<p class="lede">One hidden rule decides everything.<br>Work out what it is.</p>' +
+      '<div class="demo">' +
+        '<div class="dcol"><span class="dh good">' + ic('check_circle', { size: 13, fill: 1 }) +
+          'Follows</span><b>PI<em>Z</em>ZA</b><b>DA<em>Z</em>ZLE</b></div>' +
+        '<div class="dcol"><span class="dh bad">' + ic('cancel', { size: 13, fill: 1 }) +
+          'Breaks it</span><b>PASTA</b><b>DINNER</b></div>' +
+      '</div>' +
+      '<p class="dwhy">' + ic('lightbulb', { size: 17, fill: 1 }) +
+        '<span>The rule here: <em>there is a Z in it.</em></span></p>' +
+      '<p class="dnote">The real ones are harder than that.</p>' +
+      '<ol class="steps">' +
+        '<li>' + ic('experiment', { size: 20, fill: 1 }) +
+          '<div><b>Probe.</b> Type anything — <code>AAAA</code> counts — and the bench says pass or fail. Six of them.</div></li>' +
+        '<li>' + ic('gavel', { size: 20, fill: 1 }) +
+          '<div><b>Call it.</b> Eight fresh words. Tap the <b>three</b> that obey the rule.</div></li>' +
+        '<li>' + ic('military_tech', { size: 20, fill: 1 }) +
+          '<div><b>Score.</b> Probes spent. Six is a squeaker; zero is legendary.</div></li>' +
+      '</ol>' +
+      '<div class="warn-box">' + ic('warning', { size: 19, fill: 1 }) +
+        '<span><b>One call only.</b> Three right and you cracked it. Anything else and you are busted for the day.</span></div>' +
+      /* The lab record lives behind here rather than in the bar: four buttons
+         will not leave a centred two-part wordmark clear air at 320px, and a
+         cramped masthead is a worse trade than one extra tap for a number you
+         look at between cases. */
+      /* No symbol on the record button: icon + "Lab record" measures 144px and
+         half of a 320px sheet is 135px, which put the label on a second line
+         and gave the row a 69px chin. The word carries it. */
+      '<div class="btnrow">' +
+        '<button class="btn ghost" type="button" data-record>Lab record</button>' +
+        '<button class="btn primary" data-close type="button">Got it</button>' +
+      '</div>';
+  }
 
-  document.getElementById('helpBtn').addEventListener('click', Kit.helpButton(HELP, 'How to play'));
+  document.getElementById('helpBtn').addEventListener('click', function () {
+    hap('key');
+    Kit.sheet(helpHTML(), {
+      onOpen: function (sheetEl, close) {
+        sheetEl.setAttribute('aria-label', 'How to play');
+        sheetEl.querySelector('[data-record]').addEventListener('click', function () {
+          hap('key');
+          close();
+          // let the help sheet finish leaving before the record arrives, or
+          // the two animate over each other
+          setTimeout(openRecord, 220);
+        });
+      }
+    });
+  });
 
-  document.getElementById('statsBtn').addEventListener('click', function () {
+  function openRecord() {
     var st = stats();
     var avg = st.cracked ? (st.probeSum / st.cracked).toFixed(1) : '–';
     Kit.sheet(
-      '<h2>Lab record</h2><p class="sub">Local to this device.</p>' +
+      '<h2>Lab record</h2><p class="lede">Local to this device.</p>' +
       '<div class="statrow">' +
-      '<div class="stat"><span class="n">' + st.played + '</span><span class="l">Cases</span></div>' +
-      '<div class="stat"><span class="n">' + st.cracked + '</span><span class="l">Cracked</span></div>' +
-      '<div class="stat"><span class="n">' + (st.best === null ? '–' : st.best) + '</span><span class="l">Fewest probes</span></div>' +
+      '<div class="stat"><span class="n tick" data-to="' + st.played + '">0</span><span class="l">Cases</span></div>' +
+      '<div class="stat"><span class="n tick" data-to="' + st.cracked + '">0</span><span class="l">Cracked</span></div>' +
+      '<div class="stat"><span class="n">' + (st.best === null ? '–' : st.best) + '</span><span class="l">Fewest</span></div>' +
       '<div class="stat"><span class="n">' + avg + '</span><span class="l">Avg probes</span></div>' +
       '</div>' +
-      '<button class="btn primary wide" data-close type="button" style="margin-top:14px">Close</button>'
+      (st.streak > 1
+        ? '<div class="streakrow"><span class="kchip acc">' + ic('local_fire_department', { size: 14 }) +
+          st.streak + '-day streak</span></div>'
+        : '') +
+      '<button class="btn primary wide" data-close type="button" style="margin-top:16px">Close</button>',
+      { onOpen: function (sheetEl) {
+          sheetEl.setAttribute('aria-label', 'Lab record');
+          // the two counts that grow land rather than appear
+          sheetEl.querySelectorAll('.n[data-to]').forEach(function (n) {
+            tally(n, +n.dataset.to, 480);
+          });
+        } }
     );
-  });
+  }
+
+  Kit.themeToggle(document.getElementById('themeBtn'));
 
   /* ---------------- boot ---------------- */
   render();
-  if (!seenDb.get()) {
-    seenDb.set(1);
-    Kit.helpButton(HELP, 'How to play')();
+
+  /* A first-timer plays without reading rules: three coach marks, one
+     sentence each, each pointing at the next thing to touch. The full help
+     sheet stays behind the ? for anyone who wants it. */
+  if (S.phase === 'probe' && !S.probes.length && Kit.once('rule:tour')) {
+    setTimeout(function () {
+      Kit.tour([
+        { sel: '.board', text: 'Three of these words obey one <b>hidden rule</b>. Three break it.', place: 'below' },
+        { sel: '.slot', text: 'Test a theory: type <b>any</b> letters — even nonsense — and the bench answers pass or fail.', place: 'above' },
+        { sel: '.callit', text: 'Six probes, then <b>one call</b>. Cash in the moment you think you have it.', place: 'above' }
+      ], {
+        doneLabel: 'Start',
+        // the coach marks outlast the slot's own three-breath nudge, so hand
+        // the board back with the affordance still asking
+        onDone: function () { paintSlot(); }
+      });
+    }, 240);
   }
 })();
 </script>

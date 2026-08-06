@@ -10,62 +10,300 @@
 <link rel="stylesheet" href="../shared/kit.css">
 <link rel="stylesheet" href="font.css">
 <style>
-  :root { --accent:#0e6f9e; --accent-soft:#d7ebf6; --accent-ink:#fff; --key:#b07f12; --key-soft:#fbeec8; --key-ink:#fff; }
+  /* ============================================================
+     STOWAWAYS — a column of newsprint you can search.
+
+     Surface language is print, not app: hairline rules instead of
+     shadows, a double rule under the masthead, one column rail down
+     the passage, and a single wash of harbour-blue ink down the page.
+     The only real elevation in the game belongs to the passage,
+     because the passage is the game.
+
+     Colour: harbour blue carries the search; brass is reserved
+     entirely for the keystone, so brass anywhere on the page means
+     "this is the one that names the theme".
+     --key-text is the brass that is allowed to be small: plain --key
+     is a 3:1 fill colour, fine for rules and 20px type, too weak for
+     an 11px chip label.
+     ============================================================ */
+  :root {
+    --accent:#0e6f9e; --accent-soft:#d7ebf6; --accent-ink:#ffffff;
+    --key:#b07f12; --key-soft:#f9edcb; --key-ink:#2b1f04; --key-text:#8a640c;
+    --bad:#b3402f;  --bad-soft:#f7e0da;
+    --warn:#a8790a; --warn-soft:#f7ecd0;
+    --wash:      rgba(14,111,158,.055);   /* ink settling into the paper   */
+    --page-wash: rgba(14,111,158,.07);    /* the same wash, page scale     */
+    --sheen:     rgba(14,111,158,.15);    /* the one-off pass over the type*/
+    --rule-ink:  #2b2822;                 /* the heavy masthead rule       */
+    --font-brand:'Newsreader', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    --r-col: 10px;
+  }
+  /* Both dark branches restate every token — a value set on :root here
+     out-cascades the kit's own dark-mode value, so anything the kit dims
+     (accent-soft, bad, warn) has to be dimmed again in both places. */
   @media (prefers-color-scheme: dark) {
-    :root { --accent:#4aa8d8; --accent-soft:#0d2f42; --accent-ink:#0a1a24;
-            --key:#e0b64a; --key-soft:#3a2f12; --key-ink:#1c1608; }
+    :root { --accent:#4aa8d8; --accent-soft:#0d2f42; --accent-ink:#08161f;
+            --key:#e0b64a; --key-soft:#3a2e10; --key-ink:#1c1608; --key-text:#e8c667;
+            --bad:#ef8a76;  --bad-soft:#40201a;
+            --warn:#e3a920; --warn-soft:#3a2f12;
+            --wash:rgba(74,168,216,.075); --page-wash:rgba(74,168,216,.06);
+            --sheen:rgba(74,168,216,.17); --rule-ink:#6a6472; }
   }
   :root[data-theme="dark"] {
-    --accent:#4aa8d8; --accent-soft:#0d2f42; --accent-ink:#0a1a24;
-    --key:#e0b64a; --key-soft:#3a2f12; --key-ink:#1c1608;
+    --accent:#4aa8d8; --accent-soft:#0d2f42; --accent-ink:#08161f;
+    --key:#e0b64a; --key-soft:#3a2e10; --key-ink:#1c1608; --key-text:#e8c667;
+    --bad:#ef8a76;  --bad-soft:#40201a;
+    --warn:#e3a920; --warn-soft:#3a2f12;
+    --wash:rgba(74,168,216,.075); --page-wash:rgba(74,168,216,.06);
+    --sheen:rgba(74,168,216,.17); --rule-ink:#6a6472;
   }
   :root[data-theme="light"] {
-    --accent:#0e6f9e; --accent-soft:#d7ebf6; --accent-ink:#fff;
-    --key:#b07f12; --key-soft:#fbeec8; --key-ink:#fff;
+    --accent:#0e6f9e; --accent-soft:#d7ebf6; --accent-ink:#ffffff;
+    --key:#b07f12; --key-soft:#f9edcb; --key-ink:#2b1f04; --key-text:#8a640c;
+    --bad:#b3402f;  --bad-soft:#f7e0da;
+    --warn:#a8790a; --warn-soft:#f7ecd0;
+    --wash:rgba(14,111,158,.055); --page-wash:rgba(14,111,158,.07);
+    --sheen:rgba(14,111,158,.15); --rule-ink:#2b2822;
   }
+
+  body {
+    background-image: linear-gradient(180deg, var(--page-wash), rgba(0,0,0,0) 340px);
+    background-repeat: no-repeat;
+  }
+  /* kit's `.btn:has(.ms) { display:inline-flex }` is a class selector and so
+     out-ranks the UA sheet's `[hidden] { display:none }`. Any button in this
+     file that both carries a symbol and gets hidden needs this or it never
+     goes away. */
+  [hidden] { display: none !important; }
 
   .stage { justify-content: flex-start; gap: 10px; padding: 4px 0 0; }
   /* the live region is absolutely positioned; pin it so it cannot add a
      stray pixel of page height and defeat the no-scroll layout */
   #live { position: fixed; top: 0; left: 0; }
-  /* Toasts sit low, in the gap above the controls — never over the passage or
-     the theme strip, which are the two things you are reading. #afterwards is
-     empty until the reveal, so while playing it holds that gap open and the
-     autofit grower is forced to respect it. */
-  #toast-layer { top: auto; bottom: calc(80px + var(--safe-b)); }
-  #afterwards:empty { min-height: 58px; }
-  .bar .iconbtn { text-decoration: none; }
+  /* In-play messages no longer float: they set into the dispatch line below
+     the passage (see .log). The only toast left in the game is the clipboard
+     confirmation, which fires while the result sheet is up — and the kit's
+     scrim is z-index 100, so the layer has to climb above it or the one
+     confirmation the player actually waits for is invisible. */
+  #toast-layer { z-index: 150; }
 
-  /* ---------- progress chips ----------
+  /* ---------- the masthead ----------
+     Same bar structure as the other four — back left, wordmark centre,
+     utilities right — but set as a newspaper flag: the display serif in
+     caps over a dateline, and a proper double rule underneath.
+
+     The flanks are IDENTICAL tracks, so the auto centre track is on the
+     true horizontal centre of the bar rather than centred in whatever is
+     left over. That only works if the flanks are cheap enough to leave the
+     wordmark room, and here the arithmetic is unforgiving: this masthead
+     carries a nine-cap serif AND a dateline under it, ~131px wide at a
+     320px viewport. A 320 phone gives the bar 288px. Two 44px buttons and
+     a gap on the right (94px) mirrored on the left leaves 92px for a 131px
+     lockup — the wordmark goes straight through the theme button, which is
+     exactly what it used to do. One 44px button per flank leaves 192px,
+     and the wordmark clears each button by ~34px.
+     So the help sheet moved to the controls row at the bottom of the page,
+     where it is a bigger thumb target anyway, and the bar keeps the back
+     arrow and the theme toggle and nothing else. */
+  .bar {
+    display: grid; align-items: center; gap: 4px;
+    grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
+    padding: 10px 0 9px;
+    border-bottom: 2px solid var(--rule-ink);
+    margin-bottom: 13px; position: relative;
+  }
+  .bar::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -4px;
+    height: 1px; background: var(--line-2);
+  }
+  .bar .back { justify-self: start; }
+  .bartools { display: flex; gap: 6px; justify-self: end; }
+  .lockup { min-width: 0; text-align: center; }
+  .lockup h1 {
+    font-family: var(--font-brand);
+    font-size: clamp(19px, 5.8vw, 24px);
+    font-weight: 600; font-variation-settings: 'opsz' 60, 'wght' 620;
+    letter-spacing: .04em; text-transform: uppercase;
+    margin: 0; line-height: 1.04; white-space: nowrap;
+  }
+  .dateline {
+    margin: 3px 0 0; display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 9.5px; font-weight: 500;
+    letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3);
+    white-space: nowrap; line-height: 1;
+  }
+  .dateline .ms { --ms-size: 13px; --ms-fill: 1; color: var(--accent); }
+
+  /* ---------- the kicker ----------
+     One line of standfirst: what the six words have in common. The board
+     already says there are six and that they are hidden, so this says
+     neither. */
+  .kicker {
+    text-align: center; padding: 9px 4px 11px; position: relative;
+    border-bottom: 1px solid var(--line);
+  }
+  /* When the keystone comes aboard the clue is answered — it named the theme.
+     The standfirst does not change what it says; it changes what it IS, and
+     the rule under it draws itself again in brass. Transform only. */
+  .kicker::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: var(--key); transform: scaleX(0);
+    transition: transform .55s var(--ease-out);
+  }
+  .kicker.solved::after { transform: scaleX(1); }
+  .kicker.solved .kick-l { color: var(--key-text); }
+  .kicker.solved .kick-c::before,
+  .kicker.solved .kick-c::after { color: var(--key); }
+  .kick-l {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--accent);
+    transition: color var(--dur-3) var(--ease-out);
+  }
+  .kick-l .ms { --ms-size: 13px; --ms-fill: 1; }
+  .kick-c {
+    margin: 2px 0 0; font-family: var(--font-brand);
+    font-size: clamp(19px, 5.6vw, 23px); font-weight: 500;
+    color: var(--ink); line-height: 1.25;
+  }
+  .kick-c::before { content: '\201C'; color: var(--ink-3); }
+  .kick-c::after  { content: '\201D'; color: var(--ink-3); }
+
+  /* ---------- the manifest ----------
+     Six berths and a count, filling up like a ship's list. The starred
+     berth is the keystone and it is brass from the first glance, so the
+     board itself says one of these is different before anyone reads a rule.
      NB the keystone modifier is `.ks`, not `.key` — kit.css already owns
      `.key` for the on-screen keyboard and it would flex-grow the chip. */
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+  .man-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px;
+  }
+  .man-head .l { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); }
+  .man-head .ms { --ms-size: 14px; --ms-fill: 1; color: var(--ink-3); }
+  .man-head b { color: var(--accent); font-weight: 800; }
+  /* The berth block is held at its FILLED height from the first frame.
+     Empty berths are all one width — no berth is ever wider than another, so
+     nothing about the block leaks a word length — and the reserved two rows
+     mean landing a nine-letter word can never wrap the manifest, grow the
+     page and force refit() to shrink the passage under the reader's thumb.
+     Above ~500px everything fits on one row anyway, so the reserve is off. */
+  .chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    justify-content: center; align-items: center; align-content: center;
+    min-height: 60px;
+  }
   .chip {
-    flex: 0 0 auto;
+    flex: 0 0 auto; position: relative; overflow: hidden; isolation: isolate;
     font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .06em;
     line-height: 1.2; text-transform: uppercase; font-weight: 700;
-    padding: 5px 10px; min-width: 34px; height: 26px; text-align: center;
+    padding: 5px 10px; min-width: 62px; height: 27px; text-align: center;
     display: inline-flex; align-items: center; justify-content: center;
     border: 1px dashed var(--line-2); border-radius: var(--r-pill);
     color: var(--ink-3); background: transparent;
-    transition: background .25s, color .25s, border-color .25s, transform .2s;
+    transition: color .25s var(--ease-out), border-color .25s var(--ease-out);
   }
-  .chip.on { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
-  .chip.ks { border-color: var(--key); color: var(--key); }
-  .chip.ks.on { background: var(--key-soft); color: var(--key); border-color: var(--key); }
-  .chip.miss { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad); }
-  .chip.just { transform: scale(1.16); }
+  /* the berth ground is a separate layer so it can WASH in from the left
+     rather than switching on — the same left-to-right ink the passage uses */
+  .chip::before {
+    content: ''; position: absolute; inset: 0; z-index: 0;
+    background: var(--accent-soft);
+    transform: scaleX(0); transform-origin: left center;
+  }
+  .chip .lbl {
+    position: relative; z-index: 1;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .chip .ms { --ms-size: 13px; --ms-wght: 500; }
+  .chip.on { color: var(--accent); border: 1px solid var(--accent); }
+  .chip.on::before { transform: scaleX(1); }
+  .chip.ks { border-color: var(--key); color: var(--key-text); }
+  .chip.ks .ms { color: var(--key-text); }
+  .chip.ks::before { background: var(--key-soft); }
+  .chip.ks.on { color: var(--key-text); border-color: var(--key); }
+  .chip.ks.on .ms { --ms-fill: 1; }   /* the star fills the moment it is true */
+  .chip.miss { color: var(--bad); border: 1px solid var(--bad); }
+  .chip.miss::before { background: var(--bad-soft); transform: scaleX(1); }
+  .chip.miss .ms { color: var(--bad); }
+  /* A berth being claimed: the ground washes across, the chip stamps down.
+     --d carries the stagger so the chip and its ::before ground start
+     together; the reveal at the end of a lost day walks the missed berths
+     onto the list one after another instead of dumping all of them. */
+  .chip.just          { animation: chip-stamp .46s var(--ease-spring) var(--d, 0s) both; }
+  .chip.just::before  { animation: chip-wash  .40s var(--ease-out)    var(--d, 0s) both; }
+  .chip.miss.just     { animation: chip-drop  .44s var(--ease-out)    var(--d, 0s) both; }
+  @keyframes chip-stamp { 0% { transform: scale(1.26) } 100% { transform: none } }
+  @keyframes chip-wash  { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+  @keyframes chip-drop  {
+    0%   { opacity: 0; transform: translateY(-5px) scale(1.08) }
+    100% { opacity: 1; transform: none }
+  }
 
-  /* ---------- readout ---------- */
+  /* ---------- readout ----------
+     One line, above the passage, that only ever answers "what do I touch
+     next". It never carries consequences — those set into the dispatch line
+     below the passage — so the two never fight for the same glance. */
   .readout {
-    height: 30px; display: flex; align-items: center; justify-content: center;
+    height: 30px; display: flex; align-items: center; justify-content: center; gap: 6px;
     font-family: var(--font-mono); font-size: 15px; letter-spacing: .16em;
     color: var(--accent); font-weight: 700; text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-align: center;
   }
-  .readout.idle { font-family: var(--font-ui); font-size: 13px; letter-spacing: 0;
+  .readout.idle { font-family: var(--font-ui);
+    font-size: clamp(11.5px, 3.4vw, 13px); letter-spacing: 0;
     color: var(--ink-3); font-weight: 400; text-transform: none;
-    white-space: normal; line-height: 1.3; }
+    white-space: nowrap; line-height: 1.3; }
+  /* nowrap in a fixed 30px box would clip in silence at a large browser
+     minimum font size; ellipsis at least makes the truncation say so */
+  .readout.idle span:not(.ms) { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .readout.idle .ms { --ms-size: 16px; color: var(--ink-3); flex: 0 0 auto; }
+  .readout.armed { color: var(--accent); font-weight: 600; }
+  .readout.armed .ms { --ms-fill: 1; color: var(--accent); }
+  /* the instruction ARRIVES rather than swapping: each new state rises the
+     way a fresh line of type does. The drag readout writes textContent with
+     no child element, so the letters under your thumb stay instant. */
+  .readout.idle > * { animation: read-in var(--dur-2) var(--ease-out) both; }
+  @keyframes read-in { from { opacity: 0; transform: translateY(4px) } }
+
+  /* ---------- the dispatch line ----------
+     The well between the passage and the controls used to be empty air held
+     open so a floating toast had somewhere to land. It is now the game's
+     running record: what just happened, in the ship's-log register, set
+     under a short rule that wipes in like a fresh mark. Consequences live
+     here; instructions live above the passage. It is a fixed height so a
+     message can never grow the page and re-wrap the passage. */
+  .log { height: 58px; display: grid; place-items: center; text-align: center; }
+  .log-l {
+    margin: 0; padding-top: 10px; position: relative; max-width: 100%;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+    letter-spacing: .11em; text-transform: uppercase; line-height: 1.35;
+    color: var(--ink-3);
+    animation: log-in var(--dur-2) var(--ease-out) both;
+  }
+  .log-l::before {
+    content: ''; position: absolute; top: 0; left: 50%; width: 30px; height: 2px;
+    margin-left: -15px; background: currentColor; opacity: .45;
+    transform: scaleX(0); animation: rule-wipe var(--dur-3) var(--ease-out) forwards;
+  }
+  .log-l .ms { --ms-size: 15px; --ms-fill: 1; flex: 0 0 auto; }
+  .log-l.good { color: var(--accent); }
+  .log-l.bad  { color: var(--bad); }
+  .log-l.note { color: var(--ink-2); }
+  /* A near miss is not a miss and not a find, so its rule is neither: it is
+     drawn half in harbour blue and half in red, on the side the player
+     actually got right. The smallest mark on the page tells the truest
+     version of the story. */
+  .log-l.near  { color: var(--accent); }
+  .log-l.near::before  { opacity: 1;
+    background: linear-gradient(90deg, var(--accent) 50%, var(--bad) 50%); }
+  .log-l.near2::before {
+    background: linear-gradient(90deg, var(--bad) 50%, var(--accent) 50%); }
+  .log-l.ks   { color: var(--key-text); font-size: 12.5px; letter-spacing: .13em; }
+  .log-l.ks::before { background: var(--key); opacity: 1; }
+  @keyframes log-in   { from { opacity: 0; transform: translateY(5px) } }
+  @keyframes rule-wipe { from { transform: scaleX(0) } to { transform: scaleX(1) } }
 
   /* ============================================================
      THE PASSAGE — the hero.
@@ -89,21 +327,33 @@
           each space is what keeps the paragraph wrapping once the
           spaces stop being breakable text.
        3. Nothing that highlights may touch the box model. Ever. If the
-          letter you are aiming at moves, the game is broken.
+          letter you are aiming at moves, the game is broken. That
+          includes WEIGHT: a variable face is wider at 600 than at 400,
+          so a found word cannot be bolded — it would re-wrap the
+          paragraph under the reader's thumb. Found type gets its extra
+          colour from -webkit-text-stroke instead, which is painted and
+          costs no advance width.
+
+     The face is Newsreader, at a reading optical size — this is the one
+     game in the suite whose hero is prose, so it is set like prose.
      ============================================================ */
   .passage {
     --bleed: .085em;
     --band: 1.5;
     --rest-op: 1;
     background: var(--white);
+    background-image: linear-gradient(180deg, var(--wash), rgba(0,0,0,0) 85%);
     border: 1px solid var(--line);
-    border-radius: 18px;
-    box-shadow: var(--shadow-2);
-    padding: 18px 16px 20px;
-    font-family: var(--font-display);
-    font-size: clamp(17px, 4.9vw, 20px);
+    border-radius: var(--r-col);
+    /* the column rail — the same inset rule the reveal rows carry, so the
+       passage and its afterword read as one printed column */
+    box-shadow: var(--shadow-1), inset 3px 0 0 var(--accent);
+    padding: 16px 15px 18px 18px;
+    font-family: var(--font-brand);
+    font-size: clamp(18px, 5.1vw, 21px);
     font-weight: 400;
-    line-height: 2.05;
+    font-optical-sizing: auto;
+    line-height: 1.95;
     letter-spacing: 0;
     color: var(--ink);
     text-wrap: pretty;
@@ -111,6 +361,38 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: none; cursor: crosshair;
     hyphens: none;
+    /* isolate + relative make this a stacking context, so the ink effects
+       below can sit at z-index -1: above the paper, UNDER the type. Ink
+       soaking into a page never covers the letters it is soaking around. */
+    position: relative; isolation: isolate; overflow: hidden;
+  }
+  /* the empty state: one slow pass of light across the column on first load,
+     before a single word has been found. It says "this surface lights up"
+     without saying a word, and it is purely decorative — the instruction is
+     the readout above, which does not depend on any of this running. */
+  .passage::after {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(102deg,
+      rgba(0,0,0,0) 34%, var(--sheen) 50%, rgba(0,0,0,0) 66%);
+    opacity: 0; transform: translateX(-55%);
+  }
+  .passage.sheen::after { animation: sheen 1.7s var(--ease-in-out) .45s both; }
+  @keyframes sheen {
+    0%        { opacity: 0; transform: translateX(-55%) }
+    22%, 74%  { opacity: 1 }
+    100%      { opacity: 0; transform: translateX(55%) }
+  }
+  /* the keystone bloom — see land(). A flare of brass that spreads out of the
+     word and soaks away through the column. Transform + opacity only. */
+  .bloom {
+    position: absolute; z-index: -1; pointer-events: none;
+    width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+    background: radial-gradient(circle closest-side, var(--key), rgba(0,0,0,0));
+    animation: bloom 1.05s var(--ease-out) forwards;
+  }
+  @keyframes bloom {
+    0%   { transform: scale(.35); opacity: .9 }
+    100% { transform: scale(16);  opacity: 0 }
   }
   /* The passage takes focus on pointerdown so the keyboard path keeps working
      after a tap — but a tap must not paint a focus ring round the whole card.
@@ -132,23 +414,75 @@
      It never goes far enough to hurt the search. */
   .passage .ch:not(.fnd):not(.mis):not(.sel):not(.tip) { opacity: var(--rest-op); }
 
-  .ch.fnd  { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-  .ch.fnd.k{ background: var(--key-soft); color: var(--key); }
-  .ch.mis  { background: var(--bad-soft); color: var(--bad); }
+  .ch.fnd  { background: var(--accent-soft); color: var(--accent);
+             -webkit-text-stroke: .3px currentColor; }
+  .ch.fnd.k{ background: var(--key-soft); color: var(--key-text); }
+  .ch.mis  { background: var(--bad-soft); color: var(--bad);
+             -webkit-text-stroke: .3px currentColor; }
   /* live selection outranks everything underneath it — while you are dragging,
-     the only thing that matters is the exact range you have marked */
-  .passage .ch.sel { background: var(--accent); color: var(--accent-ink); }
-  .passage .ch.no  { background: var(--bad-soft); color: var(--bad); }
+     the only thing that matters is the exact range you have marked. It tracks
+     the thumb faster than the found wash: an acknowledgement, not a flourish. */
+  .passage .ch.sel { background: var(--accent); color: var(--accent-ink);
+                     transition-duration: .11s, .11s, .45s; }
+
+  /* ---------- the three answers ----------
+     A find, a near miss and a plain miss must never be mistaken for one
+     another at a glance. All three start SOLID — full-strength ink — and cool
+     to their soft ground, which is also their static state, so with
+     prefers-reduced-motion every one of them is still there and still the
+     right colour; only the cooling is lost. */
+  .passage .ch.no  { background: var(--bad-soft); color: var(--bad);
+                     -webkit-text-stroke: .3px currentColor;
+                     animation: ink-no .6s var(--ease-out) both; }
+  /* a near miss keeps the end you got RIGHT lit in harbour blue while the
+     rest of the range bleeds red. "Right first letter, wrong length" said in
+     ink instead of in words — and it leaks nothing the message did not. */
+  .passage .ch.no.hit { background: var(--accent-soft); color: var(--accent);
+                        animation-name: ink-yes; }
+  @keyframes ink-no  { 0% { background: var(--bad);    color: var(--accent-ink) }
+                       45%, 100% { background: var(--bad-soft);    color: var(--bad) } }
+  @keyframes ink-yes { 0% { background: var(--accent); color: var(--accent-ink) }
+                       45%, 100% { background: var(--accent-soft); color: var(--accent) } }
+  /* the end-of-day reveal: each missed word bleeds up out of the page in
+     turn, left to right, so a loss is a sequence of small gut-punches rather
+     than one flat wall of red */
+  .ch.rev { animation: ink-rev .72s var(--ease-out) var(--d, 0s) both; }
+  @keyframes ink-rev {
+    0%   { background: rgba(0,0,0,0); color: inherit }
+    38%  { background: var(--bad); color: var(--accent-ink) }
+    100% { background: var(--bad-soft); color: var(--bad) }
+  }
+
+  /* one ring, expanding once, wherever the game has just put a mark: the
+     armed first letter, and the letter a hint lands on. A STATE always sits
+     underneath it (.anc, .tip), so the ring is the flourish and never the
+     information — reduced motion loses nothing that matters. */
+  .ch.ping { position: relative; }
+  .ch.ping::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 9px;
+    border: 2px solid var(--ping, var(--accent)); pointer-events: none;
+    animation: ping-out .5s var(--ease-out) forwards;
+  }
+  .ch.ping.w { --ping: var(--warn); }
+  @keyframes ping-out {
+    from { transform: scale(.6); opacity: 1 }
+    to   { transform: scale(1.55); opacity: 0 }
+  }
   /* found/missed ends use cap/cbp; the transient selection uses its own pair so
      clearing a selection can never strand a rounded corner mid-word */
   .ch.cap, .ch.scap { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
   .ch.cbp, .ch.scbp { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
   .ltr.anc { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 6px; }
   .ltr.cur { box-shadow: inset 0 0 0 2px var(--ink-2); border-radius: 6px; }
-  .ltr.tip { animation: beacon 1.4s ease-in-out infinite; border-radius: 6px; }
+  /* The hint marker is a STATE first and a pulse second: it has to still be
+     visible with prefers-reduced-motion, where the pulse is zeroed out. */
+  .ltr.tip {
+    box-shadow: inset 0 0 0 2px var(--warn); background: var(--warn-soft);
+    border-radius: 6px; animation: beacon 1.4s ease-in-out infinite;
+  }
   @keyframes beacon {
-    0%,100% { box-shadow: inset 0 0 0 2px var(--warn); background: var(--warn-soft); }
-    50%     { box-shadow: inset 0 0 0 2px var(--warn); background: transparent; }
+    0%,100% { background: var(--warn-soft); }
+    50%     { background: transparent; }
   }
 
   /* ---------- the lock: a left-to-right wave that cools from solid to soft.
@@ -159,44 +493,102 @@
   }
   @keyframes lock-fill-k {
     0%, 52% { background: var(--key); color: var(--key-ink); }
-    100%    { background: var(--key-soft); color: var(--key); }
+    100%    { background: var(--key-soft); color: var(--key-text); }
   }
   @keyframes lock-lift { 0%, 100% { transform: none } 36% { transform: translateY(-4px) } }
+  /* the keystone lifts further and settles back through the baseline — it is
+     the heaviest thing on the page and it should land like it */
+  @keyframes lock-lift-k {
+    0%, 100% { transform: none }
+    34%      { transform: translateY(-7px) scale(1.06) }
+    72%      { transform: translateY(1px) }
+  }
   .ch.lock       { animation: lock-fill .52s ease-out both; }
   .ltr.lock,
   .pun.lock      { animation: lock-fill .52s ease-out both,
                               lock-lift .4s cubic-bezier(.3,.9,.4,1) both; }
-  .ch.k.lock     { animation-name: lock-fill-k; }
+  .ch.k.lock     { animation: lock-fill-k .62s ease-out both; }
   .ltr.k.lock,
-  .pun.k.lock    { animation-name: lock-fill-k, lock-lift; }
+  .pun.k.lock    { animation: lock-fill-k .62s ease-out both,
+                              lock-lift-k .58s var(--ease-spring) both; }
 
-  /* ---------- controls ---------- */
+  /* ---------- controls ----------
+     Three thumb targets on one line, and on a 320px phone that line has
+     288px to spend — so the help control is a bare symbol at a fixed 46px
+     and the two labelled buttons split what is left. Below 380px the side
+     padding comes in too: a .btn's default 20px each side is 40px of air
+     per button, which is the difference between "Give up" fitting and the
+     row pushing the page sideways. */
   .controls { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
   .controls .btn { flex: 1; min-height: 46px; }
+  .controls .btn.icon { flex: 0 0 46px; padding: 0; }
+  .controls .btn .ms { --ms-size: 18px; }
+  .controls .btn.icon .ms { --ms-size: 21px; }
+  /* every control acknowledges the thumb before the action resolves: the
+     symbol fills on press, and the hint lamp stays lit for a beat after a
+     hint is actually spent so the button confirms its own effect */
+  .controls .btn:active .ms { --ms-fill: 1; }
+  #hintBtn.spent .ms { --ms-fill: 1; --ms-wght: 600; color: var(--warn); }
+  /* the tour's own buttons are the first thing a first-timer ever taps, so
+     they get the same 44px thumb target as everything else in the game */
+  #tour-layer .bub .btn { min-height: 44px; }
+  /* the last coach mark SHOWS the trick rather than describing it — on a
+     phrase that is checked, in verify terms, against every shipped passage.
+     See the DEMO PHRASE note by openHelp(): teaching the gesture on a string
+     that occurs in a passage hands that passage's answer away for free. */
+  #tour-layer .bub .ex {
+    display: block; margin-top: 9px; text-align: center;
+    font-family: var(--font-brand); font-size: 18px; line-height: 1.6;
+    color: var(--ink);
+  }
+  #tour-layer .bub .ex b {
+    background: var(--accent-soft); color: var(--accent); font-weight: 400;
+    -webkit-text-stroke: .3px currentColor;
+    border-radius: 5px; padding: 2px 3px; margin: 0 -1px;
+  }
 
   /* short phones (SE, older Androids): tighten the chrome so the passage
      keeps enough room to stay legible without the page having to scroll */
   @media (max-height: 730px) {
-    .bar { padding: 8px 0 8px; margin-bottom: 10px; }
-    .bar h1 { font-size: 19px; }
-    .prompt { padding: 9px 12px; }
-    .prompt .v { font-size: 13px; }
-    .chips { gap: 5px; }
-    .chip { font-size: 10.5px; padding: 4px 7px; min-width: 28px; }
-    .readout { height: 24px; }
-    .passage { line-height: 1.85; padding: 14px 13px 16px; }
-    /* short screens cannot spare 58px of clear air; tighten the toast well
-       and bring the toasts down to match so the passage keeps its size */
-    #afterwards:empty { min-height: 46px; }
-    #toast-layer { bottom: calc(66px + var(--safe-b)); }
-    .stage { gap: 8px; }
+    .bar { padding: 7px 0 7px; margin-bottom: 11px; }
+    .lockup h1 { font-size: clamp(19px, 5.8vw, 23px); }
+    .kicker { padding: 7px 4px 8px; }
+    .kick-c { font-size: clamp(17px, 5vw, 20px); }
+    .man-head { margin-bottom: 5px; }
+    .chips { gap: 5px; min-height: 55px; }
+    .chip { font-size: 10.5px; padding: 4px 8px; min-width: 56px; height: 25px; }
+    .readout { height: 26px; }
+    .passage { line-height: 1.85; padding: 13px 13px 15px 16px; }
+    /* Short screens cannot spare 58px for the dispatch line, and every 8px
+       taken off the chrome here is worth a whole step of passage type: the
+       autofit shrinks by half a point at a time, but the passage only gets
+       SHORTER when a line reflows, so 12px of chrome is the difference
+       between 16.6px and 18.1px of reading face on a 375x667 phone. */
+    .log { height: 38px; }
+    .log-l { padding-top: 8px; font-size: 10.5px; letter-spacing: .09em; }
+    .stage { gap: 6px; }
     .controls { padding-top: 8px; }
     .controls .btn { min-height: 44px; padding: 10px 14px; }
   }
+  /* Narrow phones: the controls row is three items wide now, so the side
+     padding has to come in or "Give up" stops fitting and the row pushes
+     the page sideways. Declared after the short-screen block on purpose —
+     a 320x568 phone matches both and this is the one that must win. */
+  @media (max-width: 380px) {
+    .controls { gap: 6px; }
+    .controls .btn { padding-left: 10px; padding-right: 10px; }
+    .controls .btn:has(.ms) { gap: 6px; }
+    .controls .btn.icon { padding: 0; }
+  }
+  /* Past ~500px of column the whole manifest fits on one row, filled or
+     empty, so the two-row reserve has nothing to protect and would only
+     leave a hole. Declared last so it also wins over the short-screen block
+     above, which a short, wide desktop window matches too. */
+  @media (min-width: 500px) { .chips { min-height: 0; } }
 
-  /* ---------- reveal list ----------
-     Rows are distinguished by an inset rail (an outline, drawn inside the
-     border radius) rather than a shadow on one edge. */
+  /* ---------- the afterword ----------
+     Where every stowaway was, set as column rows carrying the same rail
+     as the passage above them. */
   .found-list { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
   .fl-row {
     display: flex; gap: 10px; align-items: baseline;
@@ -208,74 +600,206 @@
   .fl-row.m { box-shadow: inset 3px 0 0 var(--bad); }
   .fl-w { font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
           letter-spacing: .08em; color: var(--accent); flex: 0 0 auto; min-width: 74px; }
-  .fl-row.k .fl-w { color: var(--key); }
+  .fl-row.k .fl-w { color: var(--key-text); }
   .fl-row.m .fl-w { color: var(--bad); }
-  .fl-t { font-family: var(--font-display); font-size: 14.5px; line-height: 1.75; color: var(--ink-2); }
-  .fl-t b { color: var(--ink); background: var(--accent-soft); font-weight: 700;
+  .fl-t { font-family: var(--font-brand); font-size: 15px; line-height: 1.7; color: var(--ink-2); }
+  .fl-t b { color: var(--accent); background: var(--accent-soft); font-weight: 400;
+            -webkit-text-stroke: .3px currentColor;
             border-radius: 4px; padding: 2px 3px; margin: 0 -1px; }
-  .fl-row.k .fl-t b { background: var(--key-soft); color: var(--key); }
+  .fl-row.k .fl-t b { background: var(--key-soft); color: var(--key-text); }
   .fl-row.m .fl-t b { background: var(--bad-soft); color: var(--bad); }
 
+  /* the byline: the theme, named at last, in brass */
   .themebar {
-    text-align: center; padding: 12px; border-radius: var(--r);
-    background: var(--accent-soft); color: var(--accent);
-    font-family: var(--font-display); font-size: 18px; font-weight: 700;
-    letter-spacing: -.005em;
+    text-align: center; padding: 11px 12px 12px; border-radius: var(--r-col);
+    background: var(--key-soft); color: var(--key-text);
+    box-shadow: inset 3px 0 0 var(--key);
+    font-family: var(--font-brand); font-size: 21px; font-weight: 600;
+    font-variation-settings: 'opsz' 34, 'wght' 600;
+    letter-spacing: .01em; line-height: 1.15;
   }
+  .themebar .ms { --ms-size: 17px; --ms-fill: 1; vertical-align: -2px; margin-right: 5px; }
   .themebar small { display: block; font-family: var(--font-ui); font-size: 12.5px;
-    font-weight: 400; letter-spacing: 0; opacity: .85; margin-top: 3px; }
+    font-weight: 400; font-variation-settings: normal; letter-spacing: 0;
+    color: var(--ink-2); margin-top: 3px; }
 
-  /* ---------- type re-tune for the sans face ---------- */
-  .bar h1 { font-weight: 800; letter-spacing: .05em; }
-  .prompt .k { font-weight: 800; letter-spacing: .1em; }
-  .prompt .v { font-size: 14px; line-height: 1.45; }
-  .prompt .v b { font-weight: 700; color: var(--ink); }
-  .sheet h2 { font-weight: 800; letter-spacing: -.025em; }
-  .verdict { font-weight: 800; letter-spacing: -.03em; }
-  .stat .n { font-weight: 800; letter-spacing: -.03em; }
+  /* ---------- type ----------
+     Display serif carries the emotional type only: the wordmark, the clue,
+     the verdict, the numbers that matter. Everything dense stays in the
+     suite's sans. */
+  .sheet h2 {
+    font-family: var(--font-brand); font-size: 30px; font-weight: 600;
+    font-variation-settings: 'opsz' 46, 'wght' 620; letter-spacing: -.005em;
+    line-height: 1.1; margin-bottom: 6px;
+  }
+  .stat .n {
+    font-family: var(--font-brand); font-weight: 600;
+    font-variation-settings: 'opsz' 30, 'wght' 620; letter-spacing: 0;
+    font-variant-numeric: lining-nums tabular-nums; font-size: 23px;
+  }
+  .stat .n .ms { --ms-size: 22px; --ms-wght: 500; color: var(--key); }
+  .stat .n .ms.off { color: var(--ink-3); }
   .btn { font-weight: 650; letter-spacing: -.005em; }
-  .sheet .rules { line-height: 1.65; }
+  .sheet .rules { line-height: 1.6; }
+  .sheet .rules li { margin-bottom: 9px; }
+  /* the share block is a column too — same rail as the passage it came from */
+  .sharegrid { box-shadow: inset 3px 0 0 var(--accent); border-radius: var(--r-col); }
+  .stat { border-radius: var(--r-col); }
 
-  .sheet .cd { font-family: var(--font-mono); color: var(--ink-2); }
-  .rules kbd { font-family: var(--font-mono); font-size: 12px; background: var(--paper-2);
-    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
-  .demo { font-family: var(--font-display); font-size: 17px; line-height: 1.95;
-    background: var(--white); border: 1px solid var(--line); border-radius: var(--r-sm);
-    padding: 12px 14px; margin: 12px 0; color: var(--ink); text-align: center; }
-  .demo b { background: var(--accent-soft); color: var(--accent); font-weight: 700;
-    border-radius: 4px; padding: 2px 3px; margin: 0 -1px; }
+  /* ---------- the result stamp ----------
+     Every day ends with a mark pressed onto the page. It is the first thing
+     in the sheet and the first thing in the screenshot, and which mark it is
+     is the whole story: brass anchor for a clean sweep, blue for all six,
+     red for the ones that got away. It presses down rather than fading in —
+     .stagger's rise is deliberately overridden here. */
+  .seal {
+    width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px;
+    display: grid; place-items: center;
+    border: 2px solid currentColor; color: var(--accent); background: var(--accent-soft);
+    animation: stamp .46s var(--ease-spring) .04s both;
+  }
+  .seal .ms { --ms-size: 29px; --ms-fill: 1; }
+  .seal.k { color: var(--key-text); border-color: var(--key); background: var(--key-soft); }
+  .seal.m { color: var(--bad); background: var(--bad-soft); }
+  @keyframes stamp {
+    0%   { opacity: 0; transform: scale(1.55) rotate(-7deg) }
+    55%  { opacity: 1 }
+    100% { opacity: 1; transform: none }
+  }
+
+  /* ---------- the ones that got away ----------
+     A loss is only a near miss if you are shown exactly what you missed. */
+  .gotaway {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    align-items: center; margin: 0 0 14px;
+  }
+  .gotaway .gl {
+    font-size: 9.5px; font-weight: 800; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-3); width: 100%; text-align: center;
+    margin-bottom: 1px;
+  }
+  .gotaway .gw {
+    font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 5px 11px; border-radius: var(--r-pill);
+    background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .gotaway .gw.k { background: var(--key-soft); color: var(--key-text); border-color: var(--key); }
+  .gotaway .gw .ms { --ms-size: 13px; --ms-fill: 1; }
+
+  .keys { font-size: 12.5px; color: var(--ink-3); text-align: center;
+    margin: 14px 0 0; line-height: 2.2; }
+  .keys kbd { font-family: var(--font-mono); font-size: 11.5px; background: var(--paper-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px; color: var(--ink-2); }
+
+  /* ---------- the help diagram ----------
+     Two lines: the sentence as your eye reads it, then the same sentence
+     with the stowaway lit. That is the whole game in one look. */
+  .demo {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--r-col); box-shadow: inset 3px 0 0 var(--accent);
+    padding: 12px 14px 11px; margin: 14px 0; text-align: center;
+  }
+  .demo-r { font-family: var(--font-brand); font-size: 19px; line-height: 1.85; color: var(--ink); }
+  .demo-r.pale { color: var(--ink-3); }
+  .demo-r b { background: var(--accent-soft); color: var(--accent); font-weight: 400;
+    -webkit-text-stroke: .3px currentColor;
+    border-radius: 5px; padding: 2px 3px; margin: 0 -1px; }
+  .demo-c { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-3); margin-top: 7px; }
+
+  /* ============================================================
+     REDUCED MOTION
+     The other four games each carry this block; this one did not, and
+     the JS `calm()` gate only covers what JS starts. The kit zeroes
+     every animation DURATION but leaves DELAYS alone, and an entrance
+     that fills `both` holds its FIRST frame for the whole delay — which
+     for the lock is full-strength ink. Everything staged below is
+     therefore switched off outright: each one's resting style already
+     is the frame it was going to land on, so nothing in this file
+     depends on an animation having been allowed to run.
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    /* .stagger is the kit's own rule and has the same fault: `backwards`
+       behind delays of up to .44s, so a result sheet still assembles itself
+       line by line in front of someone who asked for none of that. */
+    .stagger > *, .seal,
+    /* the lock zips a find shut cell by cell off an inline per-cell delay;
+       .fnd underneath it is already exactly the frame it settles on */
+    .ch.lock, .ltr.lock, .pun.lock, .ch.k.lock, .ltr.k.lock, .pun.k.lock,
+    .ch.rev, .chip.just, .chip.just::before, .chip.miss.just {
+      animation: none !important;
+    }
+    /* an infinite loop at .01ms is a repaint forever for nothing — and the
+       hint marker is a STATE (ring plus warm ground) with the pulse only
+       sitting on top of it, so the beacon loses nothing that matters */
+    .ltr.tip { animation: none; }
+    /* the kit opens its coach bubble on a .1s delay that it does not zero */
+    #tour-layer .bub { animation-delay: 0s !important; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app">
-  <div class="bar">
-    <a class="iconbtn" href="../" aria-label="Back to all games">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  <header class="bar">
+    <a class="iconbtn back" href="../" aria-label="All games" title="All games">
+      <span class="ms" aria-hidden="true">arrow_back</span>
     </a>
-    <h1>Stowaways</h1>
-    <button class="iconbtn" id="helpBtn" aria-label="How to play">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.3"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
-    </button>
-  </div>
+    <div class="lockup">
+      <h1>Stowaways</h1>
+      <p class="dateline">
+        <span class="ms" aria-hidden="true">sailing</span>
+        No.&nbsp;<span id="pno"></span> · <span id="dline"></span>
+      </p>
+    </div>
+    <div class="bartools">
+      <button class="iconbtn" id="themeBtn" type="button" aria-label="Toggle theme"></button>
+    </div>
+  </header>
 
-  <div class="prompt">
-    <span class="k">Theme <span class="puzz-no" id="pno"></span></span>
-    <span class="v"><b id="clue"></b> — six words hide in the passage. One names the theme.</span>
+  <div class="kicker" id="kicker">
+    <span class="kick-l"><span class="ms" aria-hidden="true">format_quote</span>Today’s clue</span>
+    <p class="kick-c" id="clue"></p>
   </div>
 
   <div class="stage">
-    <div class="chips" id="chips" aria-label="Progress"></div>
-    <div class="readout idle" id="readout">Tap the first letter, then the last. Or drag.</div>
+    <section class="manifest" id="manifest">
+      <div class="man-head">
+        <span class="l"><span class="ms" aria-hidden="true">inventory_2</span>Manifest</span>
+        <span class="n"><b class="tick" id="manN">0</b> of 6 aboard</span>
+      </div>
+      <div class="chips" id="chips" aria-hidden="true"></div>
+    </section>
+    <div class="readout idle" id="readout"></div>
+    <!-- role="application" is what lets the arrow keys reach this element at
+         all instead of being eaten by a screen reader's own browse mode. It
+         is also why nothing inside it is announced on its own — so every
+         caret step, every selection and every hint is spoken through #live.
+         See ANNOUNCEMENTS in the script below. -->
+    <!-- role="application" is load-bearing — without it the arrow keys never
+         reach us — but it also suppresses the virtual buffer, so the passage
+         becomes walkable letter by letter and unreadable as prose. #prose is
+         the same text as one plain string, referenced as the description, so a
+         screen-reader user can hear the sentences before hunting them. Shunt's
+         #tray does the same job for the same reason. -->
     <div class="passage" id="passage" tabindex="0" role="application"
-         aria-label="Hidden word passage. Use arrow keys to move, Enter to mark the start and end of a word."></div>
+         aria-describedby="prose"
+         aria-label="Hidden word passage. Arrow keys move through the letters and each one is read out. Enter marks the first letter, then the last. Escape clears the mark. H spends a hint."></div>
+    <p class="sr" id="prose"></p>
+    <div class="log" id="log" aria-hidden="true"></div>
     <div id="afterwards"></div>
   </div>
 
   <div class="controls" id="controls">
-    <button class="btn ghost" id="hintBtn">Hint · 3</button>
-    <button class="btn ghost" id="quitBtn">Give up</button>
-    <button class="btn primary" id="resultBtn" hidden>Result</button>
+    <button class="btn ghost icon" id="helpBtn" type="button" aria-label="How to play" title="How to play">
+      <span class="ms" aria-hidden="true">help</span></button>
+    <button class="btn ghost" id="hintBtn" type="button"></button>
+    <button class="btn ghost" id="quitBtn" type="button">
+      <span class="ms" aria-hidden="true">flag</span>Give up</button>
+    <button class="btn primary" id="resultBtn" type="button" hidden>
+      <span class="ms" aria-hidden="true">bar_chart</span>Result</button>
   </div>
 </div>
 
@@ -288,22 +812,65 @@
   'use strict';
 
   var PUZZLES = window.STOWAWAY_PUZZLES;
-  var DAY = Kit.dayNumber();
-  var P = Kit.pick(PUZZLES);
+  /* The day sets which passage you OPEN on; finishing one hands you the next
+     rather than a locked door. Kit.puzzleNo is that number — the one on the
+     masthead, in the save key and on the share line — and it is what `?d=N`
+     pins. Kit.dayNumber ignores both the cursor and the pin, which is why
+     `?d=3` used to serve puzzle 3 under today's number. */
+  var NS = 'stowaways';
+  var DAY = Kit.puzzleNo(NS);
+  var P = Kit.pick(PUZZLES, NS);
   var store = Kit.store('stowaways');
   var HINTS_MAX = 3;
 
   var passEl   = document.getElementById('passage');
   var chipsEl  = document.getElementById('chips');
+  var manNEl   = document.getElementById('manN');
   var readEl   = document.getElementById('readout');
   var afterEl  = document.getElementById('afterwards');
+  var logEl    = document.getElementById('log');
+  var kickEl   = document.getElementById('kicker');
   var hintBtn  = document.getElementById('hintBtn');
   var quitBtn  = document.getElementById('quitBtn');
   var resBtn   = document.getElementById('resultBtn');
   var liveEl   = document.getElementById('live');
 
+  /* One question asked once. Everything decorative in this file is gated on
+     it, and everything load-bearing is a static state that survives it. */
+  var RM = matchMedia('(prefers-reduced-motion: reduce)');
+  function calm() { return RM.matches; }
+
+  /* The confetti is harbour blue, brass and newsprint — the game's own three
+     colours, nothing borrowed from the suite default, and lifted in dark mode
+     because #0e6f9e on a near-black ground is a shower of invisible dots. */
+  function burstInk() {
+    return Kit.currentTheme() === 'dark'
+      ? ['#4aa8d8', '#8fcbe8', '#e0b64a', '#f2dc9c', '#f4f1ea']
+      : ['#0e6f9e', '#4aa8d8', '#b07f12', '#e0b64a', '#c6bfb0'];
+  }
+  function burstBrass() {
+    return Kit.currentTheme() === 'dark'
+      ? ['#e0b64a', '#f2dc9c', '#f4f1ea']
+      : ['#b07f12', '#e0b64a', '#c6bfb0'];
+  }
+
+  /* ---------------------------------------------------------------
+     The dispatch line: the running record under the passage. It holds
+     the last thing that happened until the next thing happens, which
+     is why a near miss is readable long after a toast would have gone.
+     --------------------------------------------------------------- */
+  function log(icon, msg, cls) {
+    logEl.innerHTML = '<p class="log-l ' + (cls || '') + '">' +
+      Kit.icon(icon, { size: 15 }) + '<span>' + Kit.esc(msg) + '</span></p>';
+  }
+  function logIdle() { log('inventory_2', 'Nothing aboard yet.', ''); }
+
   document.getElementById('clue').textContent = P.clue;
-  document.getElementById('pno').textContent = '#' + DAY;
+  document.getElementById('pno').textContent = DAY;
+  /* the dateline, short enough to sit under the wordmark on a 360px phone */
+  document.getElementById('dline').textContent =
+    new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  Kit.themeToggle(document.getElementById('themeBtn'));
 
   /* ---------------------------------------------------------------
      Render the passage. Every character becomes a span so a found
@@ -353,6 +920,10 @@
       }
     }
     passEl.appendChild(frag);
+    // The prose as one readable string for the description above. It carries
+    // no marks and never changes, so it can never leak which words are hiding.
+    var proseEl = document.getElementById('prose');
+    if (proseEl) proseEl.textContent = text;
   })();
 
   /* ---------------------------------------------------------------
@@ -391,21 +962,30 @@
      --------------------------------------------------------------- */
   function cellRange(a, b) { return [letters[a].cell, letters[b].cell]; }
 
+  /* The live selection is repainted on every pointermove, so it keeps its own
+     register of exactly which cells it dirtied. Sweeping all ~250 cells to
+     clear four classes was invalidating the whole passage sixty times a
+     second inside a drag; this touches only the cells that were actually
+     painted, and the drag never gets near a layout read. */
+  var selCells = [];
+
   function paintRange(a, b, cls, extra) {
     var r = cellRange(a, b);
+    var sel = cls === 'sel';
     for (var i = r[0]; i <= r[1]; i++) {
       cells[i].el.classList.add(cls);
       if (extra) cells[i].el.classList.add(extra);
+      if (sel) selCells.push(cells[i].el);
     }
-    var sel = cls === 'sel';
     cells[r[0]].el.classList.add(sel ? 'scap' : 'cap');
     cells[r[1]].el.classList.add(sel ? 'scbp' : 'cbp');
   }
 
   function clearSel() {
-    for (var i = 0; i < cells.length; i++) {
-      cells[i].el.classList.remove('sel', 'scap', 'scbp', 'anc');
+    for (var i = 0; i < selCells.length; i++) {
+      selCells[i].classList.remove('sel', 'scap', 'scbp', 'anc');
     }
+    selCells.length = 0;
   }
 
   /* The lock. Every cell in the range — letters, spaces and commas alike —
@@ -427,7 +1007,28 @@
         cells[i].el.classList.remove('lock');
         cells[i].el.style.animationDelay = '';
       }
-    }, span * step + 620);
+    }, span * step + 760);
+  }
+
+  /* THE KEYSTONE LANDING.
+     The longest word on the page, the one that names the day, zips shut in
+     brass — and then the ink it was written in keeps going: a flare that
+     spreads out of the middle of the word and soaks away through the whole
+     column, underneath the type. Decorative by construction; with reduced
+     motion the brass, the manifest star and the dispatch line all still say
+     exactly the same thing, they just say it without the flourish. */
+  function keystoneBloom(t) {
+    if (calm()) return;
+    var r = cellRange(t.s, t.e);
+    var a = cells[r[0]].el.getBoundingClientRect();
+    var b = cells[r[1]].el.getBoundingClientRect();
+    var box = passEl.getBoundingClientRect();
+    var el = document.createElement('div');
+    el.className = 'bloom';
+    el.style.left = (((a.left + b.right) / 2) - box.left) + 'px';
+    el.style.top  = (((a.top + b.bottom) / 2) - box.top) + 'px';
+    passEl.appendChild(el);
+    setTimeout(function () { el.remove(); }, 1200);
   }
 
   function paintFound(t, animate) {
@@ -436,7 +1037,37 @@
     if (animate) playLock(t);
   }
 
-  function paintMissed(t) { paintRange(t.s, t.e, 'mis'); }
+  /* The reveal is a sequence, not a dump: each missed word bleeds up out of
+     the page in reading order. `.mis` is applied either way, so the words are
+     never dependent on the animation to become visible. */
+  function paintMissed(t, delay) {
+    paintRange(t.s, t.e, 'mis');
+    if (delay == null || calm()) return;
+    var r = cellRange(t.s, t.e);
+    var step = (r[1] - r[0]) > 9 ? 22 : 30;
+    for (var i = r[0]; i <= r[1]; i++) {
+      var el = cells[i].el;
+      el.style.setProperty('--d', (delay + (i - r[0]) * step) + 'ms');
+      el.classList.add('rev');
+    }
+    setTimeout(function () {
+      for (var i = r[0]; i <= r[1]; i++) {
+        cells[i].el.classList.remove('rev');
+        cells[i].el.style.removeProperty('--d');
+      }
+    }, delay + (r[1] - r[0]) * step + 900);
+  }
+
+  /* a single expanding ring wherever the game has just put a mark */
+  function ping(cellIdx, warn) {
+    if (calm()) return;
+    var el = cells[cellIdx].el;
+    el.classList.remove('ping', 'w');
+    void el.offsetWidth;
+    el.classList.add('ping');
+    if (warn) el.classList.add('w');
+    setTimeout(function () { el.classList.remove('ping', 'w'); }, 560);
+  }
 
   /* Progressive lighting-up: each find pulls the carrier prose back a step,
      so the passage reads as gradually lighting up around the stowaways.
@@ -446,26 +1077,58 @@
     passEl.style.setProperty('--rest-op', st.over ? '1' : String(1 - Math.min(n, 5) * 0.045));
   }
 
+  /* The standfirst asked a question; the keystone is the answer, because the
+     keystone IS the theme. Nothing new is disclosed — the player is holding
+     the word — but the label above the clue turns brass and the rule under it
+     redraws itself, so the page acknowledges what just happened to it. */
+  function markKicker() {
+    if (kickEl.classList.contains('solved')) return;
+    kickEl.classList.add('solved');
+    kickEl.querySelector('.kick-l').innerHTML =
+      Kit.icon('star', { size: 13, fill: 1 }) + 'Clue answered';
+  }
+
   /* ---------------------------------------------------------------
      Chips
      --------------------------------------------------------------- */
+  var STAR = Kit.icon('star', { size: 13 });
+
+  function berth(el, label, star) {
+    el.innerHTML = '<span class="lbl">' + (star ? STAR : '') +
+      Kit.esc(label) + '</span>';
+  }
+  /* one stamp routine for every berth that changes, so a find, a keystone and
+     a missed word all land with the same physics and only differ in colour */
+  function stamp(el, delay) {
+    el.style.setProperty('--d', (delay || 0) + 'ms');
+    el.classList.remove('just');
+    void el.offsetWidth;                    // restart the animation cleanly
+    el.classList.add('just');
+    setTimeout(function () {
+      el.classList.remove('just');
+      el.style.removeProperty('--d');
+    }, (delay || 0) + 560);
+  }
+
   function buildChips() {
     chipsEl.innerHTML = '';
     var plain = targets.filter(function (t) { return !t.key; });
     for (var i = 0; i < plain.length; i++) {
       var c = document.createElement('span');
-      c.className = 'chip'; c.textContent = '?';
+      c.className = 'chip';
+      berth(c, '—', false);                 // an empty berth on the list
       c.dataset.slot = 'p' + i;
       chipsEl.appendChild(c);
     }
     var k = document.createElement('span');
-    k.className = 'chip ks'; k.textContent = '★';
+    k.className = 'chip ks';
+    berth(k, '', true);
     k.dataset.slot = 'k';
     k.title = 'The keystone — the longest word, and it names the theme';
     chipsEl.appendChild(k);
   }
 
-  function fillChips(justWord) {
+  function fillChips(justWord, revealMissed) {
     var slots = chipsEl.querySelectorAll('.chip:not(.ks)');
     var n = 0;
     st.order.forEach(function (w) {
@@ -473,27 +1136,32 @@
       if (t.key) return;
       var el = slots[n++];
       if (!el) return;
-      el.textContent = w;
+      berth(el, w, false);
       el.classList.add('on');
-      el.classList.toggle('just', w === justWord);
+      if (w === justWord) stamp(el, 0);
     });
     var kEl = chipsEl.querySelector('.chip.ks');
     if (keystone.found) {
-      kEl.textContent = keystone.w;
+      berth(kEl, keystone.w, true);
       kEl.classList.add('on');
-      kEl.classList.toggle('just', keystone.w === justWord);
+      if (keystone.w === justWord) stamp(kEl, 0);
+    }
+    if (manNEl.textContent !== String(st.order.length)) {
+      manNEl.textContent = st.order.length;
+      Kit.flash(manNEl, 'bump');
     }
     if (st.over) {
-      targets.filter(function (t) { return !t.found; }).forEach(function (t) {
-        var el = t.key ? kEl : slots[n++];
-        if (!el) return;
-        el.textContent = t.w;
-        el.classList.add('miss');
-      });
+      var seq = 0;
+      targets.filter(function (t) { return !t.found; })
+        .sort(function (a, b) { return a.s - b.s; })
+        .forEach(function (t) {
+          var el = t.key ? kEl : slots[n++];
+          if (!el) return;
+          berth(el, t.w, t.key);
+          el.classList.add('miss');
+          if (revealMissed && !calm()) stamp(el, 120 + seq++ * 95);
+        });
     }
-    if (justWord) setTimeout(function () {
-      chipsEl.querySelectorAll('.just').forEach(function (e) { e.classList.remove('just'); });
-    }, 220);
   }
 
   /* ---------------------------------------------------------------
@@ -527,18 +1195,36 @@
   var cursor = 0;       // keyboard caret
   var press = null;
 
+  /* The line above the passage is the only running instruction in the game,
+     so it says exactly one thing: what to touch next. Idle it teaches, armed
+     it confirms, dragging it reads back the letters under your thumb. */
   function setReadout(a, b) {
     if (a < 0) {
-      readEl.className = 'readout idle';
-      readEl.textContent = st.over
-        ? 'That is the day. The words were hiding in plain sight.'
-        : (anchor >= 0 ? 'Start set — now pick the last letter of the word.'
-                       : 'Tap the first letter, then the last. Or drag.');
+      if (st.over) {
+        readEl.className = 'readout idle';
+        readEl.innerHTML = Kit.icon('menu_book', { size: 16 }) +
+          '<span>They were hiding in plain sight.</span>';
+      } else if (anchor >= 0) {
+        readEl.className = 'readout idle armed';
+        readEl.innerHTML = Kit.icon('east', { size: 16 }) +
+          '<span>Now its last letter.</span>';
+      } else {
+        readEl.className = 'readout idle';
+        readEl.innerHTML = Kit.icon('touch_app', { size: 17 }) +
+          '<span>Tap a word’s first letter, then its last.</span>';
+      }
       return;
     }
     var lo = Math.min(a, b), hi = Math.max(a, b);
+    var run = S.slice(lo, hi + 1);
     readEl.className = 'readout';
-    readEl.textContent = S.slice(lo, hi + 1);
+    // A long drag used to run the letters straight off the end of a fixed,
+    // clipped box — the two characters you are actually aiming at were the
+    // first to disappear. Elide the middle instead: both ends stay visible,
+    // which is the only part of a long run anybody is reading.
+    readEl.textContent = run.length > 18
+      ? run.slice(0, 8) + '…' + run.slice(-8)
+      : run;
   }
 
   function preview(a, b) {
@@ -560,29 +1246,47 @@
 
     if (exact && !exact.found) { land(exact); return; }
     anchor = -1;
-    if (exact && exact.found) { clearSel(); setReadout(-1); Kit.toast('Already aboard.'); return; }
+    if (exact && exact.found) {
+      clearSel(); setReadout(-1);
+      log('done_all', 'Already aboard.', 'note');
+      say(exact.w + ' is already aboard.');
+      Kit.haptic(6);
+      return;
+    }
 
-    // wrong — free, but tell them when they were achingly close.
-    // The range itself flashes red; shaking the whole passage would jolt
-    // the thing you are trying to read.
+    /* Wrong costs nothing, so it must not feel like a punishment — but the
+       three outcomes have to be told apart without reading. A plain miss
+       bleeds red across the whole range and gets one blunt buzz. A near miss
+       bleeds red EXCEPT for the end you got right, which stays harbour blue,
+       and buzzes as a stutter — the hand feels "almost" before the eye reads
+       it. Nothing shakes except the readout: jolting the passage would move
+       the very thing you are trying to read. */
+    var near = sameStart ? lo : (sameEnd ? hi : -1);
     var msg = 'Nothing there.';
     if (sameStart) msg = 'Right first letter — wrong length.';
     else if (sameEnd) msg = 'Right last letter — wrong length.';
-    Kit.haptic(14);
+    Kit.haptic(near >= 0 ? [10, 55, 10] : 20);
     clearWrong();
     var r = cellRange(lo, hi);
     for (var i = r[0]; i <= r[1]; i++) cells[i].el.classList.add('no');
+    if (near >= 0) cells[letters[near].cell].el.classList.add('hit');
     Kit.flash(readEl, 'shake');
-    wrongT = setTimeout(function () { clearWrong(); clearSel(); setReadout(-1); }, 400);
-    Kit.toast(msg);
-    say(msg);
+    // a near miss is held long enough to be studied; a plain miss is not
+    wrongT = setTimeout(function () {
+      clearWrong(); clearSel(); setReadout(-1);
+    }, near >= 0 ? 900 : 620);
+    log(near >= 0 ? 'straighten' : 'cancel', msg,
+        sameStart ? 'near' : (sameEnd ? 'near near2' : 'bad'));
+    /* The one place a DRAG gets a voice: the range is spelled back before
+       the verdict, so what was tried is never left to the readout alone. */
+    say('Tried ' + spoken(S.slice(lo, hi + 1)) + '. ' + msg);
   }
 
   var wrongT = null;
   function clearWrong() {
     if (wrongT) { clearTimeout(wrongT); wrongT = null; }
     var els = passEl.querySelectorAll('.no');
-    for (var i = 0; i < els.length; i++) els[i].classList.remove('no');
+    for (var i = 0; i < els.length; i++) els[i].classList.remove('no', 'hit');
   }
 
   function land(t) {
@@ -592,18 +1296,109 @@
     clearSel();
     st.order.push(t.w);
     paintFound(t, true);
-    relight();
     fillChips(t.w);
     save();
-    Kit.haptic(t.key ? 26 : 10);
-    Kit.toast(t.key ? '★ ' + t.w + ' — the keystone!' : t.w, t.key ? 2400 : 1600);
-    say(t.w + ' found. ' + remaining().length + ' left.');
     setReadout(-1);
     refit();
-    if (remaining().length === 0) setTimeout(function () { finish(false); }, 780);
+
+    if (t.key) {
+      /* the signature moment, choreographed in four beats:
+         the brass zip, the flare, the standfirst turning brass, the log */
+      Kit.haptic([16, 45, 24, 45, 44]);
+      setTimeout(function () { keystoneBloom(t); }, 170);
+      setTimeout(markKicker, 240);
+      log('star', 'Keystone aboard — ' + t.w, 'ks');
+    } else {
+      Kit.haptic(12);
+      log('anchor', t.w + ' — aboard', 'good');
+    }
+    var still = remaining().length;
+    say(t.w + ' found. ' + (still === 0 ? 'All six aboard.'
+        : still === 1 ? '1 still hiding.' : still + ' still hiding.'));
+
+    /* the carrier prose steps back AFTER the zip has landed — restyling 250
+       cells while the lock is mid-flight is the one place this passage can
+       be made to stutter on a phone */
+    setTimeout(relight, t.key ? 700 : 480);
+    if (remaining().length === 0) setTimeout(function () { finish(false); }, t.key ? 1000 : 820);
   }
 
-  function say(m) { liveEl.textContent = m; }
+  /* ---------------------------------------------------------------
+     ANNOUNCEMENTS — what a screen reader is told.
+
+     The readout above the passage is the running preview of the letters
+     you have marked, and it is the single most important piece of
+     feedback in the game. On its own it says nothing to a screen
+     reader: it is a plain line of type, and the passage under it is
+     role="application" so the arrow keys can reach it at all, which
+     means the passage says nothing either. Driving by keyboard used to
+     put four letters on screen and leave the live region empty.
+
+     So everything the readout shows, every caret step and every hint is
+     spoken here instead. Two rules hold it together:
+
+       · POINTER DRAGS ARE NOT ANNOUNCED FRAME BY FRAME. pointermove
+         repaints the preview sixty times a second; a live region fed at
+         that rate is a live region nobody can listen to. A drag speaks
+         once, when the gesture settles — which is what commit() has
+         always done.
+       · A letter on its own is not a location. In 200 characters of
+         prose "B" means nothing, so every announcement carries the
+         letter, where it sits in its printed word, and which word that
+         is. The hint says exactly the same thing in exactly the same
+         shape, because the beacon it lights is invisible to anyone
+         listening — a hint that only flashes is not a hint at all.
+     --------------------------------------------------------------- */
+
+  /* A live region does not re-announce text identical to what it already
+     holds — and arrowing back onto the letter you just left produces
+     precisely that. Alternating a trailing NO-BREAK space keeps every step
+     audible without changing a word of what is read out. A plain space
+     would not: that is normalised away before the comparison is made. */
+  var sayFlip = false;
+  function say(m) {
+    sayFlip = !sayFlip;
+    liveEl.textContent = m + (sayFlip ? ' ' : '');
+  }
+
+  var WORDCH = /[A-Za-z’']/;   // an apostrophe is inside the word: Ray’s
+  function wordAt(li) {
+    var ci = letters[li].ci, from = ci, to = ci;
+    while (from > 0 && WORDCH.test(text[from - 1])) from--;
+    while (to < text.length - 1 && WORDCH.test(text[to + 1])) to++;
+    return text.slice(from, to + 1);
+  }
+  function posInWord(li) {
+    var ci = letters[li].ci, from = ci, n = 1;
+    while (from > 0 && WORDCH.test(text[from - 1])) {
+      from--;
+      if (/[A-Za-z]/.test(text[from])) n++;
+    }
+    return n;
+  }
+  // "B, letter 6 of heartbreak" — the same phrasing the hint uses, so a
+  // hint can be acted on with the arrow keys without any translation
+  function describe(li) {
+    return S[li] + ', letter ' + posInWord(li) + ' of ' + wordAt(li);
+  }
+  // spelled out: a live region handed "CLER" reads it as a failed word
+  function spell(run) { return run.split('').join(' '); }
+  /* The same elision the readout uses, for the same reason: no target is
+     longer than nine letters, so a run past eighteen is a mistake in
+     progress and only its two ends are worth hearing. */
+  function spoken(run) {
+    return run.length > 18
+      ? spell(run.slice(0, 8)) + ' to ' + spell(run.slice(-8))
+      : spell(run);
+  }
+  function selSuffix() {
+    if (anchor < 0) return '.';
+    var lo = Math.min(anchor, cursor), hi = Math.max(anchor, cursor);
+    var run = S.slice(lo, hi + 1);
+    return '. Selected ' + spoken(run) + ', ' + run.length +
+           (run.length === 1 ? ' letter.' : ' letters.');
+  }
+  function sayCaret() { say(describe(cursor) + selSuffix()); }
 
   /* ---------------------------------------------------------------
      Pointer: one gesture handles both drag-select and tap-tap.
@@ -613,12 +1408,16 @@
     e.preventDefault();
     passEl.classList.add('pf');
     passEl.focus({ preventScroll: true });
+    // a thumb has taken over from the keyboard: the caret is not their target
+    passEl.querySelectorAll('.cur').forEach(function (e) { e.classList.remove('cur'); });
     clearWrong();
     measure();
     var i = nearest(e.clientX, e.clientY);
     if (i < 0) return;
     press = { x: e.clientX, y: e.clientY, i: i, at: i, moved: false, wasArmed: anchor >= 0 };
-    if (anchor < 0) anchor = i;
+    // the mark lands before anything else resolves: ring, tick, ink, in that
+    // order, all inside the same frame as the touch
+    if (anchor < 0) { anchor = i; ping(letters[i].cell, false); Kit.haptic(4); }
     cursor = i;
     preview(anchor, i);
     try { passEl.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
@@ -630,6 +1429,9 @@
     if (!press.moved && dx * dx + dy * dy > 64) press.moved = true;
     var i = nearest(e.clientX, e.clientY);
     if (i < 0) return;
+    // a thumb travelling inside one letter is not a change of selection;
+    // repainting the range anyway is the only per-frame work in this game
+    if (i === press.at) return;
     press.at = i; cursor = i;
     preview(anchor, i);
   });
@@ -639,16 +1441,24 @@
     var p = press; press = null;
     try { passEl.releasePointerCapture(e.pointerId); } catch (err) { /* noop */ }
 
+    /* This is where a pointer gesture SPEAKS — once, on settle. pointermove
+       repaints the preview on every frame and deliberately says nothing;
+       a drag that ends is a commit, and commit() announces its own outcome. */
     if (p.moved) { commit(anchor, p.at); return; }         // a drag
     // first tap — stay armed, and say so rather than echoing one letter back
-    if (!p.wasArmed) { preview(anchor, anchor); armedHint(); return; }
-    if (p.i === anchor) { anchor = -1; clearSel(); setReadout(-1); return; }  // tap same = cancel
+    if (!p.wasArmed) {
+      preview(anchor, anchor); armedHint();
+      say('Start marked: ' + describe(anchor) + '. Now tap its last letter.');
+      return;
+    }
+    if (p.i === anchor) {                                   // tap same = cancel
+      anchor = -1; clearSel(); setReadout(-1);
+      say('Selection cleared.');
+      return;
+    }
     commit(anchor, p.i);                                    // second tap
   }
-  function armedHint() {
-    readEl.className = 'readout idle';
-    readEl.textContent = 'Start set — now pick the last letter of the word.';
-  }
+  function armedHint() { setReadout(-1); }   // anchor is set: setReadout says so
   passEl.addEventListener('pointerup', endPress);
   passEl.addEventListener('pointercancel', function () { press = null; });
   passEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -684,16 +1494,26 @@
     else if (k === 'End') { cursor = letters.length - 1; }
     else if (k === 'Enter' || k === ' ') {
       e.preventDefault();
-      if (anchor < 0) { anchor = cursor; preview(anchor, cursor); armedHint(); }
-      else { commit(anchor, cursor); }
+      if (anchor < 0) {
+        anchor = cursor; preview(anchor, cursor); armedHint();
+        ping(letters[cursor].cell, false); Kit.haptic(4);
+        say('Start marked: ' + describe(cursor) +
+            '. Move to the last letter and press Enter.');
+      } else { commit(anchor, cursor); }   // commit() speaks its own outcome
       showCursor(); return;
     } else if (k === 'Escape') {
-      anchor = -1; clearSel(); setReadout(-1); showCursor(); return;
+      var wasArmed = anchor >= 0;
+      anchor = -1; clearSel(); setReadout(-1); showCursor();
+      if (wasArmed) say('Selection cleared. ' + describe(cursor) + '.');
+      return;
     } else if (k === 'h' || k === 'H') { hint(); return; }
     else return;
     e.preventDefault();
     if (anchor >= 0) preview(anchor, cursor); else setReadout(-1);
     showCursor();
+    // every arrow step reads back the letter it landed on, and the run so
+    // far if one is armed — this is the readout, spoken
+    sayCaret();
   });
 
   function showCursor() {
@@ -707,6 +1527,10 @@
   passEl.addEventListener('focus', showCursor);
   passEl.addEventListener('blur', function () {
     passEl.querySelectorAll('.cur').forEach(function (e) { e.classList.remove('cur'); });
+    // .pf suppresses the focus ring because the focus came from a thumb. Once
+    // focus has LEFT, that is no longer true of the next arrival: a player who
+    // tabs back in has to get a ring, and only a keypress cleared the flag.
+    passEl.classList.remove('pf');
   });
 
   /* ---------------------------------------------------------------
@@ -714,9 +1538,19 @@
      --------------------------------------------------------------- */
   function hint() {
     if (st.over) return;
-    if (st.hints >= HINTS_MAX) { Kit.toast('No hints left.'); return; }
+    /* the dispatch line is aria-hidden — it is decorative typography — so
+       every message routed to it is also spoken through the live region */
+    if (st.hints >= HINTS_MAX) {
+      log('tips_and_updates', 'No hints left.', 'note');
+      say('No hints left.');
+      return;
+    }
     var pool = remaining().filter(function (t) { return !t.hinted; });
-    if (!pool.length) { Kit.toast('Every remaining word is already marked.'); return; }
+    if (!pool.length) {
+      log('tips_and_updates', 'Every remaining word is already marked.', 'note');
+      say('Every remaining word is already marked.');
+      return;
+    }
     // Sweep left to right through the passage, and never surrender the keystone
     // while a plain word is still available — the keystone is the flex, so it
     // has to be the last thing a hint will give you.
@@ -727,15 +1561,28 @@
     st.hints++;
     save();
     cells[letters[t.s].cell].el.classList.add('tip');
+    // the beacon can land anywhere in 250 characters, so the ring is what
+    // actually tells you WHERE — it is the only way to catch it in one look
+    ping(letters[t.s].cell, true);
     syncHintBtn();
     Kit.haptic(8);
-    Kit.toast('A word starts on that flashing letter.');
-    say('Hint placed. ' + (HINTS_MAX - st.hints) + ' hints left.');
+    // the lamp on the button lights, so the control confirms its own effect
+    hintBtn.classList.add('spent');
+    setTimeout(function () { hintBtn.classList.remove('spent'); }, 900);
+    log('tips_and_updates', 'A word starts on the flashing letter.', 'note');
+    /* The beacon is the whole hint, and a beacon is invisible to anyone
+       listening — "Hint placed" spent one of three hints and told them
+       nothing. Spoken, the hint names the letter it landed on in exactly
+       the same shape the arrow keys use, so it can be walked to. */
+    var left = HINTS_MAX - st.hints;
+    say('Hint: a word starts on ' + describe(t.s) + '. ' +
+        (left === 1 ? '1 hint left.' : left + ' hints left.'));
   }
 
   function syncHintBtn() {
     var left = HINTS_MAX - st.hints;
-    hintBtn.textContent = left > 0 ? 'Hint · ' + left : 'No hints left';
+    hintBtn.innerHTML = Kit.icon('tips_and_updates', { size: 18 }) +
+      (left > 0 ? 'Hint · ' + left : 'No hints');
     hintBtn.disabled = left <= 0 || st.over;
   }
 
@@ -745,13 +1592,23 @@
     if (st.over) return;
     var n = remaining().length;
     Kit.sheet(
+      '<div class="stagger">' +
       '<h2>Give up?</h2>' +
-      '<p class="sub">' + n + (n === 1 ? ' word is' : ' words are') + ' still aboard. ' +
+      '<p class="sub">' + n + (n === 1 ? ' word is' : ' words are') + ' still hiding. ' +
       'Revealing ends the day — but you do get to see where they were.</p>' +
-      '<button class="btn primary wide" id="yesQuit">Show me</button>' +
-      '<button class="btn ghost wide" data-close style="margin-top:8px">Keep looking</button>',
+      '<button class="btn primary wide" id="yesQuit" type="button">' +
+        Kit.icon('visibility', { size: 19 }) + 'Show me</button>' +
+      '<button class="btn ghost wide" data-close type="button" style="margin-top:8px">' +
+        Kit.icon('manage_search', { size: 19 }) + 'Keep looking</button>' +
+      '</div>',
       { onOpen: function (el, close) {
-          el.querySelector('#yesQuit').addEventListener('click', function () { close(); finish(true); });
+          /* Kit.sheet marks the dialog but cannot name it — an unnamed dialog
+             is announced as a bare "dialog". Every sheet in this file names
+             itself here, the way the rest of the suite does. */
+          el.setAttribute('aria-label', 'Give up?');
+          el.querySelector('#yesQuit').addEventListener('click', function () {
+            Kit.haptic(18); close(); finish(true);
+          });
         } }
     );
   });
@@ -775,7 +1632,8 @@
              '<span class="fl-t">' + snippet(t) + '</span></div>';
     }).join('');
     afterEl.innerHTML =
-      '<div class="themebar" style="margin-bottom:10px">' + P.theme +
+      '<div class="themebar" style="margin-bottom:10px">' +
+      Kit.icon('star', { size: 17 }) + Kit.esc(P.theme) +
       '<small>' + Kit.esc(P.reveal) + '</small></div>' +
       '<div class="found-list">' + rows + '</div>';
   }
@@ -802,99 +1660,195 @@
   }
 
   function finish(gaveUp) {
-    if (st.over) { resultSheet(); return; }
+    if (st.over) { resultSheet(false); return; }
     st.over = true; st.gave = gaveUp;
     save();
     anchor = -1; press = null;
     clearWrong();
     clearSel();
+    // the hint beacon has nothing left to point at, and it loops forever
+    passEl.querySelectorAll('.tip').forEach(function (e) { e.classList.remove('tip'); });
+    passEl.classList.remove('sheen');
     relight();
-    targets.forEach(function (t) { if (!t.found) paintMissed(t); });
-    fillChips(null);
+
+    /* The reveal is the payoff of a lost day, so it is not allowed to happen
+       behind the result sheet. Each missed word bleeds up out of the passage
+       in reading order, and only when the last one has surfaced does the
+       sheet come over the top. */
+    var missed = targets.filter(function (t) { return !t.found; })
+      .sort(function (a, b) { return a.s - b.s; });
+    var stagger = calm() ? 0 : 150;
+    missed.forEach(function (t, i) { paintMissed(t, stagger ? i * 200 : null); });
+
+    fillChips(null, true);
     renderAfterwards();
     syncHintBtn();
     quitBtn.hidden = true;
     hintBtn.hidden = true;
     resBtn.hidden = false;
+    logEl.hidden = true;
     setReadout(-1);
     passEl.style.cursor = 'default';
     passEl.style.touchAction = 'auto';   // the page grows; let it scroll again
-    setTimeout(resultSheet, gaveUp ? 260 : 520);
+    var wait = missed.length && stagger
+      ? Math.min(1900, 620 + missed.length * 200)
+      : (gaveUp ? 320 : 620);
+    setTimeout(function () { resultSheet(true); }, wait);
   }
 
-  function resultSheet() {
+  /* `fresh` is true only on the run that ended the day. A player reopening
+     yesterday's result gets the same sheet without the celebration — confetti
+     you can summon on demand is confetti that means nothing. */
+  function resultSheet(fresh) {
     var n = st.order.length;
     var clean = n === 6 && st.hints === 0;
-    var verdict, sub;
+    var verdict, sub, seal, mark;
     if (!st.gave) {
       verdict = clean ? 'Clean sweep.' : 'All six aboard.';
       sub = clean
         ? 'Six stowaways, no hints, no help. Nobody is going to believe you.'
         : 'All six, on ' + st.hints + (st.hints === 1 ? ' hint.' : ' hints.');
+      seal = clean ? 'k' : '';
+      mark = clean ? 'anchor' : 'done_all';
     } else if (n === 5) {
       verdict = 'One got away.';
       sub = 'Five of six, and the last one was in a sentence you read nine times.';
+      seal = 'm'; mark = 'sailing';   // it sailed. the mark from the masthead, escaping
     } else if (n === 0) {
       verdict = 'Nothing aboard.';
       sub = 'Every single one was in plain sight the whole time. Look again below.';
+      seal = 'm'; mark = 'visibility_off';
     } else {
       verdict = 'Right there.';
       sub = 'You looked straight at ' + n + ' of the six and walked past the rest. Everyone does.';
+      seal = 'm'; mark = 'find_in_page';
     }
 
+    /* On a loss the sheet names exactly what escaped. A near miss is only a
+       near miss if you are shown the thing you nearly had. */
+    var away = targets.filter(function (t) { return !t.found; })
+      .sort(function (a, b) { return a.s - b.s; });
+    var awayHtml = away.length
+      ? '<div class="gotaway"><span class="gl">' +
+        (away.length === 1 ? 'The one that got away' : 'The ones that got away') +
+        '</span>' + away.map(function (t) {
+          return '<span class="gw' + (t.key ? ' k' : '') + '">' +
+            (t.key ? Kit.icon('star', { size: 13 }) : '') + Kit.esc(t.w) + '</span>';
+        }).join('') + '</div>'
+      : '';
+
     var html =
+      '<div class="stagger">' +
+      '<div class="seal ' + seal + '" id="seal">' +
+        Kit.icon(mark, { size: 29, fill: 1 }) + '</div>' +
       '<h2>' + verdict + '</h2>' +
       '<p class="sub">' + sub + '</p>' +
-      '<div class="sharegrid" id="sg">' + Kit.esc(shareText()) + '</div>' +
+      awayHtml +
+      /* From here down every game in the suite runs the same tail, in the same
+         order: the stats, the share block, the share button, the way on to the
+         next puzzle, and the way back to the board. */
       '<div class="statrow">' +
-        '<div class="stat"><span class="n">' + n + '/6</span><span class="l">Found</span></div>' +
+        '<div class="stat"><span class="n tick" id="nFound">0/6</span><span class="l">Found</span></div>' +
         '<div class="stat"><span class="n">' + st.hints + '</span><span class="l">Hints</span></div>' +
-        '<div class="stat"><span class="n">' + (keystone.found ? '★' : '—') + '</span><span class="l">Keystone</span></div>' +
+        '<div class="stat"><span class="n">' +
+          Kit.icon('star', { size: 22, fill: keystone.found ? 1 : 0, cls: keystone.found ? '' : 'off' }) +
+        '</span><span class="l">Keystone</span></div>' +
       '</div>' +
-      '<button class="btn primary wide" id="shareBtn">Share result</button>' +
-      '<button class="btn ghost wide" data-close style="margin-top:8px">See where they were</button>' +
-      '<p class="hint" style="margin-top:14px">Next passage in <span class="cd" id="cd">--:--:--</span></p>';
+      '<div class="sharegrid" id="sg">' + Kit.esc(shareText()) + '</div>' +
+      '<button class="btn primary wide" id="shareBtn" type="button">' +
+        Kit.icon('share', { size: 19 }) + 'Share result</button>' +
+      /* Never a locked gate. The day picked the passage you opened on; the
+         result hands you the next one on the spot, won or lost. */
+      '<div style="margin-top:14px">' + Kit.nextButton(NS, 'Next passage') + '</div>' +
+      '<button class="btn ghost wide" data-close type="button" style="margin-top:8px">' +
+        Kit.icon('visibility', { size: 19 }) + 'See where they were</button>' +
+      '</div>';
 
     Kit.sheet(html, { onOpen: function (el, close) {
+      el.setAttribute('aria-label', verdict);
       var b = el.querySelector('#shareBtn');
-      b.addEventListener('click', function () { Kit.share(shareText(), b); });
-      var cd = el.querySelector('#cd');
-      var t = Kit.countdown(cd);
-      // stop the clock when the sheet actually leaves the document — keying it
-      // to a click on the scrim also killed it when you tapped Share
-      var guard = setInterval(function () {
-        if (!cd.isConnected) { clearInterval(t); clearInterval(guard); }
-      }, 1000);
+      /* The button is handed to Kit.share and says nothing on its own. It
+         used to paint "Copied" on click, which was a guess: when the
+         clipboard is blocked the kit falls back to a select-and-copy
+         textarea, and the button would still have claimed a copy that had
+         not happened. The kit now restores the label via innerHTML — so the
+         symbol survives — and reports what actually occurred. */
+      b.addEventListener('click', function () { Kit.haptic(8); Kit.share(shareText(), b); });
+
+      // the number that carries the story counts itself up to the truth
+      Kit.count(el.querySelector('#nFound'), n, {
+        ms: 620, fmt: function (v) { return v + '/6'; }
+      });
+
+      /* Earned, not given: only a day where every stowaway came aboard under
+         the player's own steam. Six-of-six with hints still gets it — that is
+         a win — and a clean sweep gets a second, brass-heavy volley. */
+      if (fresh && !st.gave && n === 6) {
+        var s = el.querySelector('#seal');
+        setTimeout(function () {
+          var r = s.getBoundingClientRect();
+          var x = r.left + r.width / 2, y = r.top + r.height / 2;
+          Kit.burst({ x: x, y: y, n: clean ? 60 : 40, colors: burstInk() });
+          if (clean) setTimeout(function () {
+            Kit.burst({ x: x, y: y, n: 34, colors: burstBrass() });
+          }, 260);
+        }, 300);
+        Kit.haptic(clean ? [22, 60, 22, 60, 52] : 18);
+      }
       void close;
     } });
   }
 
-  resBtn.addEventListener('click', resultSheet);
+  resBtn.addEventListener('click', function () { resultSheet(false); });
 
   /* ---------------------------------------------------------------
-     Help
+     Help — the sheet is now the long read, behind the ? button. The
+     first-run teaching is the coach tour at the bottom of this file.
+     Lead sentence first, diagram second, rules last.
      --------------------------------------------------------------- */
-  var HELP =
-    '<p>A few ordinary sentences. Hiding inside them, <b>six words on one theme</b> — ' +
-    'spelled straight through, but ignoring every space, comma and capital.</p>' +
-    '<div class="demo">the sam<b>ba con</b>test</div>' +
-    '<ul class="rules" style="padding-left:18px">' +
-      '<li><b>Tap the first letter, then the last.</b> Or drag across them — either ' +
-        'works. Tap the same letter twice to cancel.</li>' +
-      '<li>Every hidden word <b>straddles a gap</b> between real words. None of them ' +
-        'sit inside a single word — that would be too easy.</li>' +
-      '<li>One find is the <b>keystone ★</b>: the longest, and it names the theme. ' +
-        'Spotting it early is the flex.</li>' +
-      '<li><b>Wrong guesses cost nothing.</b> Guess constantly. This is a game about ' +
-        'looking, not risking.</li>' +
-      '<li>Three hints. Each one flashes the first letter of a word you have not found. ' +
-        'Hinted finds show as 🟡 when you share.</li>' +
-      '<li>Desktop: <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> to move, ' +
-        '<kbd>Enter</kbd> to set the start and again to set the end, <kbd>Esc</kbd> to ' +
-        'cancel, <kbd>H</kbd> for a hint.</li>' +
-    '</ul>';
-
-  var openHelp = Kit.helpButton(HELP, 'Stowaways');
+  function openHelp() {
+    Kit.sheet(
+      '<h2>Stowaways</h2>' +
+      '<p class="sub">Six themed words are spelled straight through the passage — ' +
+      'across the gaps between ordinary words, where your eye reads past them.</p>' +
+      /* THE DEMO PHRASE — "past this landing", hiding ISLAND.
+         It used to be "the sam<b>ba con</b>test", hiding BACON. Both the
+         phrase and the answer are in puzzle #218: its passage opens "Uncle
+         Ray's turn at the samba contest" and BACON is one of its six words,
+         so the tutorial handed a first-timer a free find on the very board
+         it opened. The replacement is checked against every shipped passage:
+         neither "this" nor "landing" appears in any of them, the phrase does
+         not appear in any of them, no substring of THISLANDING five letters
+         or longer occurs in any letters-only passage string, and ISLAND is
+         in no puzzle's words list and no puzzle's decoys list. Any future
+         demo phrase has to clear the same four checks. */
+      '<div class="demo">' +
+        '<div class="demo-r pale">past this landing</div>' +
+        '<div class="demo-r">past th<b>is land</b>ing</div>' +
+        '<div class="demo-c">Island · spaces do not count</div>' +
+      '</div>' +
+      '<ul class="rules" style="padding-left:18px;margin:0">' +
+        '<li><b>Tap a word’s first letter, then its last.</b> Or drag across it. ' +
+          'Tap the same letter twice to cancel.</li>' +
+        '<li><b>Wrong guesses cost nothing.</b> Guess constantly — this is a game ' +
+          'about looking, not risking.</li>' +
+        '<li>The starred berth on the manifest is the <b>keystone</b>: the longest ' +
+          'word, and the one that names the theme. Finding it early is the flex.</li>' +
+        '<li>Three hints. Each flashes the first letter of a word still hiding — ' +
+          'and marks that find on your share.</li>' +
+      '</ul>' +
+      /* The four arrow glyphs used to be set as characters, and only two of
+         them survive: the shipped mono subset carries U+2191 and U+2193 but
+         NOT U+2190 or U+2192, so the row rendered half in Google Sans Code
+         and half in whatever system mono the device fell back to — two of the
+         four keys visibly wider and lighter than the others. Named keys, the
+         way Chains, The Rule and Seed name theirs. */
+      '<p class="keys"><kbd>Arrow keys</kbd> move · ' +
+        '<kbd>Enter</kbd> set each end · <kbd>Esc</kbd> cancel · <kbd>H</kbd> hint</p>' +
+      '<button class="btn primary wide" data-close type="button" style="margin-top:16px">Got it</button>',
+      { onOpen: function (el) { el.setAttribute('aria-label', 'How to play'); } }
+    );
+  }
   document.getElementById('helpBtn').addEventListener('click', openHelp);
 
   /* ---------------------------------------------------------------
@@ -902,7 +1856,7 @@
      scrolls the page out from under you. That is only safe if the
      page never needs to scroll, so shrink the type until it fits.
      --------------------------------------------------------------- */
-  var BASE_FS = null, MAX_FS = 23;
+  var BASE_FS = null, MAX_FS = 24;   // a serif reads a size smaller than the sans did
   function autofit() {
     if (st.over) return;
     if (BASE_FS === null) { passEl.style.fontSize = ''; BASE_FS = parseFloat(getComputedStyle(passEl).fontSize); }
@@ -954,25 +1908,79 @@
     if (t.found) paintFound(t, false);
     else if (t.hinted && !st.over) cells[letters[t.s].cell].el.classList.add('tip');
   });
-  fillChips(null);
+  fillChips(null, false);
   syncHintBtn();
   relight();
   setReadout(-1);
+  if (keystone.found) markKicker();
 
   if (st.over) {
-    targets.forEach(function (t) { if (!t.found) paintMissed(t); });
+    targets.forEach(function (t) { if (!t.found) paintMissed(t, null); });
     renderAfterwards();
     quitBtn.hidden = true; hintBtn.hidden = true; resBtn.hidden = false;
+    logEl.hidden = true;
     passEl.style.cursor = 'default';
     passEl.style.touchAction = 'auto';
+    /* A finished day reopens its result rather than restarting — and the
+       afterword makes the page taller than the viewport, so the Result
+       button is below the fold on arrival and is not something to rely on.
+       The sheet is the way back to the share block and to the next passage. */
+    setTimeout(function () { resultSheet(false); }, 280);
   } else {
+    // the dispatch line opens on the empty hold, in the ship's-log voice, so
+    // the well below the passage never reads as unresolved space
+    if (st.order.length) {
+      var lastW = st.order[st.order.length - 1];
+      var lastT = byWord(lastW);
+      if (lastT.key) log('star', 'Keystone aboard — ' + lastW, 'ks');
+      else log('anchor', lastW + ' — aboard', 'good');
+    } else {
+      logIdle();
+    }
     autofit();
   }
 
-  var seen = Kit.store('stowaways:seen');
-  if (!seen.get()) { seen.set(1); setTimeout(openHelp, 380); }
+  /* ---------------------------------------------------------------
+     First run: three coach marks, not a wall of rules. Each one points
+     at the single thing to look at next, and the last one hands over
+     the passage itself. The full rules stay behind the ? button.
 
-  window.addEventListener('load', function () { rects = null; if (!st.over) autofit(); });
+     Then the empty state, before a single mark has been made: one slow
+     pass of light down the column. It teaches nothing on its own — the
+     readout above carries the instruction — but it answers the question
+     a wall of static prose provokes, which is "am I meant to touch this?"
+     --------------------------------------------------------------- */
+  function inkPass() {
+    if (st.over || calm() || st.order.length) return;
+    passEl.classList.add('sheen');
+    setTimeout(function () { passEl.classList.remove('sheen'); }, 2500);
+  }
+
+  function firstRun() {
+    if (st.over) return;
+    if (!Kit.once('stowaways:tour')) { inkPass(); return; }
+    Kit.tour([
+      { sel: '#kicker', place: 'below', pad: 4,
+        text: 'Everything hiding today has <b>this</b> in common.' },
+      { sel: '#manifest', place: 'below', pad: 6,
+        text: 'Six berths to fill. The brass one is the <b>keystone</b> — the longest word, and it names the theme.' },
+      // The gesture is SHOWN, not described — on the demo phrase from
+      // openHelp() above, which is checked against every shipped passage so
+      // the tutorial can never hand over an answer to the board behind it.
+      // placed ABOVE on purpose: left to itself the bubble lands under the
+      // passage and covers the bottom third of the thing it is pointing at
+      { el: passEl, pad: 6, place: 'above',
+        text: 'Words run straight through the passage, across the gaps between ' +
+              'the real ones. Drag over one — or tap its first letter, then its last.' +
+              '<span class="ex">past th<b>is land</b>ing</span>' }
+    ], { doneLabel: 'Start looking', onDone: function () { setTimeout(inkPass, 240); } });
+  }
+
+  window.addEventListener('load', function () {
+    rects = null;
+    if (!st.over) autofit();
+    setTimeout(firstRun, 260);
+  });
 })();
 </script>
 </body>

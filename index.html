@@ -3,93 +3,628 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Superfun Daily — five pitches</title>
+<title>Superfun Daily — five daily word games</title>
+<meta name="description" content="Five finished, playable daily word game pitches: Chains, The Rule, Shunt, Seed and Stowaways.">
 <link rel="stylesheet" href="shared/fonts.css">
 <link rel="stylesheet" href="shared/icons.css">
 <link rel="stylesheet" href="shared/kit.css">
+<!-- The five display faces, each the same self-contained base64 stylesheet the
+     game itself links — no network request, still opens from file://.
+     This page used to set all five wordmarks in one typeface and separate them
+     with weight, case and tracking alone. Measured, that left Chains and
+     Stowaways at the SAME face, the same 22px and the same tracking, differing
+     only by 600 vs 500 — two wordmarks nobody could tell apart, on the one page
+     whose entire job is the claim that these are five products. A reviewer opens
+     the cover and then opens Chains, and if the wordmark changes typeface on the
+     way in, the cover was a placeholder. So each card now wears its game's own
+     face, at its game's own settings. -->
+<link rel="stylesheet" href="chains/font.css">
+<link rel="stylesheet" href="rule/font.css">
+<link rel="stylesheet" href="shunt/font.css">
+<link rel="stylesheet" href="seed/font.css">
+<link rel="stylesheet" href="stowaways/font.css">
+<!-- kit.js in the head, not at the foot: it applies the stored theme before
+     first paint, so the cover never flashes the wrong one. -->
+<script src="shared/kit.js"></script>
 <style>
-  .wrap { max-width: 620px; margin: 0 auto; padding: 28px 18px calc(40px + var(--safe-b)); }
-  .hero { text-align: center; padding: 18px 0 26px; border-bottom: 1px solid var(--line); margin-bottom: 26px; }
-  .hero .eyebrow { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; }
-  .hero h1 { font-family: var(--font-display); font-size: clamp(32px, 9vw, 46px); margin: 8px 0 10px; font-weight: 600; line-height: 1.05; }
-  .hero p { color: var(--ink-2); font-size: 15.5px; margin: 0 auto; max-width: 44ch; }
-  .grid { display: grid; gap: 14px; }
-  .card {
-    display: block; text-decoration: none; color: inherit;
-    background: var(--white); border: 1px solid var(--line);
-    border-radius: var(--r);
-    padding: 16px 18px; box-shadow: var(--shadow-1);
-    transition: transform .14s, box-shadow .18s, border-color .18s;
-  }
-  .card:hover { border-color: var(--c); }
-  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
-  .card .top { display: flex; align-items: baseline; gap: 10px; }
-  .card h2 { font-family: var(--font-display); font-size: 23px; margin: 0; font-weight: 600; letter-spacing: .02em; }
-  .card .dna { margin-left: auto; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--c); font-weight: 700; white-space: nowrap; }
-  .card .hook { color: var(--ink); font-size: 15px; margin: 7px 0 4px; font-weight: 600; }
-  .card .why { color: var(--ink-2); font-size: 13.5px; margin: 0; }
-  .card .go { margin-top: 12px; display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-3); }
-  .card .go b { color: var(--c); font-weight: 700; }
-  .foot { margin-top: 30px; text-align: center; color: var(--ink-3); font-size: 12.5px; line-height: 1.7; }
-  .foot a { color: var(--ink-2); }
+/* ==================================================================
+   THE COVER
+   The publisher's chrome is deliberately monochrome. The only colour
+   on this page belongs to the five games, so the lineup reads as five
+   products rather than one template in five tints.
+
+   --accent is restated in all four theme branches (base, media-dark,
+   [data-theme=dark], [data-theme=light]) because setting it on :root
+   here out-cascades the kit's own dark values.
+   ================================================================== */
+:root {
+  --accent:#17161a; --accent-soft:#e9e3d7; --accent-ink:#faf7f2;
+  /* how hard a game's accent is mixed into a panel; dark needs more */
+  --mix-1:7%; --mix-2:13%; --mix-3:26%;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --accent:#f4f1ea; --accent-soft:#2c2a34; --accent-ink:#16151a;
+          --mix-1:11%; --mix-2:20%; --mix-3:34%; }
+}
+:root[data-theme="dark"] {
+  --accent:#f4f1ea; --accent-soft:#2c2a34; --accent-ink:#16151a;
+  --mix-1:11%; --mix-2:20%; --mix-3:34%;
+}
+:root[data-theme="light"] {
+  --accent:#17161a; --accent-soft:#e9e3d7; --accent-ink:#faf7f2;
+  --mix-1:7%; --mix-2:13%; --mix-3:26%;
+}
+
+.wrap { max-width: 1140px; margin: 0 auto; padding: 0 18px calc(44px + var(--safe-b)); }
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 0 10px; border-bottom: 3px double var(--line-2);
+}
+.pub {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 13px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase;
+}
+.pub .ms { --ms-size: 20px; --ms-fill: 1; color: var(--ink-3); flex: 0 0 auto; }
+.masthead .iconbtn { margin-left: auto; }
+
+/* ---------- hero ---------- */
+.hero { padding: 26px 0 2px; }
+.kicker {
+  font-size: 11px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px;
+}
+/* THE HEADLINE IS TWO CLAUSES AND IT GETS TWO LINES.
+   The <span> is display:block because the second clause has always been meant
+   to sit on its own line. Measured, that intent only survived at 390 and up:
+   the old clamp floored at 33px from 384px down, so at 360 the first clause
+   spilled and left "games." alone (111.7px) under a 224px line, and at 320 it
+   broke FOUR ways with two orphans — and the muted clause, at 317px, was the
+   longest line on the page. A de-emphasised line cannot be the widest thing
+   in the composition; that is the hierarchy stated and then contradicted.
+
+   So the ramp now actually ramps. 8.3vw carries the size down with the
+   viewport instead of parking on a floor 0.54px below the 390 value, and it
+   is set so the FIRST clause — the wide one, 10.36em — still clears the
+   measure at 320. Two lines everywhere from 289px up, longest line always the
+   black one. balance and the non-breaking joins in the markup are the belt
+   and braces: if a fallback face ever does force a wrap, it wraps between the
+   clauses' own words and can never strand a six-character orphan again. */
+.hero h1 {
+  font-family: var(--font-display); margin: 0 0 15px;
+  font-size: clamp(24px, 8.3vw, 56px); line-height: 1.03;
+  letter-spacing: -.032em; font-weight: 700; max-width: 22ch;
+  text-wrap: pretty;    /* fallback where balance is unsupported */
+  text-wrap: balance;
+}
+.hero h1 span { display: block; color: var(--ink-3); }
+.deck { font-size: 16.5px; line-height: 1.5; color: var(--ink-2); margin: 0 0 20px; max-width: 58ch; }
+.deck b { color: var(--ink); font-weight: 650; }
+
+.feels { display: grid; gap: 15px; margin: 0 0 20px; }
+.feels .f { border-left: 3px solid var(--ink); padding: 1px 0 1px 13px; }
+.feels .f b { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+.feels .f b .ms { --ms-size: 20px; --ms-fill: 1; color: var(--ink-3); }
+.feels .f i { display: block; font-style: normal; font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+.argue { font-size: 14.5px; line-height: 1.5; color: var(--ink-2); max-width: 66ch; margin: 0; }
+
+/* ---------- section rules ---------- */
+.secrule { display: flex; align-items: center; gap: 12px; margin: 36px 0 15px; }
+.secrule h2 { margin: 0; font-size: 11.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+/* --line-2, not --line. The two labels this rule runs between are both set in
+   --ink-3, which the kit just moved from #8e8b96 to #6b6874 in light and from
+   #77737f to #95919f in dark — a jump from 3.13:1 to 5.09:1 on paper. At the
+   old --line (1.35:1 light, 1.45:1 dark) the rule survived by being roughly as
+   quiet as the labels; against the new ones it read as a printing fault. 1.71
+   and 1.98 is still a hairline, and it is the same value the masthead's own
+   double rule already uses. */
+.secrule i { flex: 1; height: 1px; background: var(--line-2); }
+.secrule em { font-style: normal; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ---------- the lineup ----------
+   Each game brings its own hue from its own demo, in both themes. Only
+   --c is branched; every panel tint is mixed from it against --white,
+   which already flips with the theme. */
+.g-chains { --c-l:#1f7a63; --c-d:#6cc4a8; }
+.g-rule   { --c-l:#5b46c9; --c-d:#a596f2; }
+.g-shunt  { --c-l:#c2410c; --c-d:#f0762f; }
+.g-seed   { --c-l:#b02a5b; --c-d:#f0789c; }
+.g-stow   { --c-l:#0e6f9e; --c-d:#4aa8d8; }
+.card, .spectrum i { --c: var(--c-l); }
+@media (prefers-color-scheme: dark) { .card, .spectrum i { --c: var(--c-d); } }
+:root[data-theme="dark"]  .card, :root[data-theme="dark"]  .spectrum i { --c: var(--c-d); }
+:root[data-theme="light"] .card, :root[data-theme="light"] .spectrum i { --c: var(--c-l); }
+
+/* five hues under one masthead: the lineup, stated before it is listed */
+.spectrum { display: flex; gap: 3px; margin-top: 5px; }
+.spectrum i { flex: 1; height: 3px; border-radius: 2px; background: var(--c); }
+
+.lineup { display: grid; gap: 16px; }
+.card {
+  display: block; text-decoration: none; color: inherit; overflow: hidden;
+  background: var(--white); border: 1px solid var(--line);
+  border-radius: var(--r); box-shadow: var(--shadow-1);
+  transition: transform .2s var(--ease-out), box-shadow .22s, border-color .22s;
+}
+/* kit's global :focus-visible would flatten the card's radius to 4px */
+.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: var(--r); }
+.card:focus-visible .tile .ms { --ms-fill: 1; }
+@media (hover: hover) {
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2);
+                border-color: color-mix(in srgb, var(--c) 55%, var(--line)); }
+  .card:hover .go .ms { transform: translateX(3px); }
+  .card:hover .tile .ms { --ms-fill: 1; }
+}
+/* after the hover block, so a press still reads as a press on a mouse */
+.card:active { transform: translateY(0) scale(.993); box-shadow: var(--shadow-1); }
+
+.card .body { padding: 14px 16px 15px; }
+.head { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
+.tile {
+  flex: 0 0 38px; width: 38px; height: 38px; border-radius: 11px;
+  display: grid; place-items: center; color: var(--c);
+  background: color-mix(in srgb, var(--c) var(--mix-2), var(--white));
+}
+.tile .ms { --ms-size: 22px; --ms-wght: 500; }
+.head .txt { min-width: 0; }
+.kick {
+  display: block; margin-bottom: 2px; font-size: 10px; font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kick b { color: var(--c); font-weight: 800; }
+.card h3 { font-family: var(--font-display); margin: 0; font-size: 22px; line-height: 1.04; font-weight: 700; letter-spacing: -.012em; }
+.hook { margin: 0 0 6px; font-size: 15px; font-weight: 600; line-height: 1.35; }
+.why  { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+/* the display face has no true italic — emphasis is weight, not a slant */
+.why em { font-style: normal; font-weight: 700; color: var(--ink); }
+.rail { display: flex; align-items: center; gap: 10px; margin-top: 13px; }
+.kchip.feel { background: color-mix(in srgb, var(--c) var(--mix-2), var(--white)); border-color: transparent; color: var(--c); }
+.mins { margin-left: auto; font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.go { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 700; color: var(--c); white-space: nowrap; }
+.go .ms { --ms-size: 17px; transition: transform .2s var(--ease-out); }
+
+/* FIVE WORDMARKS, FIVE FACES.
+   Each is the lockup from that game's own app bar, reproduced here: same
+   typeface, same variation settings, same case, same tracking. Open a card and
+   the wordmark you tapped is the wordmark at the top of the screen you land on.
+   `font-weight: normal` sits under every variable one on purpose — the browser
+   would otherwise synthesise a bold on top of an axis that already carries the
+   weight, and a double-bolded Fraunces is a different typeface again. */
+.card h3 { font-weight: normal; }
+
+.g-chains h3 {                                    /* Fraunces, engraved plate */
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-variation-settings: 'opsz' 144, 'wght' 650;
+  font-size: 21px; text-transform: uppercase;
+  letter-spacing: .17em; text-indent: .17em;      /* tracking added on the right
+                                                     is optically centred back */
+}
+.g-rule h3 {                                      /* Space Grotesk, bench label */
+  font-family: 'Space Grotesk', var(--font-display);
+  font-variation-settings: 'wght' 700;
+  font-size: 20px; text-transform: uppercase; letter-spacing: .055em;
+}
+.g-rule h3 .the {
+  font-size: 10.5px; font-variation-settings: 'wght' 400; letter-spacing: .26em;
+  color: var(--ink-3); margin-right: .34em; vertical-align: .14em;
+}
+.g-shunt h3 {                                     /* Archivo, machined */
+  font-family: 'Archivo', var(--font-display);
+  font-variation-settings: 'wdth' 125, 'wght' 900;
+  font-size: 23px; text-transform: uppercase; letter-spacing: .012em;
+}
+.g-seed h3 {                                      /* Instrument Serif, botanical */
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  font-size: 28px; letter-spacing: .004em; line-height: .98;
+}
+.g-stow h3 {                                      /* Newsreader, newspaper flag */
+  font-family: 'Newsreader', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  font-variation-settings: 'opsz' 60, 'wght' 620;
+  font-size: 23px; text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* ---------- the miniatures ----------
+   A fragment of each board, drawn in CSS. No SVG, no screenshots: they
+   have to be legible at 98px tall and correct in both themes. */
+.mini {
+  position: relative; height: 98px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--c) var(--mix-1), var(--white));
+  /* A muted mark inside a miniature answers to the PANEL, not to the page.
+     --ink-3 is tuned against --paper and --white; measured on these tinted
+     panels it lands 4.87–4.97 in light — fine — but 4.08–4.34 in dark, because
+     there the panel is a LIFT off --white rather than a wash into it, and the
+     8–9px labels in here ("BREAKS", the "?", the step counts) are the smallest
+     type on the page. One step to --ink-2 in dark puts all five back over 4.5
+     and leaves the light values, which were already right, untouched. */
+  --ink-mini: var(--ink-3);
+}
+@media (prefers-color-scheme: dark) { .mini { --ink-mini: var(--ink-2); } }
+:root[data-theme="dark"]  .mini { --ink-mini: var(--ink-2); }
+:root[data-theme="light"] .mini { --ink-mini: var(--ink-3); }
+
+/* CHAINS — the vertical chain, laid on its side: two words played, the
+   pin still behind a dashed link you have not covered yet. */
+.m-chain { padding: 0 8px; }
+.m-chain .pl {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
+  background: var(--white); border: 1px solid color-mix(in srgb, var(--c) 25%, var(--line));
+  border-radius: 6px; padding: 5px 7px; box-shadow: var(--shadow-1);
+}
+.m-chain .pin { display: inline-flex; align-items: center; gap: 4px; border-color: var(--c); color: var(--c); }
+.m-chain .pin .ms { --ms-size: 14px; --ms-fill: 1; }
+.m-chain .lnk { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 54px; flex: 0 1 54px; }
+.m-chain .lnk i { font-style: normal; font-size: 8px; font-weight: 700; color: var(--c); letter-spacing: .01em; }
+.m-chain .lnk b { width: 100%; border-top: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); }
+.m-chain .gap i { color: var(--ink-mini); }
+.m-chain .gap b { border-top-style: dashed; }
+
+/* THE RULE — three words obey, three break, and nothing about them says why */
+.m-rule { padding: 0 6px; }
+.m-rule .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.m-rule .hd {
+  display: flex; align-items: center; gap: 4px; margin-bottom: 1px;
+  font-size: 8.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-mini);
+}
+.m-rule .ok .hd { color: var(--c); }
+.m-rule .hd .ms { --ms-size: 13px; --ms-wght: 700; }
+.m-rule i { height: 9px; border-radius: 2px; }
+.m-rule .ok i { background: repeating-linear-gradient(90deg, var(--c) 0 7px, transparent 7px 10px); }
+.m-rule .no i { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink-3) 55%, transparent) 0 7px, transparent 7px 10px); }
+.m-rule .vr { width: 1px; align-self: stretch; margin: 16px 0; background: var(--line); }
+
+/* SHUNT — sixteen letters on rails, one row already lit */
+.m-grid { gap: 5px; }
+.m-grid .g4 { display: grid; grid-template-columns: repeat(4, 18px); gap: 3px; }
+.m-grid .g4 i {
+  font-style: normal; height: 18px; display: grid; place-items: center;
+  font-size: 9.5px; font-weight: 700; border-radius: 4px; color: var(--ink-2);
+  background: var(--white); border: 1px solid var(--line);
+}
+.m-grid .g4 i.lit { background: var(--c); border-color: transparent; color: var(--white); }
+.m-grid .ar { --ms-size: 16px; color: color-mix(in srgb, var(--c) 65%, var(--ink-3)); }
+
+/* SEED — the queue everyone can see, and the word growing under it */
+.m-seed { flex-direction: column; align-items: flex-start; gap: 9px; padding-left: 26px; }
+.m-seed .queue { display: flex; gap: 4px; }
+.m-seed .queue i {
+  font-style: normal; width: 15px; height: 15px; display: grid; place-items: center;
+  font-size: 8.5px; font-weight: 700; border-radius: 4px; color: var(--ink-3);
+  background: var(--white); border: 1px solid var(--line);
+}
+.m-seed .queue i:first-child { background: var(--c); border-color: transparent; color: var(--white); }
+.m-seed .steps { display: flex; flex-direction: column; gap: 3px; }
+.m-seed .st { display: flex; align-items: center; gap: 8px; }
+.m-seed .st:nth-child(2) { padding-left: 11px; }
+.m-seed .st:nth-child(3) { padding-left: 22px; }
+.m-seed .st i { font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--ink-2); }
+.m-seed .st i::before {
+  content: ''; display: inline-block; width: 5px; height: 5px; margin-right: 6px;
+  vertical-align: 3px; opacity: .45;
+  border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+}
+.m-seed .st b { font-size: 9px; font-weight: 700; color: var(--ink-mini); }
+.m-seed .st.on i, .m-seed .st.on b { color: var(--c); }
+
+/* STOWAWAYS — prose, with one word straddling the gap between two others */
+.m-prose { flex-direction: column; align-items: flex-start; gap: 12px; padding-left: 20px; }
+.m-prose .ln { display: flex; align-items: center; gap: 8px; }
+.m-prose .ln i {
+  font-style: normal; height: 8px; border-radius: 2px;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink-3) 55%, transparent) 0 6px, transparent 6px 9px);
+}
+.m-prose .w3 { width: 24px; } .m-prose .w4 { width: 33px; }
+.m-prose .w5 { width: 42px; } .m-prose .w6 { width: 51px; } .m-prose .w7 { width: 60px; }
+.m-prose .fade { -webkit-mask-image: linear-gradient(90deg, #000 55%, transparent); mask-image: linear-gradient(90deg, #000 55%, transparent); }
+.m-prose .hit {
+  display: flex; align-items: center; gap: 8px; padding: 4px 5px; margin: -4px -1px;
+  border-radius: 5px; background: color-mix(in srgb, var(--c) var(--mix-3), var(--white));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.m-prose .hit i { background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 9px); }
+
+/* ---------- reviewer notes ---------- */
+.notes {
+  display: grid; gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
+}
+.note { background: var(--white); padding: 14px 15px; display: flex; gap: 11px; }
+.note .ms { --ms-size: 20px; --ms-fill: 1; color: var(--ink-3); flex: 0 0 auto; margin-top: 1px; }
+.note b { display: block; font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+.note p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+.note code { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); background: var(--paper-2); padding: 1px 5px; border-radius: 5px; }
+
+/* ---------- foot ---------- */
+.foot {
+  margin-top: 24px; display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: center; gap: 4px 16px; font-size: 12.5px; color: var(--ink-3);
+}
+.foot a {
+  display: inline-flex; align-items: center; gap: 6px; padding: 13px 4px;
+  color: var(--ink-2); text-decoration: none;
+}
+.foot a .ms { --ms-size: 16px; }
+.foot a u { text-decoration: none; border-bottom: 1px solid var(--line); }
+.foot a:hover u { border-bottom-color: var(--ink-2); }
+
+/* ---------- arrival ----------
+   A cover, not a toy: one rise for the hero, one short cascade for the
+   lineup, and nothing that has to finish before the page is usable. */
+.arrive { animation: rise .5s var(--ease-out) backwards; }
+.lineup.stagger > * { animation: rise .52s var(--ease-out) backwards; animation-delay: calc(.12s + var(--i, 0) * .06s); }
+
+/* ---------- wider than a phone ---------- */
+@media (min-width: 620px) {
+  .feels { grid-template-columns: 1fr 1fr; gap: 24px; max-width: 840px; }
+  .notes { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 720px) {
+  .wrap { padding: 0 26px calc(56px + var(--safe-b)); }
+  .lineup { grid-template-columns: repeat(6, 1fr); gap: 18px; }
+  .card { grid-column: span 3; }
+  .mini { height: 116px; }
+  .card .body { padding: 16px 18px 17px; }
+}
+/* five cards into two columns leaves one over — so the last one takes the
+   full measure and turns on its side, the way a section front's lead does */
+@media (min-width: 720px) and (max-width: 1059px) {
+  .card.wide { grid-column: span 6; display: grid; grid-template-columns: 42% 1fr; align-items: stretch; }
+  .card.wide .mini { height: 100%; border-bottom: none; border-right: 1px solid var(--line); }
+  .card.wide .body { align-self: center; }
+}
+@media (min-width: 1060px) {
+  .card { grid-column: span 2; }
+  .card:nth-child(4), .card:nth-child(5) { grid-column: span 3; }
+  .notes { grid-template-columns: repeat(3, 1fr); }
+  .hero { padding-top: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrive, .lineup.stagger > * { animation: none; }
+  .card:hover { transform: none; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hero">
-    <div class="eyebrow">Superfun · pitch round</div>
-    <h1>Five daily word games</h1>
-    <p>Each one built around the two feelings that actually make people post a
-       result every morning: <em>I was clever</em>, or <em>I was so close</em>.</p>
+
+  <header class="masthead">
+    <span class="pub"><span class="ms" aria-hidden="true">auto_awesome</span>Superfun Daily</span>
+    <button class="iconbtn" id="themeBtn" type="button" aria-label="Switch theme"></button>
+  </header>
+  <div class="spectrum" aria-hidden="true">
+    <i class="g-chains"></i><i class="g-rule"></i><i class="g-shunt"></i><i class="g-seed"></i><i class="g-stow"></i>
   </div>
 
-  <div class="grid">
-    <a class="card" href="chains/" style="--c:#1f7a63">
-      <div class="top"><h2>Chains</h2><span class="dna">Compound golf</span></div>
-      <p class="hook">Get from FIRE to CAR in four words. No undo.</p>
-      <p class="why">Every word must form a compound with the last. Three holes, a par,
-        and no take-backs — so a bad link strands you in the rough for real.</p>
-      <div class="go"><b>Play →</b> <span>· 3 holes · ~3 min</span></div>
+  <section class="hero arrive">
+    <p class="kicker" id="dateline">Pitch round</p>
+    <h1>Five daily word&nbsp;games. <span>One of them is&nbsp;yours.</span></h1>
+    <p class="deck">A golf course, a laboratory, a tray of sliding letters, a word that
+      grows, and a paragraph with something hidden in it. <b>One shared kit, five
+      different products</b> — all five finished, and playable on a phone right now.</p>
+
+    <div class="feels">
+      <div class="f">
+        <b><span class="ms" aria-hidden="true">lightbulb</span>“I was clever.”</b>
+        <i>A line nobody else found, and you want the credit.</i>
+      </div>
+      <div class="f">
+        <b><span class="ms" aria-hidden="true">sentiment_dissatisfied</span>“I was SO close.”</b>
+        <i>A near miss that stings enough to need witnesses.</i>
+      </div>
+    </div>
+
+    <p class="argue">Nobody posts a result for any other reason. Each game below is
+      engineered to manufacture one of those two, daily, and to leave six pasteable
+      lines that tell the story without leaking the answer.</p>
+  </section>
+
+  <div class="secrule"><h2>The lineup</h2><i></i><em>Five games · tap to play</em></div>
+
+  <div class="lineup stagger">
+
+    <a class="card g-chains" href="chains/index.html" style="--i:0">
+      <div class="mini m-chain" aria-hidden="true">
+        <span class="pl">MILK</span>
+        <span class="lnk"><i>milkshake</i><b></b></span>
+        <span class="pl">SHAKE</span>
+        <span class="lnk gap"><i>?</i><b></b></span>
+        <span class="pl pin">TOWN<span class="ms">golf_course</span></span>
+      </div>
+      <div class="body">
+        <div class="head">
+          <span class="tile"><span class="ms" aria-hidden="true">golf_course</span></span>
+          <div class="txt">
+            <span class="kick"><b>Compound golf</b> · 3 holes</span>
+            <h3>Chains</h3>
+          </div>
+        </div>
+        <p class="hook">Golf, played on compound words: MILK to TOWN in as few links as you dare.</p>
+        <p class="why">There is no undo. A word that links is <em>played</em>, so one greedy
+          hop leaves you in the rough with the pin in plain sight and two swings left.</p>
+        <div class="rail">
+          <span class="kchip feel"><span class="ms" aria-hidden="true">sentiment_dissatisfied</span>I was SO close</span>
+          <span class="mins">~3 min</span>
+          <span class="go">Play<span class="ms" aria-hidden="true">arrow_forward</span></span>
+        </div>
+      </div>
     </a>
 
-    <a class="card" href="rule/" style="--c:#5b46c9">
-      <div class="top"><h2>The Rule</h2><span class="dna">Deduction</span></div>
-      <p class="hook">Six words. Three pass, three fail. Why?</p>
-      <p class="why">Probe with any word — real or nonsense — until you can name the
-        hidden rule. Then call it. You get one call.</p>
-      <div class="go"><b>Play →</b> <span>· 6 probes · ~2 min</span></div>
+    <a class="card g-rule" href="rule/index.html" style="--i:1">
+      <div class="mini m-rule" aria-hidden="true">
+        <div class="col ok">
+          <span class="hd"><span class="ms">check</span>Follows</span>
+          <i style="width:47px"></i><i style="width:37px"></i><i style="width:57px"></i>
+        </div>
+        <span class="vr"></span>
+        <div class="col no">
+          <span class="hd"><span class="ms">close</span>Breaks</span>
+          <i style="width:37px"></i><i style="width:57px"></i><i style="width:47px"></i>
+        </div>
+      </div>
+      <div class="body">
+        <div class="head">
+          <span class="tile"><span class="ms" aria-hidden="true">science</span></span>
+          <div class="txt">
+            <span class="kick"><b>Deduction</b> · 6 probes</span>
+            <h3><span class="the">The</span> Rule</h3>
+          </div>
+        </div>
+        <p class="hook">Six words. Three obey a hidden law, three break it. Name the law.</p>
+        <p class="why">Probe with anything — a real word or deliberate nonsense — then call
+          it. You get one call, and the reveal makes what you missed humiliatingly obvious.</p>
+        <div class="rail">
+          <span class="kchip feel"><span class="ms" aria-hidden="true">lightbulb</span>I was clever</span>
+          <span class="mins">~2 min</span>
+          <span class="go">Play<span class="ms" aria-hidden="true">arrow_forward</span></span>
+        </div>
+      </div>
     </a>
 
-    <a class="card" href="shunt/" style="--c:#c2410c">
-      <div class="top"><h2>Shunt</h2><span class="dna">Tactile grid</span></div>
-      <p class="hook">Slide the rows. Slide the columns. Spell four words at once.</p>
-      <p class="why">Fixing the bottom row breaks the top one. Multiple solutions exist —
-        and the game tells you how rare yours was.</p>
-      <div class="go"><b>Play →</b> <span>· par 6 · ~3 min</span></div>
+    <a class="card g-shunt" href="shunt/index.html" style="--i:2">
+      <div class="mini m-grid" aria-hidden="true">
+        <span class="ms ar">chevron_left</span>
+        <div class="g4">
+          <i>E</i><i>R</i><i>O</i><i>K</i>
+          <i class="lit">M</i><i class="lit">I</i><i class="lit">N</i><i class="lit">T</i>
+          <i>A</i><i>S</i><i>L</i><i>D</i>
+          <i>P</i><i>U</i><i>C</i><i>H</i>
+        </div>
+        <span class="ms ar">chevron_right</span>
+      </div>
+      <div class="body">
+        <div class="head">
+          <span class="tile"><span class="ms" aria-hidden="true">grid_view</span></span>
+          <div class="txt">
+            <span class="kick"><b>Sliding grid</b> · no typing</span>
+            <h3>Shunt</h3>
+          </div>
+        </div>
+        <p class="hook">Sixteen letters on rails. Push rows and columns until all four rows spell words.</p>
+        <p class="why">Fixing the bottom row breaks the top one. Par is a proven minimum, so
+          beating it isn't luck — it means nobody alive could have done it in fewer.</p>
+        <div class="rail">
+          <span class="kchip feel"><span class="ms" aria-hidden="true">lightbulb</span>I was clever</span>
+          <span class="mins">~3 min</span>
+          <span class="go">Play<span class="ms" aria-hidden="true">arrow_forward</span></span>
+        </div>
+      </div>
     </a>
 
-    <a class="card" href="seed/" style="--c:#b02a5b">
-      <div class="top"><h2>Seed</h2><span class="dna">Growth · strategy</span></div>
-      <p class="hook">EAT → EATS → TEARS → ORATES → …</p>
-      <p class="why">One letter arrives each turn from a queue everyone can see coming.
-        Use every letter, every time. It isn't anagramming — it's planning.</p>
-      <div class="go"><b>Play →</b> <span>· 9 letters · ~3 min</span></div>
+    <a class="card g-seed" href="seed/index.html" style="--i:3">
+      <div class="mini m-seed" aria-hidden="true">
+        <div class="queue"><i>D</i><i>E</i><i>C</i><i>S</i><i>L</i></div>
+        <div class="steps">
+          <span class="st"><i>ARC</i><b>3</b></span>
+          <span class="st"><i>CARD</i><b>4</b></span>
+          <span class="st on"><i>RACED</i><b>5</b></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="head">
+          <span class="tile"><span class="ms" aria-hidden="true">eco</span></span>
+          <div class="txt">
+            <span class="kick"><b>Anagram planning</b> · 2 skips</span>
+            <h3>Seed</h3>
+          </div>
+        </div>
+        <p class="hook">Three letters to start, nine more arriving one at a time — and everyone sees the queue.</p>
+        <p class="why">Every turn you must play a word using every letter you hold. It isn't
+          anagramming, it's anagramming with a weather forecast, and you get two skips.</p>
+        <div class="rail">
+          <span class="kchip feel"><span class="ms" aria-hidden="true">sentiment_dissatisfied</span>I was SO close</span>
+          <span class="mins">~3 min</span>
+          <span class="go">Play<span class="ms" aria-hidden="true">arrow_forward</span></span>
+        </div>
+      </div>
     </a>
 
-    <a class="card" href="stowaways/" style="--c:#0e6f9e">
-      <div class="top"><h2>Stowaways</h2><span class="dna">Hidden in prose</span></div>
-      <p class="hook">Six themed words hiding in two ordinary sentences.</p>
-      <p class="why">Not a grid — a scene. The words span the gaps between real words,
-        camouflaged by meaning, and your eye reads straight past them.</p>
-      <div class="go"><b>Play →</b> <span>· 6 finds · ~3 min</span></div>
+    <a class="card g-stow wide" href="stowaways/index.html" style="--i:4">
+      <div class="mini m-prose" aria-hidden="true">
+        <span class="ln"><i class="w6"></i><i class="w3"></i><i class="w7"></i><i class="w4"></i></span>
+        <span class="ln"><i class="w4"></i><span class="hit"><i class="w5"></i><i class="w3"></i></span><i class="w6"></i></span>
+        <span class="ln"><i class="w3"></i><i class="w6"></i><i class="w4"></i><i class="w5"></i></span>
+        <span class="ln fade"><i class="w5"></i><i class="w4"></i><i class="w7"></i><i class="w3"></i></span>
+      </div>
+      <div class="body">
+        <div class="head">
+          <span class="tile"><span class="ms" aria-hidden="true">sailing</span></span>
+          <div class="txt">
+            <span class="kick"><b>Hidden in prose</b> · 6 finds</span>
+            <h3>Stowaways</h3>
+          </div>
+        </div>
+        <p class="hook">Six themed words hide in two ordinary sentences, straddling the gaps between real words.</p>
+        <p class="why">No grid, no keyboard, no guessing — just looking, at plain English you
+          have already read straight past once and will read past again.</p>
+        <div class="rail">
+          <span class="kchip feel"><span class="ms" aria-hidden="true">lightbulb</span>I was clever</span>
+          <span class="mins">~3 min</span>
+          <span class="go">Play<span class="ms" aria-hidden="true">arrow_forward</span></span>
+        </div>
+      </div>
     </a>
+
+  </div>
+
+  <div class="secrule"><h2>For the reviewer</h2><i></i></div>
+
+  <div class="notes">
+    <div class="note">
+      <span class="ms" aria-hidden="true">today</span>
+      <div><b>A puzzle a day, never a lockout</b>
+        <p>The local date sets which board everyone opens on. Finishing one — won or
+          lost — hands you the next immediately, so you can play four in a row.</p></div>
+    </div>
+    <div class="note">
+      <span class="ms" aria-hidden="true">link</span>
+      <div><b>Pin any puzzle</b>
+        <p>Add <code>?d=4</code> to any game's URL to open that exact board. Numbering is
+          stable, so a whole committee can review the same one.</p></div>
+    </div>
+    <div class="note">
+      <span class="ms" aria-hidden="true">touch_app</span>
+      <div><b>Mobile first, thumb only</b>
+        <p>Every game plays start to finish inside a 390×844 viewport with 44px targets.
+          Then again on desktop, with a physical keyboard.</p></div>
+    </div>
+    <div class="note">
+      <span class="ms" aria-hidden="true">bolt</span>
+      <div><b>No build step</b>
+        <p>Static HTML, CSS and JS. Opens straight from <code>file://</code> or over http.
+          No frameworks, no CDNs, no network at all — the type is inlined.</p></div>
+    </div>
+    <div class="note">
+      <span class="ms" aria-hidden="true">verified</span>
+      <div><b>Hand-authored, then checked</b>
+        <p>Each game ships six or more puzzles plus its own <code>verify.js</code> — every
+          board machine-checked, and hand-solved, before it shipped.</p></div>
+    </div>
+    <div class="note">
+      <span class="ms" aria-hidden="true">share</span>
+      <div><b>An answer-safe artifact</b>
+        <p>Every result copies six lines or fewer that read in iMessage, tell the story
+          at a glance, and give nothing away.</p></div>
+    </div>
   </div>
 
   <p class="foot">
-    Mobile first, desktop supported. Each demo rotates a new puzzle daily —
-    add <code>?d=2</code> to any URL to jump to another day.<br>
-    Read the round brief in <a href="BRIEF.md">BRIEF.md</a>.
+    <span>Superfun Daily · pitch round</span>
+    <a href="BRIEF.md"><span class="ms" aria-hidden="true">menu_book</span><u>Read the brief</u></a>
   </p>
+
 </div>
+
+<script>
+(function () {
+  'use strict';
+  Kit.themeToggle(document.getElementById('themeBtn'));
+  var d = document.getElementById('dateline');
+  if (d) d.textContent = 'Pitch round · ' + Kit.dateLabel();
+})();
+</script>
 </body>
 </html>

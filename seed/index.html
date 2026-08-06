@@ -10,203 +10,384 @@
 <link rel="stylesheet" href="../shared/kit.css">
 <link rel="stylesheet" href="font.css">
 <style>
-  :root { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; --rung:#e8c9d6; }
-  @media (prefers-color-scheme: dark) {
-    :root { --accent:#f0789c; --accent-soft:#3d1626; --accent-ink:#1c080f; --rung:#5a2b3c; }
-  }
-  :root[data-theme="dark"]  { --accent:#f0789c; --accent-soft:#3d1626; --accent-ink:#1c080f; --rung:#5a2b3c; }
-  :root[data-theme="light"] { --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff; --rung:#e8c9d6; }
-
-  /* ---------- type: Google Sans Flex is a geometric sans, so the old
-       serif-era settings read limp. Heavier weights, tighter tracking on
-       everything that is a heading; wide tracking only on the logotype. ---- */
-  .bar h1 {
-    font-size: 15px; font-weight: 800; letter-spacing: .30em; text-indent: .30em;
-  }
-  .verdict { font-weight: 800; letter-spacing: -.035em; font-size: 33px; line-height: 1.05; }
-  .sheet h2 { font-weight: 800; letter-spacing: -.025em; }
-  .stat .n { font-weight: 800; letter-spacing: -.03em; }
-  .prompt .k { font-weight: 800; letter-spacing: .14em; }
-
-  .stage { justify-content: flex-start; gap: 12px; }
-
   /* ==========================================================================
-     THE STAIRCASE — the screenshot.
-     Every word you played, hanging off an elbow from the one before it and
-     stepping right as it grows. The number column stays flush right so the
-     3·4·5·6·7… ladder reads as a single rising line.
+     SEED — a botanical plate for a thing that climbs.
+     Rose ink on tinted paper, hairline keylines, a specimen label over the
+     conveyor and a growth-ring seed at the foot of the ladder.
      ======================================================================== */
-  .stair {
-    flex: 1 1 0; min-height: 92px; overflow-y: auto;
-    display: flex; flex-direction: column; justify-content: flex-end;
-    gap: 1px; padding: 10px 4px 2px;
-    scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(180deg, transparent, #000 30px);
-            mask-image: linear-gradient(180deg, transparent, #000 30px);
+  :root {
+    --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff;
+    --good:#2e7d4f; --warn:#a1700a; --bad:#a93a2a;
+    --stem:#dcbcca;                       /* the hairline the ladder hangs off */
+    --plate:#fffbfc;                      /* tint at the top of a specimen card */
+    --socket:#cdbcc3;                     /* an empty letter hole */
+    --wash:rgba(176,42,91,.055);          /* the page's rose light */
+    --font-brand:'Instrument Serif', Georgia, 'Times New Roman', serif;
   }
-  .stair::-webkit-scrollbar { width: 0; height: 0; }
-
-  .step {
-    display: grid; grid-template-columns: 1fr auto; align-items: center;
-    gap: 10px; padding: 2px 8px 2px 2px; border-radius: var(--r-pill);
-    animation: step-in .34s cubic-bezier(.2,.9,.3,1);
+  /* Every dark branch restates the whole set: a value declared only on :root
+     out-cascades the kit's dark values, so nothing here may be left implied. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent:#f0789c; --accent-soft:#3d1626; --accent-ink:#1c080f;
+      --good:#7fc99a; --warn:#e0b455; --bad:#ef8f79;
+      --stem:#5e2e40; --plate:#2a2731; --socket:#4a4653;
+      --wash:rgba(240,120,156,.09);
+    }
   }
-  @keyframes step-in { from { opacity: 0; transform: translate(-10px, 10px) } }
-
-  .step .w {
-    display: inline-flex; align-items: center; min-width: 0;
-    margin-left: calc(var(--i) * 10px);
-    font-family: var(--font-tile); font-weight: 700; font-size: 15px;
-    letter-spacing: .17em; text-transform: uppercase;
-    color: var(--ink-2); white-space: nowrap;
-    transition: color .25s, font-size .25s;
+  :root[data-theme="dark"] {
+    --accent:#f0789c; --accent-soft:#3d1626; --accent-ink:#1c080f;
+    --good:#7fc99a; --warn:#e0b455; --bad:#ef8f79;
+    --stem:#5e2e40; --plate:#2a2731; --socket:#4a4653;
+    --wash:rgba(240,120,156,.09);
   }
-  /* the elbow that ties this rung to the one above it */
-  .step .w::before {
-    content: ''; flex: 0 0 10px; width: 10px; height: 15px;
-    margin: -14px 7px 0 0;
-    border-left: 1.5px solid var(--rung);
-    border-bottom: 1.5px solid var(--rung);
-    border-bottom-left-radius: 6px;
-  }
-  .step.seed .w::before {
-    border: 0; border-radius: 50%; align-self: center;
-    flex: 0 0 7px; width: 7px; height: 7px; margin: 0 8px 0 1px;
-    background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
-  }
-  .step .len {
-    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-    color: var(--ink-3); letter-spacing: 0; min-width: 2ch; text-align: right;
-    font-variant-numeric: tabular-nums;
+  :root[data-theme="light"] {
+    --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff;
+    --good:#2e7d4f; --warn:#a1700a; --bad:#a93a2a;
+    --stem:#dcbcca; --plate:#fffbfc; --socket:#cdbcc3;
+    --wash:rgba(176,42,91,.055);
   }
 
-  .step.cur { background: linear-gradient(90deg, var(--accent-soft), transparent 78%); }
-  .step.cur .w   { color: var(--accent); font-size: 17.5px; letter-spacing: .2em; }
-  .step.cur .len { color: var(--accent); font-weight: 700; font-size: 12px; }
-  .step.cur .w::before { border-color: var(--accent); opacity: .55; }
-
-  /* ghost rungs: the shape of the run still on the table. No numbers, so
-     nothing about the true maximum leaks. */
-  .step.ghost { animation: none; }
-  .step.ghost .w { color: var(--ink-3); opacity: .34; letter-spacing: .34em; font-size: 13px; }
-  /* a plain dashed lead-in, not an elbow — elbows on empty rungs read as glitches */
-  .step.ghost .w::before {
-    border: 0; border-top: 1.5px dashed var(--line-2); border-radius: 0;
-    height: 0; margin: 0 8px 0 0; flex-basis: 11px; width: 11px; align-self: center;
+  /* the plate's wash: rose light falling from the top of the page */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(130% 55% at 50% -8%, var(--wash), transparent 72%);
   }
-  .step.ghost.now .w { opacity: .85; color: var(--accent); }
-  .step.ghost.now .w::before { border-top-color: var(--accent); }
+  .app { position: relative; z-index: 1; }
+  .stage { justify-content: flex-start; gap: 11px; padding: 4px 0 0; }
+
+  /* ---------- the lockup ----------
+     Back · wordmark · utilities. The two flanks grow from the same zero basis,
+     so they are always exactly the same width and the wordmark sits on the TRUE
+     centre line of the bar rather than in the middle of the leftover space. The
+     wordmark itself is shrink-to-fit, so the clear space either side of it is
+     real clearance and not an empty flex box pretending to be one. */
+  .bar {
+    position: relative; gap: 8px;
+    padding: calc(10px + var(--safe-t)) 0 9px; margin-bottom: 12px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bar::after {                              /* the second, thinner rule */
+    content: ''; position: absolute; left: 0; right: 0; bottom: -4px;
+    height: 1px; background: var(--line);
+  }
+  /* min-width is the two 44px utilities plus their gap: the floor both flanks
+     hold at once, so they stay equal all the way down to a 320px phone. */
+  .barside { flex: 1 1 0; min-width: 96px; display: flex; align-items: center; gap: 8px; }
+  .barside.end { justify-content: flex-end; }
+  .wordmark { flex: 0 1 auto; min-width: 0; text-align: center; }
+  .bar h1 {
+    font-family: var(--font-brand); font-weight: 400; font-size: 29px;
+    letter-spacing: .004em; text-transform: none; line-height: .94;
+    margin: 0 0 4px; flex: none; color: var(--ink);
+  }
+  .bar .puzz-no {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em;
+    font-variation-settings: 'wght' 620; color: var(--ink-3);
+    text-transform: uppercase;
+  }
+  .bar .puzz-no::before, .bar .puzz-no::after {
+    content: ''; width: 15px; height: 1px; background: var(--line-2);
+  }
 
   /* ==========================================================================
-     THE CONVEYOR — public, ordered, same for everyone. Readable three letters
-     ahead, which is the entire skill of the game.
+     THE CONVEYOR — public, ordered, identical for everyone alive today.
+     Reading three letters ahead is the whole skill, so attention is graded
+     across the next three tiles and the eye is pointed right.
      ======================================================================== */
   .qwrap {
-    background: var(--white); border: 1px solid var(--line);
-    border-radius: var(--r); padding: 10px 12px 11px; box-shadow: var(--shadow-1);
+    position: relative;
+    background: linear-gradient(180deg, var(--plate), var(--white) 62%);
+    border: 1px solid var(--line-2); border-radius: var(--r);
+    padding: 9px 12px 11px; box-shadow: var(--shadow-1);
+  }
+  .qwrap::before {                           /* the engraved inner keyline */
+    content: ''; position: absolute; inset: 3px; pointer-events: none;
+    border: 1px solid var(--line); border-radius: calc(var(--r) - 3px); opacity: .6;
   }
   .qhead {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    font-size: 9.5px; font-weight: 800; letter-spacing: .13em;
-    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 2px;
     white-space: nowrap;
   }
+  .qhead .qlab { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .qhead .rem {
-    color: var(--ink-3); letter-spacing: .08em; font-weight: 700;
-    font-family: var(--font-mono); font-size: 9.5px;
+    display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
+    color: var(--ink-3); letter-spacing: .08em; font-family: var(--font-mono);
+    font-size: 9.5px; font-variation-settings: 'wght' 600;
   }
-  .queue { position: relative; padding-top: 12px; }
+  .qhead .rem .ms { --ms-size: 12px; --ms-wght: 600; }
+
+  .queue { position: relative; padding-top: 15px; }
   .qrow { display: flex; gap: 5px; }
   .qt {
     flex: 1 1 0; min-width: 0; height: 36px;
     display: grid; place-items: center;
-    border: 1.5px solid var(--line-2); border-radius: 8px;
+    border: 1.5px solid var(--line); border-radius: 7px;
     font-family: var(--font-tile); font-weight: 700; font-size: 15.5px;
-    background: var(--paper); color: var(--ink); position: relative;
+    background: var(--paper); color: var(--ink-3); position: relative;
     transition: background .25s, color .25s, border-color .25s, opacity .25s, transform .25s;
   }
-  .qt.next {
+  .qt.next {                                  /* in your hand right now */
     background: var(--accent); color: var(--accent-ink); border-color: transparent;
     transform: scale(1.1); box-shadow: var(--shadow-2); z-index: 2;
   }
-  /* on deck — the two letters after the one landing now. The whole pitch rests
-     on players reading ahead, so the eye gets a hairline invitation to travel
-     right instead of stopping at the highlighted tile. */
-  .qt.soon { border-color: var(--accent); color: var(--accent); }
-  /* taken — absorbed into your word */
-  .qt.done {
+  .qt.soon  { color: var(--ink); border-color: var(--accent); background: var(--white); }
+  .qt.soon2 { color: var(--ink-2); border-color: var(--stem); background: var(--white); }
+  .qt.soon3 { color: var(--ink-2); border-color: var(--line-2); }
+  .qt.done {                                  /* absorbed into your word */
     background: var(--accent-soft); color: var(--accent);
     border-color: transparent; transform: scale(.94);
   }
-  /* skipped — thrown away, and it shows */
-  .qt.skipped {
-    opacity: .55; background: transparent; border-style: dashed;
+  .qt.skipped {                               /* thrown away, and it shows */
+    opacity: .5; background: transparent; border-style: dashed;
     color: var(--ink-3); border-color: var(--line-2); transform: scale(.9);
   }
   .qt.skipped::after {
     content: ''; position: absolute; left: 16%; right: 16%; top: 50%;
     height: 1.5px; border-radius: 1px; background: var(--ink-3); transform: rotate(-14deg);
   }
-  /* the letter that ended the run */
-  .qt.killer {
-    background: var(--bad); color: #fff; border-color: transparent;
+  .qt.killer {                                /* the letter that ended the run */
+    background: var(--bad); color: var(--paper); border-color: transparent;
     transform: scale(1.12); animation: killpulse .55s ease-out 3;
   }
   @keyframes killpulse { 50% { transform: scale(1.24); } }
 
-  /* progress rail — how much conveyor is left */
+  /* THE SIGNATURE MOMENT, part two: the letter you just used is drawn down out
+     of the conveyor into your word, the belt hands you the next one, and the
+     caret steps right. Three beats, staged by delay, never a swap. */
+  .qt.absorb { animation: absorb .44s var(--ease-out); z-index: 2; }
+  @keyframes absorb {
+    0%   { transform: scale(1.1);  background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    45%  { transform: scale(.82) translateY(4px); }
+    100% { transform: scale(.94); }
+  }
+  .qt.discard { animation: discard .5s var(--ease-out); }
+  @keyframes discard {
+    0%   { transform: scale(1.1) rotate(0);                background: var(--accent); color: var(--accent-ink); border-color: transparent; opacity: 1; }
+    45%  { transform: scale(1) translateY(7px) rotate(-8deg); opacity: .8; }
+    100% { transform: scale(.9); opacity: .5; }
+  }
+  .qt.arriving { animation: takeup .46s var(--ease-spring) .2s backwards; }
+  @keyframes takeup { from { transform: scale(.9); box-shadow: none; } }
+
   .qtrack {
     position: relative; height: 3px; margin-top: 9px;
     border-radius: 2px; background: var(--paper-2); overflow: hidden;
   }
   .qfill {
     position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px;
-    background: var(--accent); transition: width .32s cubic-bezier(.2,.9,.3,1);
+    background: var(--accent); transition: width .32s var(--ease-out);
   }
 
   .caret {
-    position: absolute; top: 0; left: 0; width: 10px; height: 10px;
-    transition: transform .32s cubic-bezier(.2,.9,.3,1);
-    will-change: transform;
+    position: absolute; top: -1px; left: 0; width: 16px; height: 16px;
+    display: grid; place-items: center; color: var(--accent);
+    transition: transform .32s var(--ease-out); will-change: transform;
   }
-  .caret::before {
-    content: ''; display: block; width: 0; height: 0; margin: 0 auto;
-    border-left: 5px solid transparent; border-right: 5px solid transparent;
-    border-top: 7px solid var(--accent);
-    animation: nudge 1.5s ease-in-out infinite;
+  .caret .ms {
+    --ms-size: 15px; --ms-wght: 600; --ms-fill: 1;
+    animation: nudge 1.6s ease-in-out infinite;
   }
   @keyframes nudge { 0%,100% { transform: translateY(-2px) } 50% { transform: translateY(1px) } }
 
-  /* ---------- word tray ---------- */
+  /* ==========================================================================
+     THE STAIRCASE — the screenshot.
+     Every word you played hangs off an elbow from the one before it and steps
+     right as it grows. A dotted leader carries the eye to the length column so
+     the 3·4·5·6·7… ladder reads as one rising line.
+     ======================================================================== */
+  .stair {
+    /* the top fade and the top padding are the same measure, so the first rung
+       always clears the fade instead of arriving half-dissolved */
+    --fade-t: 14px;
+    flex: 1 1 0; min-height: 96px; overflow-y: auto;
+    display: flex; flex-direction: column;
+    gap: 1px; padding: var(--fade-t) 4px 2px;
+    scrollbar-width: none;
+    /* fades at both ends: what you grew disappears into the top, what is still
+       on the table dissolves into the future at the bottom */
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--fade-t), #000 calc(100% - 18px), transparent);
+            mask-image: linear-gradient(180deg, transparent, #000 var(--fade-t), #000 calc(100% - 18px), transparent);
+  }
+  /* The ladder hangs from the top of whatever room it is given — right under
+     the conveyor the eye has just finished reading — and the slack collects
+     below it, where the run still is. An auto margin rather than
+     justify-content, because it collapses to zero once the ladder is long
+     enough to scroll instead of stranding the bottom rung. */
+  .stair::after { content: ''; flex: 0 0 0; height: 0; margin-bottom: auto; }
+  .stair::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* The rung indent is fluid, and it has to be. The deepest rung of a maxed run
+     is an eleven-letter word carrying its own bloom, sitting nine steps in, and
+     at a fixed 8px step that lockup is ~40px wider than a 360px phone can give
+     it: the word column is a grid `auto` track, so it gets clamped, and a
+     nowrap flex line then spills its last child straight through the dotted
+     leader and on top of the length. The winning word ends up printed over its
+     own "11". The step scales with the viewport instead, so the staircase still
+     reads as a staircase and the widest rung there is still fits. */
+  .step {
+    --ind: clamp(4px, 1.6vw, 8px);
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+    padding: 4px 8px 4px 2px; border-radius: var(--r-pill);
+  }
+
+  .step .w {
+    display: inline-flex; align-items: center; min-width: 0;
+    margin-left: calc(var(--i) * var(--ind));
+    font-family: var(--font-tile); font-weight: 700; font-size: 15px;
+    letter-spacing: .17em; text-transform: uppercase;
+    color: var(--ink-2); white-space: nowrap;
+  }
+  .step .w em { font-style: normal; display: inline-block; transform-origin: 50% 100%; }
+  /* the elbow that ties this rung to the one above it */
+  .step .w::before {
+    content: ''; flex: 0 0 10px; width: 10px; height: 15px;
+    margin: -14px 7px 0 0;
+    border-left: 1.5px solid var(--stem);
+    border-bottom: 1.5px solid var(--stem);
+    border-bottom-left-radius: 6px;
+  }
+  /* the seed itself: growth rings, drawn in one gradient */
+  .step.seed .w::before {
+    border: 0; border-radius: 50%; align-self: center;
+    flex: 0 0 13px; width: 13px; height: 13px; margin: 0 6px 0 0;
+    background: radial-gradient(circle at 50% 50%,
+      var(--accent) 0 2px, transparent 2px 3.2px,
+      var(--accent) 3.2px 4.2px, transparent 4.2px 5.4px,
+      var(--accent) 5.4px 6.4px, transparent 6.4px);
+  }
+  .step .lead {
+    height: 0; margin: 2px 9px 0; min-width: 10px;
+    border-bottom: 1.5px dotted var(--stem); opacity: .8;
+  }
+  .step .len {
+    font-family: var(--font-mono); font-size: 11px;
+    font-variation-settings: 'wght' 600;
+    color: var(--ink-3); letter-spacing: 0; min-width: 2ch; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step.cur { background: linear-gradient(90deg, var(--accent-soft), transparent 76%); }
+  /* the same bargain as --ind: the live rung stays the biggest thing on the
+     ladder, but it gives back tracking before it will overrun its own number */
+  .step.cur .w    { color: var(--accent); font-size: clamp(15px, 4.4vw, 17.5px); letter-spacing: clamp(1.7px, .56vw, 3.5px); }
+  .step.cur .len  { color: var(--accent); font-size: 12px; font-variation-settings: 'wght' 700; }
+  .step.cur .w::before { border-color: var(--accent); opacity: .55; }
+  .step.cur .lead { border-bottom-color: var(--accent); opacity: .5; }
+
+  /* ==========================================================================
+     THE SIGNATURE MOMENT — a rung does not appear, it grows.
+     The stem descends from the rung above (a clip, so the stroke draws itself),
+     then the word unfurls letter by letter off the baseline, then the leader
+     runs out to the length. Roughly 3/4 of a second, all of it forward.
+     ======================================================================== */
+  .step.grew .w::before { animation: elbow .3s var(--ease-out) backwards; }
+  @keyframes elbow {
+    from { clip-path: inset(0 0 100% 0) }
+    to   { clip-path: inset(0 0 0 0) }
+  }
+  .step.grew .w em {
+    animation: sprout .42s var(--ease-spring) backwards;
+    animation-delay: calc(var(--n) * .048s + .19s);
+  }
+  @keyframes sprout { from { opacity: 0; transform: translateY(7px) scale(.5) } }
+  .step.grew .lead {
+    transform-origin: left center;
+    animation: leader .34s var(--ease-out) backwards;
+    animation-delay: calc(var(--L) * .048s + .22s);
+  }
+  @keyframes leader { from { transform: scaleX(0); opacity: 0 } }
+  .step.grew .len {
+    animation: risein .34s var(--ease-out) backwards;
+    animation-delay: calc(var(--L) * .048s + .3s);
+  }
+  @keyframes risein { from { opacity: 0; transform: translateY(5px) } }
+
+  /* the terminal bud: where the plant stopped. A bloom if you maxed it. */
+  .step .bud { margin-left: 9px; color: var(--accent); animation: bud .5s var(--ease-spring) .12s backwards; }
+  .step .bud.bloom { --ms-fill: 1; }
+  .step.grew .bud { animation-delay: calc(var(--L) * .048s + .36s); }
+  @keyframes bud { from { opacity: 0; transform: scale(0) rotate(-40deg) } }
+
+  /* ghost rungs: the shape of the run still on the table. No numbers, so
+     nothing about the true maximum leaks. Each one is fainter than the last,
+     so the ladder recedes into the future instead of reading as a wall. */
+  .step.ghost .w {
+    color: var(--ink-3); letter-spacing: .34em; font-size: 13px;
+    opacity: calc(.36 - var(--g, 0) * .026);
+  }
+  /* a plain dashed lead-in, not an elbow — elbows on empty rungs read as glitches */
+  .step.ghost .w::before {
+    border: 0; border-top: 1.5px dashed var(--line-2); border-radius: 0;
+    height: 0; margin: 0 8px 0 0; flex-basis: 11px; width: 11px; align-self: center;
+  }
+  .step.ghost .lead { opacity: 0; }
+  .step.ghost.now .w { opacity: .85; color: var(--accent); }
+  .step.ghost.now .w::before { border-top-color: var(--accent); }
+
+  /* ---------- the tray ----------
+     A mount card with one socket per letter you are holding, so "use every
+     letter" is a shape on the board rather than a sentence in a rules sheet. */
   .slotwrap { display: flex; align-items: stretch; gap: 8px; }
+  /* once the run is closed the tray and the controls are dead weight: the
+     board keeps the ladder, the hand you ended on, and one way back in */
+  .slotwrap[hidden], .controls[hidden] { display: none; }
   .slot {
-    flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-content: center;
-    min-height: 54px; padding: 5px 7px;
-    border: 1.5px dashed var(--line-2); border-radius: var(--r);
-    background: var(--paper-2);
+    flex: 1; display: flex; flex-direction: column; gap: 4px;
+    align-items: center; justify-content: center;
+    min-height: 54px; padding: 6px 7px;
+    border: 1px solid var(--line); border-radius: var(--r);
+    background: linear-gradient(180deg, var(--paper-2), var(--paper));
     transition: border-color .2s, background .2s;
   }
-  .slot.full { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
-  .slot .ph { color: var(--ink-3); font-size: 12.5px; padding: 9px 4px; line-height: 1.3; }
+  /* the tray splits into the same rows as the rack, so the hand and the word
+     you are building out of it are always the same shape */
+  .slotrow { display: flex; gap: 4px; justify-content: center; }
+  .slot.full { border-color: var(--accent); background: var(--accent-soft); }
+  .hole {
+    width: 32px; height: 40px; border-radius: 8px;
+    border: 1.5px dashed var(--socket); background: transparent;
+  }
+  /* before the first tap the leftmost socket is the one being asked for */
+  .slot.empty .slotrow:first-child .hole:first-child { border-color: var(--accent); opacity: .85; }
+  /* you pressed Grow with sockets still open: the sockets ask, nothing scolds */
+  .hole.beg { animation: beg .5s var(--ease-out); animation-delay: calc(var(--p) * .04s); }
+  @keyframes beg { 40% { transform: scale(1.13); border-color: var(--accent) } }
+
+  /* the two failures are not the same failure.
+     near — these letters DO make a word, just not that one: the tray goes amber
+     and the letters ripple, as if asking to be re-ordered.
+     wilt — nothing in the language uses this hand: the tray goes red and the
+     letters sag. Both settle back on their own; neither takes anything away. */
+  .slot.near { border-color: var(--warn); background: var(--warn-soft); }
+  .slot.near .lt { animation: ripple .5s var(--ease-in-out); animation-delay: calc(var(--p) * .045s); }
+  @keyframes ripple { 35% { transform: translateY(-6px) } 70% { transform: translateY(0) } }
+  .slot.wilt { border-color: var(--bad); background: var(--bad-soft); }
+  .slot.wilt .lt { animation: sag .5s var(--ease-out); animation-delay: calc(var(--p) * .035s); }
+  @keyframes sag { 45% { transform: translateY(5px) rotate(-4deg) } }
   .del {
     flex: 0 0 46px; width: 46px; border-radius: var(--r);
     background: var(--white); border: 1px solid var(--line-2); color: var(--ink-2);
-    display: grid; place-items: center; cursor: pointer; font-size: 17px;
-    box-shadow: var(--shadow-1); transition: transform .1s, opacity .15s;
+    display: grid; place-items: center; cursor: pointer;
+    box-shadow: var(--shadow-1); transition: transform .1s, opacity .15s, color .15s;
     touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   }
+  .del .ms { --ms-size: 20px; }
   .del:active { transform: scale(.93); }
-  .del[hidden] { display: none; }
+  .del:active .ms { --ms-fill: 1; }
+  .del[disabled] { opacity: .3; cursor: default; box-shadow: none; }
 
-  /* ---------- tiles ----------
-     The rack is laid out in explicit balanced rows (JS decides how many) so a
-     9-letter hand never leaves one orphan tile on its own line, and so tiles
-     never shrink below a thumb. */
+  /* ---------- rack ----------
+     Laid out in explicit balanced rows (JS decides how many) so a 9-letter
+     hand never orphans a tile on its own line, and never shrinks below a thumb. */
   .rack { display: flex; flex-direction: column; gap: 5px; align-items: center; min-height: 52px; }
   .rackrow { display: flex; gap: 5px; justify-content: center; }
   .lt {
     width: 44px; height: 48px; padding: 0; cursor: pointer;
-    background: var(--white); border: 1.5px solid var(--line-2);
+    background: linear-gradient(180deg, var(--white), var(--paper-2));
+    border: 1.5px solid var(--line-2);
     border-radius: 10px; font-family: var(--font-tile);
     font-weight: 700; font-size: 21px; letter-spacing: .02em; text-transform: uppercase;
     color: var(--ink); box-shadow: var(--shadow-1);
@@ -215,9 +396,35 @@
     display: grid; place-items: center; user-select: none;
   }
   .lt:active { transform: translateY(2px) scale(.96); }
+  .lt:focus-visible { outline-offset: 3px; box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow-1); }
+  .lt[disabled] { opacity: .5; cursor: default; box-shadow: none; }
+  /* a dead-end keeps the hand readable — you are meant to stare at it — but the
+     tiles stop pretending they can still be played. The [disabled] dimming that
+     applies on a reload would double up with the wilt, so it is restated here. */
+  .rack.spent .lt { pointer-events: none; cursor: default; }
+  .rack.spent .lt[disabled] { opacity: .62; }
+  /* and then, one after another, they droop. Growth run backwards. */
+  .rack.dead .lt {
+    animation: wilt .7s var(--ease-out) forwards;
+    animation-delay: calc(var(--k) * .06s);
+  }
+  @keyframes wilt {
+    to { transform: translateY(5px) rotate(-4deg); opacity: .72 }
+  }
+  .rack.dead .lt:nth-child(even) { animation-name: wilt-alt; }
+  @keyframes wilt-alt {
+    to { transform: translateY(4px) rotate(3.5deg); opacity: .72 }
+  }
+  /* a shuffle should look like the hand being turned over, not swapped out */
+  .rack.shuffled .lt {
+    animation: settle .34s var(--ease-spring) backwards;
+    animation-delay: calc(var(--k) * .028s);
+  }
+  @keyframes settle { from { transform: scale(.84); opacity: .3 } }
+  .lt.back { animation: pop .26s var(--ease-spring); }
   .lt.fresh {
     border-color: var(--accent); color: var(--accent);
-    animation: drop .4s cubic-bezier(.2,.9,.3,1);
+    animation: drop .38s var(--ease-spring) .18s backwards;
   }
   @keyframes drop {
     0%   { transform: translateY(-38px) scale(.55); opacity: 0 }
@@ -226,21 +433,39 @@
   }
   .slot .lt {
     background: var(--accent); color: var(--accent-ink); border-color: transparent;
-    box-shadow: none; width: 34px; height: 40px; font-size: 18px; border-radius: 8px;
+    box-shadow: none; width: 32px; height: 40px; font-size: 17px; border-radius: 8px;
   }
-  .slot .lt.fresh { color: var(--accent-ink); border-color: transparent; }
-  .lt.ghost { opacity: .2; pointer-events: none; box-shadow: none; }
+  /* a letter you place is seated into the tray from above, not printed there */
+  .slot .lt.seat { animation: seat .32s var(--ease-spring); }
+  @keyframes seat {
+    0%  { transform: translateY(-15px) scale(.7); opacity: 0 }
+    62% { transform: translateY(1px) scale(1.05); opacity: 1 }
+  }
+  .lt.ghost { opacity: .18; pointer-events: none; box-shadow: none; }
 
   /* ---------- controls ---------- */
   .controls { display: flex; gap: 7px; }
-  .controls .btn { flex: 1; padding: 13px 6px; font-size: 14px; min-height: 48px; font-weight: 700; }
-  .controls .btn.enter { flex: 1.6; }
-  #shuffle { flex: .7; font-size: 18px; }
+  .controls .btn { flex: 1; padding: 12px 6px; font-size: 14px; min-height: 48px; font-weight: 700; }
+  .controls .btn.enter { flex: 1.7; }
+  #shuffle { flex: .62; }
+  #shuffle .ms { --ms-size: 21px; margin: 0; }
+  #shuffle:active .ms { --ms-fill: 1; }
+  #shuffle .ms.spun { animation: spun .45s var(--ease-out); }
+  @keyframes spun { from { transform: rotate(-180deg) } }
+  /* the leaf fills the moment the whole hand is spent — the rule of the game,
+     told by an icon interpolating between two drawings of itself */
+  #enter .ms { --ms-size: 20px; --ms-fill: 0; --ms-wght: 600; }
+  #enter.ready .ms { --ms-fill: 1; }
+  #enter.ready {
+    box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-1);
+    animation: armed .42s var(--ease-spring);
+  }
+  @keyframes armed { 42% { transform: scale(1.035) } }
   .skipdots {
     display: inline-grid; place-items: center; min-width: 21px; height: 21px;
     border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent);
     font-family: var(--font-mono); font-size: 12px; font-weight: 700;
-    margin-left: 4px; vertical-align: -4px;
+    margin-left: 5px; vertical-align: -4px;
   }
   #skip[disabled] .skipdots { background: var(--paper-2); color: var(--ink-3); }
   #skip.hot { border-color: var(--accent); color: var(--accent); }
@@ -248,85 +473,229 @@
   @keyframes beat { 50% { transform: scale(1.22) } }
 
   .bottom { margin-top: auto; display: flex; flex-direction: column; gap: 9px; padding-top: 6px; }
-  .stuckrow { text-align: center; min-height: 34px; }
+  .stuckrow { display: flex; align-items: center; justify-content: center; min-height: 44px; }
   .stuck {
     background: none; border: 0; color: var(--ink-3); font-size: 12.5px;
     text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
-    padding: 6px 14px; min-height: 34px;
+    padding: 10px 16px; min-height: 44px;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   }
+  .stuck:hover { color: var(--ink-2); }
+  .stuck.again {
+    text-decoration: none; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 700;
+    border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--white);
+  }
+  .stuck.again .ms { --ms-size: 17px; --ms-fill: 1; }
+
+  /* the coach mark is the first thing a first-timer ever taps, and the kit
+     styles its buttons at 38px — under the brief's floor. Every game in the
+     suite raises them here until it can be fixed in shared/kit.css. */
+  #tour-layer .bub .btn { min-height: 44px; }
 
   /* the run is over and it was not your choice */
   .deadbanner {
+    display: flex; align-items: center; gap: 10px; text-align: left;
     background: var(--bad-soft); color: var(--bad);
-    border: 1px solid color-mix(in srgb, var(--bad) 35%, transparent);
-    border-radius: var(--r); padding: 11px 14px; font-size: 13.5px;
-    text-align: center; animation: step-in .3s cubic-bezier(.2,.9,.3,1);
+    border-radius: var(--r); padding: 10px 13px; font-size: 13px; line-height: 1.35;
+    animation: risein .34s var(--ease-out) .25s backwards;
   }
+  .deadbanner .ms { --ms-size: 21px; --ms-fill: 1; flex: 0 0 auto; }
   .deadbanner b { font-weight: 800; letter-spacing: -.01em; }
 
-  /* ---------- result ---------- */
-  .finalword {
-    font-family: var(--font-tile); font-weight: 800; font-size: 25px;
-    letter-spacing: .16em; text-align: center; text-transform: uppercase;
-    color: var(--accent); margin: 6px 0 0; word-break: break-word; line-height: 1.2;
+  /* ---------- sheets: help + result ---------- */
+  .sheet h2 {
+    font-family: var(--font-brand); font-weight: 400; font-size: 31px;
+    letter-spacing: 0; line-height: 1.05;
   }
+  .sheet .sub { font-size: 14px; }
+  .verdict {
+    font-family: var(--font-brand); font-weight: 400; font-size: 38px;
+    letter-spacing: -.005em; line-height: 1.02;
+  }
+  .lede {
+    font-family: var(--font-brand); font-style: italic; font-size: 20px;
+    line-height: 1.3; color: var(--ink); text-align: center; margin: 2px 0 14px;
+  }
+  /* Instrument Serif has no bold, so emphasis inside the lede is carried by
+     colour rather than a synthesised weight */
+  .lede b { font-weight: 400; color: var(--accent); }
+  .demo {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--r); padding: 10px 10px 11px; margin: 0 0 15px;
+  }
+  .add {
+    font-family: var(--font-ui); font-style: normal; font-size: 10px;
+    font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    border-radius: var(--r-pill); padding: 2px 7px; margin-left: 10px;
+  }
+  /* The shortcut line in the help sheet, shown only where a hardware keyboard
+     is actually likely. Same question the kit now asks before it hides .kbd —
+     hover + fine pointer, never width — so a tablet player is never told to
+     press <kbd>space</kbd> on a keyboard they do not have. */
+  .kb { display: none; font-size: 12.5px; color: var(--ink-3); margin: 12px 0 0; line-height: 1.9; }
+  @media (hover: hover) and (pointer: fine) { .kb { display: block; } }
+  kbd {
+    font-family: var(--font-mono); font-size: 11px; background: var(--paper-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px;
+  }
+
+  /* the word you finished on, set like the name on a specimen label */
+  .specimen {
+    font-family: var(--font-brand); font-style: italic; font-size: 32px;
+    text-transform: lowercase; letter-spacing: .01em; text-align: center;
+    color: var(--accent); line-height: 1.15; word-break: break-word;
+    margin: 12px 0 0; padding: 7px 0 9px;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .specimen::first-letter { text-transform: uppercase; }
+
+  /* ---------- the gauge ----------
+     One ring per letter of growth that was on the table today, filled to the
+     height you actually reached. Two hollow rings at the end is what "so close"
+     looks like; a full row is what a maxed day looks like. */
+  .gauge {
+    display: flex; align-items: center; justify-content: center;
+    gap: 5px; margin: 11px 0 0;
+  }
+  .gauge .gnum {
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3);
+    font-variation-settings: 'wght' 600; font-variant-numeric: tabular-nums;
+  }
+  .gauge i {
+    width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+    border: 1.5px solid var(--line-2); background: transparent;
+    animation: pip .3s var(--ease-spring) backwards;
+    animation-delay: calc(var(--n) * .05s + .34s);
+  }
+  .gauge i.on { background: var(--accent); border-color: transparent; }
+  /* one or two rings short: the ones you missed are drawn in your own ink,
+     dashed — they read as "nearly" rather than as "never" */
+  .gauge i.miss { border-color: var(--accent); border-style: dashed; }
+  @keyframes pip { from { transform: scale(0); opacity: 0 } }
+
+  .statrow { gap: 7px; }
+  .stat { padding: 9px 4px 8px; }
+  /* Measurements on a plate are set in the technical face, not the display one —
+     and Instrument Serif's 1 is a bare stem, so "11" read as "ll". These are the
+     same numerals as the length column on the ladder, which is the point. */
+  .stat .n {
+    font-family: var(--font-mono); font-weight: 500; font-size: 25px;
+    font-variation-settings: 'wght' 600; letter-spacing: -.02em;
+    line-height: 1.16; margin-bottom: 1px;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .stat .l { font-size: 9.5px; letter-spacing: .09em; }
+  .stat.tone-good { background: var(--good-soft); border-color: transparent; color: var(--good); }
+  .stat.tone-warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+  .stat.tone-bad  { background: var(--bad-soft);  border-color: transparent; color: var(--bad); }
+  /* No opacity here: at 9.5px on a tinted card, .72 dropped the amber label to
+     2.4:1 and the green one to 2.7:1 in light mode — well under the untinted
+     label's own footing. Hierarchy is carried by size and tracking instead. */
+  .stat.tone-good .l, .stat.tone-warn .l, .stat.tone-bad .l { color: currentColor; }
+
+  /* The replay is the payoff, and its LAST rung is the word you won with. It
+     used to live in a 32dvh scroll box that nothing ever scrolled: on a maxed
+     run the ladder was 295px of content in a 235px window, so "SEPARATISTS 11"
+     — the entire point of the screen — rendered below the visible edge and no
+     one was told to look for it. A nested scroller inside a sheet that already
+     scrolls buys nothing anyway, so there is no height cap here at all now:
+     every rung is laid out, and the one surface that scrolls is the sheet. */
   .recap {
     background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
-    padding: 12px 10px; margin: 12px 0 0; max-height: 32dvh; overflow-y: auto;
+    padding: 12px 10px; margin: 12px 0 0;
   }
-  .recap .step { animation: none; }
+  /* the run replays itself, one rung at a time, in the sheet */
+  .recap .step {
+    animation: risein .36s var(--ease-out) backwards;
+    animation-delay: calc(var(--r) * .055s + .2s);
+  }
+  .recap .step .bud { animation-delay: calc(var(--r) * .055s + .34s); }
   .reveal {
     margin-top: 10px; border: 1px solid var(--line); border-radius: var(--r);
-    padding: 10px 12px; background: var(--paper-2);
+    padding: 0 12px 10px; background: var(--paper-2);
   }
   .reveal summary {
-    cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--accent);
-    list-style: none; text-align: center; padding: 3px 0;
+    cursor: pointer; font-size: 13px; font-weight: 700; color: var(--accent);
+    list-style: none; display: flex; align-items: center; justify-content: center;
+    gap: 6px; min-height: 44px; letter-spacing: .02em;
   }
   .reveal summary::-webkit-details-marker { display: none; }
+  .reveal summary .ms { --ms-size: 18px; transition: transform .2s var(--ease-out); }
+  .reveal[open] summary .ms { transform: rotate(180deg); }
   .parline {
-    margin-top: 11px; display: flex; flex-wrap: wrap; gap: 5px;
+    margin-top: 2px; display: flex; flex-wrap: wrap; gap: 5px;
     align-items: center; justify-content: center;
   }
   .pw {
+    display: inline-flex; align-items: center; gap: 3px;
     font-family: var(--font-tile); font-weight: 700; font-size: 11.5px;
     letter-spacing: .1em; text-transform: uppercase;
     background: var(--white); border: 1px solid var(--line);
     color: var(--ink-2); border-radius: var(--r-pill); padding: 4px 9px;
   }
+  .pw .ms { --ms-size: 12px; --ms-wght: 600; }
   .pw.sk {
     background: transparent; border-style: dashed; color: var(--ink-3);
     letter-spacing: .04em;
   }
   .pw.fin { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
-  .countdown { text-align: center; font-size: 12.5px; color: var(--ink-3); margin-top: 14px; }
-  .countdown b { font-family: var(--font-mono); color: var(--ink-2); font-weight: 600; }
-  kbd {
-    font-family: var(--font-mono); font-size: 11px; background: var(--paper-2);
-    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
-  }
-  /* the shipped share block has to survive a 390px phone without side-scrolling */
+  /* the way out of a finished run: the next seed, then the board. Never a
+     countdown — a player who just lost has to be able to play on at once. */
+  .nextrow { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  /* the shipped share block has to survive a 390px phone without side-scrolling.
+     It is also the artifact, so it is tappable in its own right. */
   .sharegrid { font-size: 15px; letter-spacing: .04em; }
+  .sharegrid.copy { cursor: pointer; transition: transform .12s var(--ease-out), border-color .2s; }
+  .sharegrid.copy:hover { border-color: var(--line-2); }
+  .sharegrid.copy:active { transform: scale(.985); }
 
   /* short phones (SE-class, and anything with browser chrome eating the view):
      everything gives up a few pixels so the whole loop still fits without
-     scrolling — the rack, the tray and Enter must never be below the fold. */
+     scrolling — the rack, the tray and Grow must never be below the fold. */
   @media (max-height: 720px) {
-    .stage { gap: 9px; }
+    .stage { gap: 8px; }
     .bottom { gap: 7px; }
-    .prompt { padding: 9px 12px; }
-    .prompt .v { font-size: 13px; }
+    .bar { padding: calc(8px + var(--safe-t)) 0 7px; margin-bottom: 10px; }
+    .bar h1 { font-size: 25px; }
     .qt { height: 32px; font-size: 14px; }
-    .stair { min-height: 46px; padding-top: 6px; }
+    .stair { min-height: 44px; --fade-t: 10px; }
     .step .w { font-size: 14px; }
     .step.cur .w { font-size: 16px; }
-    .lt { width: 41px; height: 43px; font-size: 19px; }
-    .slot { min-height: 46px; }
-    .slot .lt { width: 31px; height: 35px; font-size: 16px; }
-    .del { flex: 0 0 42px; width: 42px; }
-    .controls .btn { min-height: 45px; padding: 11px 6px; }
-    .stuckrow { min-height: 28px; }
-    .stuck { min-height: 28px; padding: 3px 12px; }
+    .lt { height: 44px; font-size: 20px; }
+    .slot { min-height: 48px; }
+    .slot .lt, .hole { height: 36px; }
+    .controls .btn { min-height: 46px; padding: 11px 6px; }
+  }
+
+  /* very narrow phones: the queue header drops its tagline rather than ellipsis,
+     and the wordmark's number line drops its two flanking rules — 44px of pure
+     decoration that is the whole difference between a comfortable bar and one
+     that runs into the theme button at 320px. */
+  @media (max-width: 359px) {
+    .qhead .tail { display: none; }
+    .step .w { letter-spacing: .13em; }
+    .bar .puzz-no::before, .bar .puzz-no::after { display: none; }
+  }
+
+  /* ==========================================================================
+     REDUCED MOTION.
+     The kit zeroes every duration globally but leaves delays intact, which
+     would hide anything staged by delay for up to half a second. Everything
+     this file stages is listed here, so with motion off the whole board — and
+     the result sheet — is simply already there.
+     ======================================================================== */
+  @media (prefers-reduced-motion: reduce) {
+    .stagger > *, .step .w em, .step .lead, .step .len, .step .bud,
+    .recap .step, .lt, .hole, .qt, .gauge i, .deadbanner, #tour-layer .bub {
+      animation-delay: 0s !important;
+    }
+    /* the ladder's ghosts and the caret nudge are ambient, not informative */
+    .caret .ms { animation: none; }
+    #skip.hot .skipdots { animation: none; }
+    /* a dead hand still has to LOOK dead when it cannot droop over time */
+    .rack.dead .lt { opacity: .72; transform: translateY(4px) rotate(-3deg); }
   }
 </style>
 </head>
@@ -334,25 +703,31 @@
 
 <div class="app">
   <div class="bar">
-    <span class="puzz-no" id="pno"></span>
-    <h1>Seed</h1>
-    <button class="iconbtn" id="helpbtn" aria-label="How to play">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.9 2.9 0 1 1 3.6 3.1c-.6.2-.8.7-.8 1.3v.4"/><circle cx="12" cy="17.4" r=".9" fill="currentColor" stroke="none"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="prompt">
-    <span class="k">Grow one word</span>
-    <span class="v" id="objective"></span>
+    <div class="barside">
+      <a class="iconbtn" href="../" aria-label="All games" title="All games">
+        <span class="ms" aria-hidden="true">arrow_back</span>
+      </a>
+    </div>
+    <div class="wordmark">
+      <h1>Seed</h1>
+      <span class="puzz-no" id="pno"></span>
+    </div>
+    <div class="barside end">
+      <button class="iconbtn" id="themebtn" type="button" aria-label="Toggle theme"></button>
+      <button class="iconbtn" id="helpbtn" type="button" aria-label="How to play" title="How to play">
+        <span class="ms" aria-hidden="true">help</span>
+      </button>
+    </div>
   </div>
 
   <div class="stage">
-    <div class="qwrap">
-      <div class="qhead"><span>The queue · everyone, same order</span><span class="rem" id="qrem"></span></div>
+    <div class="qwrap" id="qwrap">
+      <div class="qhead">
+        <span class="qlab">The queue<span class="tail"> · same for everyone</span></span>
+        <span class="rem" id="qrem"></span>
+      </div>
       <div class="queue" id="queue">
-        <div class="caret" id="caret"></div>
+        <div class="caret" id="caret"><span class="ms" aria-hidden="true">south</span></div>
         <div class="qrow" id="qrow"></div>
       </div>
       <div class="qtrack"><div class="qfill" id="qfill"></div></div>
@@ -361,17 +736,23 @@
     <div class="stair" id="stair" aria-label="Your growth so far" aria-live="polite"></div>
 
     <div class="bottom" id="bottom">
-      <div class="slotwrap">
-        <div class="slot" id="slot"></div>
-        <button class="del" id="del" hidden aria-label="Take back the last letter">⌫</button>
+      <div class="slotwrap" id="slotwrap">
+        <div class="slot" id="slot" role="group"></div>
+        <button class="del" id="del" type="button" disabled aria-label="Take back the last letter">
+          <span class="ms" aria-hidden="true">backspace</span>
+        </button>
       </div>
       <div class="rack" id="rack"></div>
-      <div class="controls">
-        <button class="btn ghost" id="shuffle" aria-label="Shuffle rack">⇄</button>
-        <button class="btn" id="skip"></button>
-        <button class="btn primary enter" id="enter">Enter</button>
+      <div class="controls" id="controls">
+        <button class="btn ghost" id="shuffle" type="button" aria-label="Shuffle your letters" title="Shuffle">
+          <span class="ms" aria-hidden="true">shuffle</span>
+        </button>
+        <button class="btn" id="skip" type="button"></button>
+        <button class="btn primary enter" id="enter" type="button" aria-label="Grow">
+          <span class="ms" aria-hidden="true">eco</span><span>Grow</span>
+        </button>
       </div>
-      <div class="stuckrow" id="stuckrow"><button class="stuck" id="stuck">I'm stuck…</button></div>
+      <div class="stuckrow" id="stuckrow"><button class="stuck" id="stuck" type="button">I'm stuck…</button></div>
     </div>
   </div>
 </div>
@@ -382,8 +763,15 @@
 (function () {
   'use strict';
 
-  var DAY   = Kit.dayNumber();
-  var PUZ   = Kit.pick(window.SEED_PUZZLES);
+  /* The local date still sets which seed you OPEN on, so everyone alive today
+     starts on the same board — but finishing one hands you the next straight
+     away. Kit.puzzleNo is that number: the one printed in the bar, written
+     into the share line and stamped on the save, and the one ?d=N pins for
+     review. Kit.dayNumber() ignores the pin, so every pinned puzzle shared a
+     single save slot — opening ?d=2 after playing ?d=1 restored puzzle 1's
+     hand and history onto puzzle 2's queue. */
+  var DAY   = Kit.puzzleNo('seed');
+  var PUZ   = Kit.pick(window.SEED_PUZZLES, 'seed');
   var Q     = PUZ.queue.split('');
   var SEED  = PUZ.seed;
   var MAXSK = 2;
@@ -422,17 +810,44 @@
   function doomed() { return !S.over && !rackHasWord() && S.skips >= MAXSK; }
 
   /* ---- rendering ------------------------------------------------------ */
-  function rung(cls, indent, inner, len) {
-    return '<div class="step' + (cls ? ' ' + cls : '') + '">' +
-      '<span class="w" style="--i:' + indent + '">' + inner + '</span>' +
+  function reduced() { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+  // One rung. `vars` carries the custom properties the growth animation is
+  // staged off, so every delay in the CSS is a function of the rung itself.
+  function rung(cls, indent, inner, len, vars) {
+    // Ghost rungs are runs of middle dots inside a live region: real text a
+    // screen reader would read out, one "dot" at a time, on every render.
+    var ghost = /(^|\s)ghost(\s|$)/.test(cls || '');
+    return '<div class="step' + (cls ? ' ' + cls : '') + '" style="--i:' + indent +
+      (vars ? ';' + vars : '') + '"' + (ghost ? ' aria-hidden="true"' : '') + '>' +
+      '<span class="w">' + inner + '</span>' +
+      '<i class="lead" aria-hidden="true"></i>' +
       '<span class="len">' + (len === null ? '' : len) + '</span></div>';
   }
 
-  function renderStair() {
+  // A word whose letters can unfurl one after another.
+  function letters(w) {
+    return w.split('').map(function (c, n) {
+      return '<em style="--n:' + n + '">' + Kit.esc(c) + '</em>';
+    }).join('');
+  }
+
+  // Where the plant stopped. A bloom if nothing longer was possible today.
+  function endMark() {
+    return S.hist[S.hist.length - 1].length >= PUZ.max
+      ? Kit.icon('local_florist', { size: 15, cls: 'bud bloom' })
+      : Kit.icon('circle', { size: 8, fill: 1, cls: 'bud' });
+  }
+
+  function renderStair(kind) {
     var el = $('stair');
+    var last = S.hist.length - 1;
+    var grew = kind === 'take';
     var html = S.hist.map(function (w, i) {
-      var cls = (i === 0 ? 'seed' : '') + (i === S.hist.length - 1 ? ' cur' : '');
-      return rung(cls, i, Kit.esc(w), w.length);
+      var end = i === last;
+      var cls = (i === 0 ? 'seed' : '') + (end ? ' cur' : '') + (end && grew ? ' grew' : '');
+      var inner = (end && grew ? letters(w) : Kit.esc(w)) + (end && S.over ? endMark() : '');
+      return rung(cls, i, inner, w.length, '--L:' + w.length);
     }).join('');
 
     // Ghost rungs: one per queue letter still to come — the shape of the run
@@ -442,44 +857,80 @@
       var left = Q.length - S.qi;
       for (var k = 0; k < left; k++) {
         html += rung('ghost' + (k === 0 ? ' now' : ''), S.hist.length + k,
-                     '·'.repeat(S.rack.length + k), null);
+                     '·'.repeat(S.rack.length + k), null, '--g:' + k);
         if (k === 0) hasNow = true;
       }
     }
+    // Hold the scroll position across the rebuild, then pan to the new rung —
+    // the camera follows the plant up rather than cutting to it.
+    var prev = el.scrollTop;
     el.innerHTML = html;
+    el.scrollTop = prev;
     var now = el.querySelector('.step.ghost.now');
-    if (hasNow && now) el.scrollTop = Math.max(0, now.offsetTop - el.clientHeight * 0.55);
-    else el.scrollTop = el.scrollHeight;
+    var to = (hasNow && now) ? Math.max(0, now.offsetTop - el.clientHeight * 0.55) : el.scrollHeight;
+    if (grew && !reduced() && el.scrollTo) el.scrollTo({ top: to, behavior: 'smooth' });
+    else el.scrollTop = to;
   }
 
-  function renderQueue() {
+  function renderQueue(kind) {
     var row = $('qrow');
     row.innerHTML = '';
     Q.forEach(function (ch, i) {
       var t = document.createElement('div');
-      t.className = 'qt';
+      var cls = 'qt';
       t.textContent = ch;
-      if (S.killer !== null && i === S.killer) t.className += ' killer';
-      else if (i < S.qi) t.className += (S.timeline[i] === 'skip' ? ' skipped' : ' done');
-      else if (i === S.qi && !S.over) t.className += ' next';
-      else if (!S.over && (i === S.qi + 1 || i === S.qi + 2)) t.className += ' soon';
+      t.setAttribute('role', 'img');
+      if (S.killer !== null && i === S.killer) cls += ' killer';
+      else if (i < S.qi) {
+        cls += (S.timeline[i] === 'skip' ? ' skipped' : ' done');
+        // the letter you just resolved, leaving the belt the way it left it
+        if (kind && i === S.qi - 1) cls += (kind === 'skip' ? ' discard' : ' absorb');
+      }
+      else if (i === S.qi && !S.over) cls += ' next' + (kind ? ' arriving' : '');
+      // graded attention across the next three: the eye is meant to travel right
+      else if (!S.over && i === S.qi + 1) cls += ' soon';
+      else if (!S.over && i === S.qi + 2) cls += ' soon2';
+      else if (!S.over && i === S.qi + 3) cls += ' soon3';
+      t.className = cls;
       t.setAttribute('aria-label', ch + (i < S.qi ? ' (' + (S.timeline[i] || 'taken') + ')' : ''));
       row.appendChild(t);
     });
 
     $('qfill').style.width = (100 * Math.min(S.qi, Q.length) / Q.length) + '%';
-    $('qrem').textContent = S.over ? 'run over' : (Q.length - S.qi) + ' to come';
+    $('qrem').innerHTML = S.over ? 'run over'
+      : (Q.length - S.qi) + ' left' + Kit.icon('east', { size: 12, wght: 600 });
 
-    var caret = $('caret');
-    if (S.qi >= Q.length || S.over) { caret.style.opacity = '0'; return; }
-    caret.style.opacity = '1';
-    var tile = row.children[S.qi];
-    caret.style.transform = 'translateX(' + (tile.offsetLeft + tile.offsetWidth / 2 - 5) + 'px)';
+    positionCaret();
   }
 
-  function renderTiles(justDropped) {
+  // The caret rides the belt. Kept apart from the rebuild so a resize repoints
+  // it without tearing down nine tiles and cancelling whatever is mid-flight.
+  function positionCaret() {
+    var caret = $('caret');
+    if (S.qi >= Q.length || S.over) { caret.style.opacity = '0'; return; }
+    var tile = $('qrow').children[S.qi];
+    if (!tile) return;
+    caret.style.opacity = '1';
+    caret.style.transform = 'translateX(' + (tile.offsetLeft + tile.offsetWidth / 2 - 8) + 'px)';
+  }
+
+  // Set for exactly one render: the tray position that was just filled, and the
+  // rack tile a letter was just handed back to. Both animate; nothing else does.
+  var seatPos = -1, backIdx = -1;
+
+  function renderTiles(kind) {
     var rackEl = $('rack'), slotEl = $('slot');
+    // Both surfaces are rebuilt from scratch every tap, which threw a keyboard
+    // player's focus back to the top of the document the moment they placed a
+    // letter. Remember where they were and put them back on the same seat.
+    var af = document.activeElement;
+    var inRack = !!(af && af.classList && af.classList.contains('lt') && rackEl.contains(af));
+    var inSlotEl = !!(af && af.classList && af.classList.contains('lt') && slotEl.contains(af));
+    var refocusAt = (inRack || inSlotEl)
+      ? [].indexOf.call((inRack ? rackEl : slotEl).querySelectorAll('.lt'), af) : -1;
     rackEl.innerHTML = ''; slotEl.innerHTML = '';
+    rackEl.classList.toggle('spent', S.over);
+    rackEl.classList.toggle('dead', S.ending === 'dead');
     var inSlot = {};
     S.slot.forEach(function (idx) { inSlot[idx] = true; });
 
@@ -496,30 +947,58 @@
       }
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'lt' + (inSlot[idx] ? ' ghost' : '');
+      b.className = 'lt' + (inSlot[idx] ? ' ghost' : '') +
+                    (kind && idx === n - 1 ? ' fresh' : '') +
+                    (idx === backIdx ? ' back' : '');
       b.textContent = ch;
+      b.disabled = S.over;
+      b.style.setProperty('--k', idx);
       b.setAttribute('aria-label', 'Letter ' + ch);
-      if (justDropped && idx === n - 1) b.className += ' fresh';
       b.addEventListener('click', function () { toSlot(idx); });
       row.appendChild(b);
     });
 
-    if (!S.slot.length) {
-      slotEl.className = 'slot';
-      slotEl.innerHTML = '<span class="ph">Tap letters — one word, using all ' + S.rack.length + '</span>';
-    } else {
-      slotEl.className = 'slot' + (S.slot.length === S.rack.length ? ' full' : '');
-      S.slot.forEach(function (idx, pos) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'lt';
-        b.textContent = S.rack[idx];
-        b.setAttribute('aria-label', 'Remove ' + S.rack[idx]);
-        b.addEventListener('click', function () { fromSlot(pos); });
-        slotEl.appendChild(b);
-      });
+    // The empty state IS the rule: one socket per letter you are holding, in
+    // the same rows as the rack, so the hand and the word are the same shape.
+    slotEl.className = 'slot' + (S.slot.length === S.rack.length ? ' full' : '') +
+                       (S.slot.length === 0 ? ' empty' : '');
+    var total = S.over ? S.slot.length : S.rack.length;
+    var srow = null;
+    for (var p = 0; p < total; p++) {
+      if (p % perRow === 0) {
+        srow = document.createElement('div');
+        srow.className = 'slotrow';
+        slotEl.appendChild(srow);
+      }
+      var node;
+      if (p < S.slot.length) {
+        node = document.createElement('button');
+        node.type = 'button';
+        node.className = 'lt' + (p === seatPos ? ' seat' : '');
+        node.textContent = S.rack[S.slot[p]];
+        node.setAttribute('aria-label', 'Remove ' + S.rack[S.slot[p]]);
+        node.addEventListener('click', (function (pos) {
+          return function () { fromSlot(pos); };
+        })(p));
+      } else {
+        node = document.createElement('span');
+        node.className = 'hole';
+      }
+      node.style.setProperty('--p', p);
+      srow.appendChild(node);
     }
-    $('del').hidden = !S.slot.length || S.over;
+    seatPos = -1; backIdx = -1;
+
+    slotEl.setAttribute('aria-label',
+      'Your word: ' + S.slot.length + ' of ' + S.rack.length + ' letters placed');
+    $('del').disabled = !S.slot.length || S.over;
+
+    if (refocusAt >= 0 && !S.over) {
+      var pool = (inRack ? rackEl : slotEl).querySelectorAll('.lt');
+      var back = pool[Math.min(refocusAt, pool.length - 1)] ||
+                 rackEl.querySelector('.lt:not([disabled])');
+      if (back) back.focus({ preventScroll: true });
+    }
   }
 
   function renderControls() {
@@ -531,37 +1010,87 @@
     sk.disabled = left === 0 || S.over || S.qi >= Q.length;
     sk.className = 'btn' + (stranded ? ' hot' : '');
     $('enter').disabled = S.over;
+    $('enter').classList.toggle('ready', !S.over && S.slot.length === S.rack.length);
     $('shuffle').disabled = S.over;
-    $('stuckrow').hidden = S.over;
-    $('stuck').textContent = stranded ? 'Nothing fits — spend a skip' : "I'm stuck…";
+    $('slotwrap').hidden = S.over;
+    $('controls').hidden = S.over;
+
+    // A finished board still needs a way back to the result sheet.
+    var st = $('stuck');
+    if (S.over) {
+      st.className = 'stuck again';
+      st.setAttribute('aria-label', 'See result');
+      st.innerHTML = Kit.icon('leaderboard', { size: 17 }) + '<span>See result</span>';
+      // the controls just vanished from under a keyboard user's focus
+      var af = document.activeElement;
+      if (af && af.closest && af.closest('#controls, #slotwrap')) st.focus();
+    } else {
+      st.className = 'stuck';
+      st.textContent = stranded ? 'Nothing fits — spend a skip' : "I'm stuck…";
+      st.removeAttribute('aria-label');
+    }
   }
 
-  function render(justDropped) {
-    renderStair(); renderQueue(); renderTiles(justDropped); renderControls();
+  function render(kind) {
+    renderStair(kind); renderQueue(kind); renderTiles(kind); renderControls();
   }
 
-  /* ---- interaction ---------------------------------------------------- */
+  // The run has ended but the closing animation has not: everything dims and
+  // stops responding immediately, and only stands down (which reflows the
+  // board) once the beat has played.
+  function freezeControls() {
+    ['enter', 'skip', 'shuffle', 'del'].forEach(function (id) { $(id).disabled = true; });
+    $('enter').classList.remove('ready');
+  }
+
+  /* ---- interaction ----------------------------------------------------
+     Every touch is answered inside 100ms, and no two answers feel the same:
+     a letter seats with a tick, a full hand arms with a double, a wrong word
+     thuds, a dead end collapses. The haptic pattern is the sentence. */
   function toSlot(idx) {
     if (S.over) return;
     if (S.slot.indexOf(idx) !== -1) return;
     S.slot.push(idx);
-    Kit.haptic(6);
+    seatPos = S.slot.length - 1;
+    // the beat where the hand is fully spent and the word is ready to go
+    Kit.haptic(S.slot.length === S.rack.length ? [5, 26, 11] : 5);
     renderTiles(); renderControls(); save();
   }
   function fromSlot(pos) {
     if (S.over) return;
+    backIdx = S.slot[pos];
     S.slot.splice(pos, 1);
-    Kit.haptic(6);
+    Kit.haptic(4);
     renderTiles(); renderControls(); save();
   }
   function typeLetter(ch) {
     for (var i = 0; i < S.rack.length; i++) {
       if (S.rack[i] === ch && S.slot.indexOf(i) === -1) { toSlot(i); return true; }
     }
-    Kit.flash($('slot'), 'shake');
+    flashSlot('near');            // you do not hold that letter — a nudge, not a scold
     return false;
   }
   function backspace() { if (S.slot.length) fromSlot(S.slot.length - 1); }
+
+  // The tray's two rejections, and the sockets asking for the rest of the hand.
+  function flashSlot(cls) {
+    var el = $('slot');
+    el.classList.remove('wilt', 'near');
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(function () { el.classList.remove(cls); }, 620);
+  }
+  function begSockets() {
+    var holes = $('slot').querySelectorAll('.hole');
+    for (var i = 0; i < holes.length; i++) {
+      holes[i].classList.remove('beg');
+      void holes[i].offsetWidth;
+      holes[i].classList.add('beg');
+    }
+    setTimeout(function () {
+      for (var j = 0; j < holes.length; j++) holes[j].classList.remove('beg');
+    }, 700);
+  }
 
   function shuffleRack() {
     if (S.over) return;
@@ -573,39 +1102,53 @@
       var j = Math.floor(Math.random() * (i + 1)), t = free[i]; free[i] = free[j]; free[j] = t;
     }
     freeIdx.forEach(function (idx, n) { S.rack[idx] = free[n]; });
-    Kit.haptic(8);
+    Kit.haptic([4, 18, 4]);
     renderTiles(); save();
+    // the hand turns itself over, and the symbol turns with it
+    var rk = $('rack');
+    rk.classList.add('shuffled');
+    setTimeout(function () { rk.classList.remove('shuffled'); }, 560);
+    var ic = $('shuffle').querySelector('.ms');
+    ic.classList.remove('spun'); void ic.offsetWidth; ic.classList.add('spun');
   }
 
-  function nextLetter() {
+  function nextLetter(kind) {
     S.slot = [];
     S.qi++;
-    if (S.qi >= Q.length) { finish('survived'); return; }
+    if (S.qi >= Q.length) { finish('survived', kind); return; }
     S.rack.push(Q[S.qi]);
     save();
-    render(true);
-    if (doomed()) setTimeout(doom, 560);
+    render(kind);
+    if (doomed()) setTimeout(doom, 620);
   }
 
   function submit() {
     if (S.over) return;
+    // not a rejection — the hand simply is not all in the tray yet
     if (S.slot.length < S.rack.length) {
-      Kit.flash($('slot'), 'shake');
-      Kit.toast('Use every letter — all ' + S.rack.length);
+      begSockets();
+      Kit.haptic(6);
+      Kit.toast('One word, every letter — all ' + S.rack.length);
       return;
     }
     var word = S.slot.map(function (i) { return S.rack[i]; }).join('');
     var ok = wordsFor(S.rack);
-    if (!ok || ok.indexOf(word) === -1) {
-      Kit.flash($('slot'), 'shake');
-      Kit.haptic(24);
-      Kit.toast(ok ? 'Not a word — but something fits' : 'Not a word');
+    if (!ok) {                                   // nothing in English fits: sting
+      flashSlot('wilt');
+      Kit.haptic([18, 45, 18]);
+      Kit.toast('No word uses all ' + S.rack.length + ' of those letters');
+      return;
+    }
+    if (ok.indexOf(word) === -1) {               // a word IS in there: near miss
+      flashSlot('near');
+      Kit.haptic([6, 34, 6]);
+      Kit.toast('Not that one — but these letters do make a word');
       return;
     }
     S.hist.push(word);
     S.timeline.push('take');
-    Kit.haptic(14);
-    nextLetter();
+    Kit.haptic([9, 22, 15]);
+    nextLetter('take');
   }
 
   function doSkip() {
@@ -615,9 +1158,9 @@
     if (at !== -1) S.rack.splice(at, 1);
     S.skips++;
     S.timeline.push('skip');
-    Kit.haptic(10);
+    Kit.haptic([5, 30, 5]);
     Kit.toast('Skipped ' + ch + ' · ' + (MAXSK - S.skips) + ' left');
-    nextLetter();
+    nextLetter('skip');
   }
 
   /* ---- endings -------------------------------------------------------- */
@@ -628,9 +1171,11 @@
     if ($('bottom').querySelector('.deadbanner')) return;
     var b = document.createElement('div');
     b.className = 'deadbanner';
-    b.innerHTML = '<b>Dead end.</b> Nothing in English uses all ' + S.rack.length +
-      ' of those letters — and you are out of skips.';
-    $('bottom').appendChild(b);
+    b.innerHTML = Kit.icon('cancel', { size: 21 }) +
+      '<span><b>Dead end.</b> Nothing in English uses all ' + S.rack.length +
+      ' of those letters — and you are out of skips.</span>';
+    // above the way out, not below it: the explanation comes before the button
+    $('bottom').insertBefore(b, $('stuckrow'));
   }
 
   function doom() {
@@ -639,11 +1184,16 @@
     save();
     // deliberately NOT re-rendering the tiles: the letter that just landed keeps
     // its highlight, so the thing that killed you is still glowing in your hand.
-    renderStair(); renderQueue(); renderControls();
-    Kit.flash($('rack'), 'shake');
-    Kit.haptic(70);
-    deadBanner();
-    setTimeout(showResult, 1300);
+    // It just stops being playable — and then, one by one, the hand wilts. The
+    // tray and the controls hold their ground until the wilt has played, so the
+    // board does not resize under the animation.
+    renderStair(); renderQueue(); freezeControls();
+    $('rack').classList.add('spent', 'dead');
+    Kit.haptic([28, 55, 110]);
+    // The whole 1.9s is there to let the wilt finish. With motion off there is
+    // no wilt, so the pause would just be a board sitting still.
+    setTimeout(function () { renderControls(); deadBanner(); }, reduced() ? 0 : 760);
+    setTimeout(showResult, reduced() ? 300 : 1900);
   }
 
   // The stuck sheet is the game's whole floor. A player who cannot see the
@@ -661,14 +1211,15 @@
       : '<h2>Nothing fits.</h2><p class="sub">No word uses all ' + S.rack.length +
         ' of these letters. Spend a skip and this letter goes away.</p>';
     if (words) {
-      html += '<button class="btn wide" id="hintbtn" style="margin-bottom:8px">' +
-        'Give me the first letter</button>' +
+      html += '<button class="btn wide" id="hintbtn" aria-label="Give me the first letter" style="margin-bottom:8px">' +
+        Kit.icon('tips_and_updates', { size: 19 }) + '<span>Give me the first letter</span></button>' +
         '<div class="hint" id="hintout" style="min-height:0"></div>';
     }
     html += '<div style="display:flex;gap:8px;margin-top:14px">' +
       '<button class="btn ghost" style="flex:1" data-close>Keep going</button>' +
       '<button class="btn primary" style="flex:1" id="reallyend">End at ' + reached + '</button></div>';
     var sh = Kit.sheet(html);
+    sh.el.setAttribute('aria-label', words ? 'End the run?' : 'Nothing fits');
     var hb = sh.el.querySelector('#hintbtn');
     if (hb) hb.addEventListener('click', function () {
       var firsts = {};
@@ -684,13 +1235,21 @@
     });
   }
 
-  function finish(how) {
+  // Surviving the whole queue ends on the best rung you will ever grow, so the
+  // last word gets its full growth beat before anything else moves: the tray
+  // and the controls only stand down once the rung has finished extending,
+  // otherwise the board reflows underneath the one animation that matters.
+  function finish(how, kind) {
     S.over = true;
     S.ending = how;
     S.slot = [];
     save();
-    render();
-    setTimeout(showResult, 340);
+    if (!kind) { render(kind); setTimeout(showResult, reduced() ? 120 : 340); return; }
+    renderStair(kind); renderQueue(kind); freezeControls();
+    // same bargain as doom(): the wait buys the rung its growth, and with
+    // motion off there is no growth to buy
+    setTimeout(function () { renderTiles(); renderControls(); }, reduced() ? 0 : 820);
+    setTimeout(showResult, reduced() ? 300 : 1080);
   }
 
   /* ---- share ---------------------------------------------------------- */
@@ -715,17 +1274,20 @@
   // "an 11", "an 8", but "a 10" and "a 9"
   function an(n) { return (n === 8 || n === 11 || n === 18) ? 'an ' + n : 'a ' + n; }
 
+  var celebrated = false;
+
   function showResult() {
     var reached = S.hist[S.hist.length - 1].length;
     var gap = PUZ.max - reached;
     var maxed = gap <= 0;
-    var verdict, sub;
+    var verdict, sub, tone;
     if (maxed)                     { verdict = 'Maxed it.';   sub = 'Nobody grew a longer word today. Nobody could.'; }
     else if (gap === 1)            { verdict = 'One short.';   sub = 'There was ' + an(PUZ.max) + ' in there. One letter more.'; }
     else if (gap === 2)            { verdict = 'So close.';    sub = 'There was ' + an(PUZ.max) + ' in there.'; }
     else if (S.ending === 'dead')  { verdict = 'Dead end at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
     else if (S.ending === 'stuck') { verdict = 'Stuck at ' + reached + '.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
     else                           { verdict = reached + ' letters.'; sub = 'The queue had ' + an(PUZ.max) + ' in it.'; }
+    tone = maxed ? 'tone-good' : (gap <= 2 ? 'tone-warn' : (S.ending === 'dead' ? 'tone-bad' : ''));
 
     // Naming the resource you didn't spend is the single strongest teacher this
     // screen has — it points at the decision, not at the vocabulary.
@@ -737,8 +1299,23 @@
     }
 
     var steps = S.hist.map(function (w, i) {
-      return rung(i === 0 ? 'seed' : (i === S.hist.length - 1 ? 'cur' : ''), i, Kit.esc(w), w.length);
+      var end = i === S.hist.length - 1;
+      return rung(i === 0 ? 'seed' : (end ? 'cur' : ''), i,
+                  Kit.esc(w) + (end ? endMark() : ''), w.length, '--r:' + i);
     }).join('');
+
+    // The gauge: one ring per letter of growth that was on the table today.
+    // The hollow ones at the end are the whole "I was SO close" feeling, and
+    // on a maxed day there are none of them.
+    var pips = '';
+    for (var g = SEED.length + 1; g <= PUZ.max; g++) {
+      pips += '<i class="' + (reached >= g ? 'on' : (gap <= 2 ? 'miss' : '')) +
+              '" style="--n:' + (g - SEED.length - 1) + '"></i>';
+    }
+    var gauge = '<div class="gauge" role="img" aria-label="Grew to ' + reached +
+      ' letters out of a possible ' + PUZ.max + '">' +
+      '<span class="gnum">' + SEED.length + '</span>' + pips +
+      '<span class="gnum">' + PUZ.max + '</span></div>';
 
     // The optimal line, replayed as decisions: words you would have played and
     // letters you would have thrown away, in queue order.
@@ -746,66 +1323,155 @@
       var skip = s[0] === 'S', body = s.slice(1);
       return '<span class="pw' + (skip ? ' sk' : '') +
         (!skip && i === PUZ.path.length - 1 ? ' fin' : '') + '">' +
-        (skip ? '✕&nbsp;' : '') + Kit.esc(body) + '</span>';
+        (skip ? Kit.icon('close', { size: 12, wght: 700 }) : '') + Kit.esc(body) + '</span>';
     }).join('');
 
-    var html =
+    var html = '<div class="stagger">' +
       '<h2 class="verdict" style="margin-bottom:6px">' + verdict + '</h2>' +
       '<p class="sub" style="margin-bottom:0">' + sub + '</p>' +
-      '<div class="finalword">' + Kit.esc(S.hist[S.hist.length - 1]) + '</div>' +
+      '<div class="specimen">' + Kit.esc(S.hist[S.hist.length - 1]) + '</div>' +
+      gauge +
+      // The run, replayed, and the line that beat it: this is Seed's own
+      // evidence, so it sits ABOVE the tail every game in the suite shares —
+      // stats, share block, share button, next puzzle, back to the board — in
+      // that order, with nothing of the game's own wedged into it.
+      '<div class="recap">' + steps + '</div>' +
+      (maxed ? '' :
+        '<details class="reveal"><summary><span>Show me the ' + PUZ.max + '</span>' +
+        Kit.icon('expand_more', { size: 18 }) + '</summary>' +
+        '<div class="parline">' + pathHtml + '</div>' +
+        '<div class="hint" style="margin-top:10px">' +
+        (PUZ.maxSkips ? Kit.icon('close', { size: 12, wght: 700, style: 'vertical-align:-1px' }) +
+                        ' = a letter you had to throw away. ' + PUZ.maxSkips + ' of them.'
+                      : 'Taking every single letter.') + '</div></details>') +
       '<div class="statrow">' +
-        '<div class="stat"><span class="n">' + reached + '</span><span class="l">Letters</span></div>' +
+        '<div class="stat ' + tone + '" aria-label="' + reached + ' letters">' +
+          '<span class="n tick" id="nreach">' + reached + '</span><span class="l">Letters</span></div>' +
         '<div class="stat"><span class="n">' + S.skips + '</span><span class="l">Skips used</span></div>' +
         '<div class="stat"><span class="n">' + PUZ.max + '</span><span class="l">Best possible</span></div>' +
       '</div>' +
       // Using a hint is recorded for you and only you — it never reaches the
       // share text, because nobody wants an asterisk in a group chat.
       (S.hinted ? '<div class="hint" style="margin:-6px 0 4px">You took a first letter along the way.</div>' : '') +
-      '<div class="sharegrid" id="sg">' + Kit.esc(shareText()) + '</div>' +
-      '<button class="btn primary wide" id="sharebtn">Share result</button>' +
-      '<div class="recap">' + steps + '</div>' +
-      (maxed ? '' :
-        '<details class="reveal"><summary>Show me the ' + PUZ.max + ' ▾</summary>' +
-        '<div class="parline">' + pathHtml + '</div>' +
-        '<div class="hint" style="margin-top:10px">' +
-        (PUZ.maxSkips ? '✕ = a letter you had to throw away. ' + PUZ.maxSkips + ' of them.'
-                      : 'Taking every single letter.') + '</div></details>') +
-      '<div class="countdown">Next seed in <b id="cd">--:--:--</b></div>' +
-      '<button class="btn ghost wide" style="margin-top:12px" data-close>Look at the board</button>';
+      '<div class="sharegrid copy" id="sg" title="Tap to copy">' + Kit.esc(shareText()) + '</div>' +
+      '<button class="btn primary wide" id="sharebtn" aria-label="Share result">' +
+        Kit.icon('share', { size: 19 }) + '<span>Share result</span></button>' +
+      // No clock and no locked gate: the run you just finished hands you the
+      // next seed on the spot. Kit.nextButton is delegated at the document, so
+      // it only has to be rendered.
+      '<div class="nextrow">' + Kit.nextButton('seed', 'Next seed') +
+        '<button class="btn ghost wide" data-close>Look at the board</button></div>' +
+      '</div>';
 
     var sh = Kit.sheet(html);
-    sh.el.querySelector('#sharebtn').addEventListener('click', function (e) {
-      Kit.share(shareText(), e.currentTarget);
+    // a dialog with no accessible name is announced as "dialog"
+    sh.el.setAttribute('aria-label', verdict);
+    // The button is handed to Kit.share, which owns its feedback and drives it
+    // off what actually happened — so it can no longer say "Copied" while the
+    // toast says "Select and copy". It restores the label with innerHTML, so
+    // the icon survives the round trip.
+    sh.el.querySelector('#sharebtn').addEventListener('click', function () {
+      Kit.haptic(8);
+      Kit.share(shareText(), this);
     });
-    var cd = sh.el.querySelector('#cd');
-    var t = Kit.countdown(cd);
-    var obs = setInterval(function () {
-      if (!document.body.contains(cd)) { clearInterval(t); clearInterval(obs); }
-    }, 1000);
+    // the artifact itself is the second copy target — no button to hand over
+    // here, and handing the grid over would overwrite the result with a label
+    sh.el.querySelector('#sg').addEventListener('click', function () {
+      Kit.haptic(8);
+      Kit.share(shareText());
+    });
+
+    // The number that matters lands rather than appears — and it counts up from
+    // the seed you started with, so the stat is the growth, not a score. It is
+    // written out at its true value first: if this never runs (reduced motion, a
+    // backgrounded tab with no animation frames) the truth is already on screen.
+    var nEl = sh.el.querySelector('#nreach');
+    if (!reduced()) setTimeout(function () {
+      if (document.body.contains(nEl) && !document.hidden) {
+        Kit.count(nEl, reached, { from: SEED.length, ms: 620 });
+      }
+    }, 250);
+
+    // Confetti is for a day nobody could have beaten. Nothing else earns it,
+    // and it fires once — reopening the sheet does not re-award the day.
+    if (maxed && !celebrated) {
+      celebrated = true;
+      setTimeout(function () {
+        var sp = sh.el.querySelector('.specimen');
+        if (!sp || !document.body.contains(sp)) return;
+        var r = sp.getBoundingClientRect();
+        Kit.burst({
+          x: r.left + r.width / 2, y: r.top + r.height / 2, n: 54,
+          colors: ['#b02a5b', '#f0789c', '#e3a7bd', '#4a8f6d', '#f2d3a7']
+        });
+      }, 560);
+    }
   }
 
-  /* ---- help ----------------------------------------------------------- */
+  /* ---- help -----------------------------------------------------------
+     Lead with the one sentence that makes the game click, then show the
+     staircase doing it — the same rungs the board draws, so the diagram and
+     the game are literally the same object.                               */
   var HELP =
-    '<ul style="padding-left:18px;margin:0 0 4px">' +
-    '<li>You start with a <b>3-letter word</b>. One letter from the queue drops into your rack each turn.</li>' +
-    '<li>Play a word that uses <b>every letter in your rack</b>, in any order. Then the next letter drops. Your word grows 3 → 4 → 5 →…</li>' +
-    '<li><b>The queue is public and in order.</b> Everyone in the world gets the same nine letters, in the same sequence. You can see what is coming — so plan for it.</li>' +
-    '<li>You get <b>2 skips</b>. A skip throws the incoming letter away and your rack does not grow. Spend them on the letters you cannot absorb.</li>' +
-    '<li>Your score is the <b>longest word you reach</b>. You survive until nothing fits.</li>' +
-    '<li>On a keyboard: type letters, <kbd>⌫</kbd> to take one back, <kbd>space</kbd> to shuffle, <kbd>enter</kbd> to play.</li>' +
+    '<p class="lede">One letter joins your hand every turn. Spell a word using ' +
+      '<b>every letter you hold</b> — and your word grows one longer.</p>' +
+    '<div class="demo" aria-hidden="true">' +
+      rung('seed', 0, 'RUN', 3) +
+      rung('', 1, 'TURN<i class="add">+ T</i>', 4) +
+      rung('cur', 2, 'TUNER<i class="add">+ E</i>', 5) +
+      rung('ghost now', 3, '······', null) +
+    '</div>' +
+    '<ul style="padding-left:18px;margin:0">' +
+    '<li><b>The queue is public.</b> Everyone alive gets the same ' + Q.length + ' letters in the same order. ' +
+      'Reading three ahead is the whole game.</li>' +
+    '<li><b>Two skips.</b> A skip throws the incoming letter away and your hand does not grow. ' +
+      'Spend them on letters you cannot absorb.</li>' +
+    '<li><b>You score your longest word.</b> Keep growing until nothing fits.</li>' +
     '</ul>' +
-    '<p style="font-size:13.5px;color:var(--ink-3);margin:12px 0 0">A greedy player grabs every letter and finds any word. ' +
-    'A good player looks three letters down the queue and keeps their hand flexible.</p>';
+    '<p class="kb">Keyboard: type letters · <kbd>space</kbd> shuffle · ' +
+      '<kbd>Backspace</kbd> take back · <kbd>Enter</kbd> grow</p>';
 
-  var openHelp = Kit.helpButton(HELP, 'How SEED works');
+  /* Kit.helpButton assembles exactly this sheet, but it takes no onOpen — so
+     the dialog it builds has no accessible name and is announced as a bare
+     "dialog". Built here instead, in the same shape and with the same "Got
+     it" as the other four games' help sheets. */
+  function openHelp() {
+    Kit.sheet('<h2>How Seed works</h2><div class="rules">' + HELP + '</div>' +
+      '<button class="btn primary wide" data-close style="margin-top:18px">Got it</button>',
+      { onOpen: function (el) { el.setAttribute('aria-label', 'How to play'); } });
+  }
   $('helpbtn').addEventListener('click', openHelp);
+
+  /* ---- first run -------------------------------------------------------
+     Three coach marks instead of a rules wall: what arrives, what you do with
+     it, and what happens when you do.                                      */
+  function startTour() {
+    Kit.tour([
+      { sel: '#qwrap', place: 'below',
+        text: Q.length + ' letters, <b>one a turn</b>, in this order — the same for everyone playing today.' },
+      { sel: '#rack', place: 'above',
+        text: 'The next one is already in your hand — tap these to spell one word that uses <b>every letter</b>.' },
+      { sel: '#enter', place: 'above',
+        text: 'Grow it, and your word gets one letter longer.' }
+    ], { doneLabel: 'Grow it' });
+  }
 
   /* ---- keyboard ------------------------------------------------------- */
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (document.querySelector('.scrim')) return;
+    if (document.querySelector('.scrim') || document.getElementById('tour-layer')) return;
     var tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    /* ENTER and SPACE belong to whatever control has focus. preventDefault on
+       keydown is exactly what cancels a focused button's activation, so
+       without this guard Skip, Shuffle, Grow, "I'm stuck" and every rack tile
+       are dead to a physical keyboard — tabbing to Skip and pressing ENTER
+       submitted the word instead. Nothing here parks focus on a control by
+       itself, so typing a word on a cold board and hitting ENTER is
+       untouched. */
+    var t = e.target;
+    if ((e.key === 'Enter' || e.key === ' ') && t && t.closest &&
+        t.closest('button, a[href], summary, [role="button"]')) return;
     if (e.key === 'Enter') { submit(); e.preventDefault(); }
     else if (e.key === 'Backspace') { backspace(); e.preventDefault(); }
     else if (e.key === ' ') { shuffleRack(); e.preventDefault(); }
@@ -814,26 +1480,46 @@
 
   /* ---- boot ----------------------------------------------------------- */
   S = load();
-  $('pno').textContent = '#' + DAY;
-  $('objective').textContent =
-    'A queue letter joins your rack each turn. Spend the whole rack on one word. ' +
-    'Two skips. Longest word wins.';
+  $('pno').textContent = 'No. ' + DAY;
+  Kit.themeToggle($('themebtn'));
+  /* A pointer click leaves focus parked on the button it hit. Combined with the
+     ENTER guard above, that meant tapping Skip with a mouse and then pressing
+     ENTER to play your word spent a second skip instead — a limited resource,
+     silently, on a keystroke that meant something else entirely. A keyboard
+     user who TABBED to Skip still keeps focus there and still gets Skip on
+     ENTER, which is the behaviour the guard exists to protect: e.detail is 0
+     for a keyboard-activated click and >= 1 only for a real pointer. */
+  function releaseAfterPointer(el) {
+    el.addEventListener('click', function (e) { if (e.detail) el.blur(); });
+  }
+  ['shuffle', 'skip', 'enter', 'del', 'stuck'].forEach(function (id) {
+    if ($(id)) releaseAfterPointer($(id));
+  });
+
   $('shuffle').addEventListener('click', shuffleRack);
   $('skip').addEventListener('click', doSkip);
   $('enter').addEventListener('click', submit);
   $('del').addEventListener('click', backspace);
-  $('stuck').addEventListener('click', confirmStuck);
-  window.addEventListener('resize', renderQueue);
+  $('stuck').addEventListener('click', function () {
+    if (S.over) showResult(); else confirmStuck();
+  });
+  window.addEventListener('resize', positionCaret);
 
   render();
-  requestAnimationFrame(renderQueue); // caret needs a laid-out row
+  // the caret needs a laid-out row to sit under. (Passing renderQueue straight
+  // to rAF would hand it the frame timestamp as its `kind` and replay the
+  // absorb beat on a cold boot.)
+  requestAnimationFrame(function () { positionCaret(); });
 
   if (S.over) {
     if (S.ending === 'dead') deadBanner();   // reloading a lost day keeps the explanation
     setTimeout(showResult, 280);
   }
   else if (doomed()) setTimeout(doom, 400);   // reloaded into a dead position
-  else if (!S.seen) { S.seen = true; save(); setTimeout(openHelp, 420); }
+  else if (!S.seen) {
+    S.seen = true; save();
+    if (Kit.once('seed:tour')) setTimeout(startTour, 480);
+  }
 })();
 </script>
 </body>

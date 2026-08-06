@@ -359,21 +359,45 @@
     });
     if (!steps.length) { opts.onDone && opts.onDone(); return { close() {} }; }
 
+    const prevFocus = document.activeElement;
     const layer = document.createElement('div');
     layer.id = 'tour-layer';
-    layer.innerHTML = '<div class="spot"></div><div class="bub" role="dialog" aria-live="polite"></div>';
+    /* aria-modal + a focus trap, because this is the first thing a first-timer
+       meets in all five games. Without them focus stayed on <body> behind the
+       scrim: a mouse user clicked it away, while a keyboard-only user had to
+       tab past the entire page to reach Skip (stop 33 of 34 in Chains). */
+    layer.innerHTML = '<div class="spot"></div>' +
+      '<div class="bub" role="dialog" aria-modal="true" aria-label="How to play" aria-live="polite"></div>';
     document.body.appendChild(layer);
     const spot = layer.querySelector('.spot'), bub = layer.querySelector('.bub');
-    let i = 0, gone = false;
+    let i = 0, gone = false, pendingFocus = false;
+
+    function onKeydown(e) {
+      if (gone) return;
+      if (e.key === 'Escape') { e.preventDefault(); done(); return; }
+      if (e.key !== 'Tab') return;
+      const f = [...bub.querySelectorAll('button:not([disabled])')].filter(n => n.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      // Tab cycles inside the bubble; nothing behind the scrim is reachable.
+      if (e.shiftKey && (document.activeElement === first || !bub.contains(document.activeElement))) {
+        last.focus(); e.preventDefault();
+      } else if (!e.shiftKey && (document.activeElement === last || !bub.contains(document.activeElement))) {
+        first.focus(); e.preventDefault();
+      }
+    }
+    document.addEventListener('keydown', onKeydown, true);
 
     function done() {
       if (gone) return;
       gone = true;
+      document.removeEventListener('keydown', onKeydown, true);
       removeEventListener('resize', place);
       removeEventListener('scroll', place, true);
       layer.style.opacity = '0';
       layer.style.transition = 'opacity .2s';
       setTimeout(() => layer.remove(), 220);
+      try { prevFocus && prevFocus.focus && prevFocus.focus({ preventScroll: true }); } catch (e) {}
       opts.onDone && opts.onDone();
     }
 
@@ -389,19 +413,31 @@
       spot.style.height = (r.height + pad * 2) + 'px';
       spot.style.borderRadius = (s.round != null ? s.round : 14) + 'px';
 
+      /* Measured and placed synchronously, on purpose. This used to hide the
+         bubble, schedule a requestAnimationFrame, and only restore visibility
+         inside it — but rAF does not fire in a backgrounded tab, so anyone who
+         switched away while the page was loading came back to a coach mark
+         that was permanently invisible and a scrim they could not explain.
+         Reading offsetHeight forces layout anyway, so the frame bought
+         nothing. */
       const below = s.place ? s.place === 'below' : (r.top < innerHeight * 0.55);
-      bub.style.visibility = 'hidden';
       bub.style.top = '0px';
-      requestAnimationFrame(() => {
-        const bh = bub.offsetHeight, bw = bub.offsetWidth;
-        let top = below ? r.bottom + pad + 14 : r.top - pad - 14 - bh;
-        top = Math.max(12, Math.min(innerHeight - bh - 12, top));
-        let left = r.left + r.width / 2 - bw / 2;
-        left = Math.max(16, Math.min(innerWidth - bw - 16, left));
-        bub.style.top = top + 'px';
-        bub.style.left = left + 'px';
-        bub.style.visibility = '';
-      });
+      const bh = bub.offsetHeight, bw = bub.offsetWidth;
+      let top = below ? r.bottom + pad + 14 : r.top - pad - 14 - bh;
+      top = Math.max(12, Math.min(innerHeight - bh - 12, top));
+      let left = r.left + r.width / 2 - bw / 2;
+      left = Math.max(16, Math.min(innerWidth - bw - 16, left));
+      bub.style.top = top + 'px';
+      bub.style.left = left + 'px';
+      bub.style.visibility = '';
+      // Focus only once the bubble is actually visible: .focus() on a
+      // visibility:hidden element is silently ignored, which is what left a
+      // keyboard user stranded on <body> behind the scrim.
+      if (pendingFocus) {
+        pendingFocus = false;
+        const nx = bub.querySelector('[data-next]');
+        if (nx) nx.focus({ preventScroll: true });
+      }
     }
 
     function paint() {
@@ -419,8 +455,11 @@
       });
       const sk = bub.querySelector('[data-skip]');
       if (sk) sk.addEventListener('click', done);
-      // re-run once the bubble has its real height
-      requestAnimationFrame(place);
+      // Focus the advance button so Enter and Space just work, and so a
+      // keyboard user starts inside the dialog rather than behind it.
+      // place() does the focusing, once the bubble is actually visible.
+      pendingFocus = true;
+      place();
     }
 
     layer.addEventListener('click', (e) => { if (e.target === layer) done(); });

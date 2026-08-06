@@ -122,6 +122,44 @@ yale
 `.trim().split(/\s+/).filter(Boolean));
 
 /* --------------------------------------------------------------------------
+   The other half of the junk filter: words the frequency cut DROPPED.
+
+   lexgen is frequency-filtered, and a frequency filter cuts inflections before
+   it cuts stems. The result is a lexicon that knows `sear` is not a word but
+   `erasing` is, and a game that answers SEARING — the most natural play on
+   {A,E,G,I,N,R,S} — with "not that one". Being told a word you know is not a
+   word is the fastest way to lose a player's trust in a word game, and it is
+   the one failure this game cannot spend its way out of: the whole loop is
+   "spell one word with every letter you hold."
+
+   So this list is the mirror image of BLOCKLIST. It was built by sweeping every
+   rack a player can hold across all ten puzzles, generating (a) every regular
+   inflection of every lexgen stem and (b) every lowercase anagram in
+   /usr/share/dict/web2, keeping only what the system spell checker accepts,
+   and then reading the survivors one at a time. Everything below is a word an
+   ordinary speaker produces without hesitating. Nothing archaic, dialectal,
+   technical or proper-noun made it through — those are the same words
+   BLOCKLIST exists to strike.
+
+   Adding a word can only ever widen what the game accepts, so verify.js
+   re-derives every maximum, every witness and the greedy trap against this
+   list applied; nothing here is taken on trust.
+   -------------------------------------------------------------------------*/
+const ALLOWLIST = new Set(`
+sear:      searing
+gain:      gainers
+steal:     stealer
+space:     spacer spacers
+plurals:   gelatins clarets treads repents parses reaps recaps scrapes
+           redacts cinders ciders dines aspirates traipses grannies lightens
+pasts:     carted crated stared darned repented rinsed
+degrees:   calmer lamest
+missing:   runt grunt wrung retune tureen irate latrine laceration smite
+           tinsel glisten singlet redact cramp eclair caliper derange rinse
+           pare pares snide traipse aspirate
+`.trim().split(/\s+/).filter(w => !w.endsWith(':')));
+
+/* --------------------------------------------------------------------------
    Lexicon -> anagram index
    -------------------------------------------------------------------------*/
 function key(letters) {
@@ -131,14 +169,20 @@ function key(letters) {
 function loadIndex() {
   const raw = JSON.parse(fs.readFileSync(LEX_PATH, 'utf8'));
   const index = new Map();
-  for (const w of raw) {
-    if (!/^[a-z]{3,12}$/.test(w)) continue;
-    if (BLOCKLIST.has(w)) continue;
+  const push = (w) => {
     const k = key(w);
     let bucket = index.get(k);
     if (!bucket) index.set(k, (bucket = []));
     bucket.push(w);
+  };
+  const seen = new Set();
+  for (const w of raw) {
+    if (!/^[a-z]{3,12}$/.test(w)) continue;
+    if (BLOCKLIST.has(w)) continue;
+    seen.add(w);
+    push(w);
   }
+  for (const w of ALLOWLIST) if (!seen.has(w)) push(w);
   return index;
 }
 
@@ -338,6 +382,6 @@ ${body}
   console.log(`wrote ${OUT_PATH} (${kb} KB)`);
 }
 
-module.exports = { loadIndex, solve, explore, key, MAX_SKIPS, PUZZLES, BLOCKLIST, LEX_PATH };
+module.exports = { loadIndex, solve, explore, key, MAX_SKIPS, PUZZLES, BLOCKLIST, ALLOWLIST, LEX_PATH };
 
 if (require.main === module) main();

@@ -8,10 +8,12 @@
    Everything below (reachability, the maximum, the witness replay, the greedy
    trap) is re-derived from first principles against the raw lexicon.
 
-   The only thing shared with build.js is the hand-curated BLOCKLIST, because
-   "which junk words a human struck" is authored data, not derived data — and
-   we separately assert every blocklist entry is real (no rotted entries) and
-   that no blocklisted word survived into the shipped file.
+   The only things shared with build.js are the hand-curated BLOCKLIST and
+   ALLOWLIST, because "which junk words a human struck" and "which real words
+   the frequency cut dropped" are authored data, not derived data — and we
+   separately assert both lists are live: every blocklist entry must exist in
+   the raw lexicon (or it is a typo protecting nothing) and every allowlist
+   entry must NOT (or it is redundant and hiding what it actually changed).
 
    What is asserted, for every shipped puzzle:
      1  structure     — seed is a real 3-letter word, queue is 9 A-Z letters
@@ -35,7 +37,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const { BLOCKLIST } = require('./build.js');
+const { BLOCKLIST, ALLOWLIST } = require('./build.js');
 
 const LEX_PATH = path.join(__dirname, '..', 'shared', 'lexgen.raw.json');
 const PUZ_PATH = path.join(__dirname, 'puzzles.js');
@@ -64,18 +66,26 @@ function loadLexicon() {
   const raw = JSON.parse(fs.readFileSync(LEX_PATH, 'utf8'));
   const words = new Set();
   const byKey = new Map();
-  let blocked = 0;
-  for (const w of raw) {
-    if (!/^[a-z]{3,12}$/.test(w)) continue;
-    if (BLOCKLIST.has(w)) { blocked++; continue; }
+  let blocked = 0, allowed = 0;
+  const push = (w) => {
     const W = w.toUpperCase();
+    if (words.has(W)) return;
     words.add(W);
     const k = sortKey(W);
     if (!byKey.has(k)) byKey.set(k, []);
     byKey.get(k).push(W);
+  };
+  for (const w of raw) {
+    if (!/^[a-z]{3,12}$/.test(w)) continue;
+    if (BLOCKLIST.has(w)) { blocked++; continue; }
+    push(w);
   }
+  // The frequency cut dropped real words — participles, agent nouns, plain
+  // plurals. Hand-restored in build.js; applied here identically, so a rack
+  // that has a common answer can never ship without it.
+  for (const w of ALLOWLIST) { if (!words.has(w.toUpperCase())) allowed++; push(w); }
   for (const list of byKey.values()) list.sort();
-  return { words, byKey, rawCount: raw.length, blocked };
+  return { words, byKey, rawCount: raw.length, blocked, allowed };
 }
 
 /* ---- load the shipped file the way a browser would ----------------------- */
@@ -186,7 +196,7 @@ function main() {
   console.log('SEED — verify');
   console.log('='.repeat(66));
   console.log(`lexicon      ${lex.rawCount} raw words -> ${lex.words.size} usable ` +
-              `(${lex.blocked} struck by hand-curated blocklist)`);
+              `(${lex.blocked} struck by blocklist, ${lex.allowed} restored by allowlist)`);
   console.log(`shipped      puzzles.js is ${(bytes / 1024).toFixed(1)} KB, ${puzzles ? puzzles.length : 0} puzzles`);
   console.log('');
 
@@ -201,6 +211,15 @@ function main() {
   const deadBlocks = [...BLOCKLIST].filter(w => !rawSet.has(w));
   ok(deadBlocks.length === 0, 'every blocklist entry exists in the lexicon',
      deadBlocks.length ? `dead entries: ${deadBlocks.slice(0, 8).join(' ')}` : '');
+
+  // Same rule, other direction: an allowlist entry that is ALREADY in the raw
+  // lexicon is doing nothing, and hides which words the list actually restored.
+  const idleAllows = [...ALLOWLIST].filter(w => rawSet.has(w));
+  ok(idleAllows.length === 0, 'no allowlist entry duplicates the lexicon',
+     idleAllows.length ? `redundant: ${idleAllows.slice(0, 8).join(' ')}` : '');
+  const oddAllows = [...ALLOWLIST].filter(w => !/^[a-z]{3,12}$/.test(w) || BLOCKLIST.has(w));
+  ok(oddAllows.length === 0, 'allowlist is well-formed and never fights the blocklist',
+     oddAllows.join(' '));
 
   const seenQueues = new Set();
   let trapCount = 0;
