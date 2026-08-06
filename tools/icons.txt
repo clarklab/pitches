@@ -1,0 +1,30 @@
+# shared chrome
+arrow_back arrow_forward arrow_upward arrow_downward
+chevron_left chevron_right expand_more expand_less
+close check check_circle cancel help info warning error
+share content_copy bar_chart leaderboard query_stats insights
+light_mode dark_mode backspace keyboard_return schedule
+calendar_today today timer hourglass_top more_horiz
+apps grid_view add remove play_arrow replay refresh restart_alt undo
+radio_button_unchecked radio_button_checked circle
+visibility visibility_off search manage_search find_in_page
+touch_app swipe drag_pan open_with pan_tool front_hand waving_hand
+north south east west swap_horiz swap_vert sync_alt shuffle skip_next
+trending_up trending_down trending_flat north_east
+# celebration + verdicts
+emoji_events military_tech celebration auto_awesome bolt rocket_launch
+flare verified done_all star sentiment_very_satisfied sentiment_dissatisfied
+local_fire_department
+# chains
+golf_course sports_golf flag sports_score link add_link route alt_route
+# the rule
+science biotech experiment quiz rule gavel lightbulb tips_and_updates
+psychology neurology fingerprint scatter_plot hub polyline
+# shunt
+view_module blur_on straighten crop_free center_focus_strong
+# seed
+spa potted_plant eco local_florist grass park forest nutrition
+water_drop stairs sprint footprint
+# stowaways
+sailing anchor directions_boat travel_explore luggage inventory_2
+key menu_book format_quote ink_highlighter text_select_start

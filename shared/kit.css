@@ -4,7 +4,10 @@
    Each game sets --accent / --accent-soft on :root to reskin.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400..700&family=Google+Sans+Flex:wght@300..800&display=swap');
+/* Type and icons are inlined in shared/fonts.css and shared/icons.css, linked
+   ahead of this file by every demo. No @import, no CDN: the brief requires
+   these to run opened straight from file://, and a network font request there
+   silently falls back to system sans and breaks every tracking value below. */
 
 :root {
   --paper:      #faf7f2;
@@ -44,6 +47,18 @@
 
   --maxw: 560px;
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
+  /* One motion vocabulary for all five. Everything that moves picks from
+     these: UI acknowledgements are --ease-out, anything that should feel
+     physical (a tile landing, a sheet arriving) is --ease-spring. */
+  --ease-out:    cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.18, 1.25, .4, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --dur-1: .14s;
+  --dur-2: .26s;
+  --dur-3: .42s;
+
   color-scheme: light dark;
 }
 
@@ -122,14 +137,24 @@ button { font: inherit; color: inherit; }
 }
 .bar .puzz-no { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); letter-spacing: .06em; }
 .iconbtn {
-  width: 38px; height: 38px; flex: 0 0 38px;
+  width: 44px; height: 44px; flex: 0 0 44px;          /* thumb target, always */
   display: grid; place-items: center;
   background: transparent; border: 1px solid var(--line);
   border-radius: var(--r-pill); cursor: pointer; color: var(--ink-2);
-  transition: background .15s, color .15s, border-color .15s;
+  text-decoration: none; padding: 0;
+  transition: background var(--dur-1), color var(--dur-1),
+              border-color var(--dur-1), transform .1s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .iconbtn:hover { background: var(--paper-2); color: var(--ink); }
+.iconbtn:active { transform: scale(.9); }
 .iconbtn svg { width: 18px; height: 18px; }
+.iconbtn .ms { --ms-size: 21px; --ms-opsz: 24; }
+/* the icon fills on press — the Material Symbols FILL axis doing the one
+   thing an SVG can't: interpolating between two drawings of the same mark */
+.iconbtn:active .ms, .iconbtn[aria-expanded="true"] .ms { --ms-fill: 1; }
+.iconbtn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.iconbtn.on .ms { --ms-fill: 1; }
 
 /* ---------- prompt strip ---------- */
 .prompt {
@@ -162,6 +187,12 @@ button { font: inherit; color: inherit; }
 .btn.ghost { background: transparent; box-shadow: none; border-color: var(--line); color: var(--ink-2); }
 .btn.wide { width: 100%; }
 .btn.sm { padding: 8px 14px; font-size: 13.5px; }
+/* buttons that carry a symbol centre their content and keep the label on the
+   optical centre line — a bare inline-block icon sits ~1px high otherwise */
+.btn:has(.ms) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn .ms { --ms-size: 19px; --ms-wght: 500; margin-top: -1px; }
+.btn.primary .ms { --ms-fill: 1; }
+.btn.sm .ms { --ms-size: 17px; }
 
 /* ---------- generic tiles ---------- */
 .tile {
@@ -263,6 +294,126 @@ button { font: inherit; color: inherit; }
 @keyframes pop { 50% { transform: scale(1.12) } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ============================================================
+   SHARED DELIGHT + ONBOARDING PRIMITIVES
+   Five games, one motion vocabulary. Anything below is used by more
+   than one demo; anything game-specific lives in that game's own
+   <style> block so a pitch stays legible as a single file.
+   ============================================================ */
+
+/* ---------- staggered entrance ----------
+   Put .stagger on a container and every direct child rises in sequence.
+   Used on every result sheet, so a verdict lands as a beat rather than a
+   wall of information appearing at once. */
+.stagger > * { animation: rise var(--dur-3) var(--ease-out) backwards; }
+.stagger > *:nth-child(1) { animation-delay: .02s }
+.stagger > *:nth-child(2) { animation-delay: .08s }
+.stagger > *:nth-child(3) { animation-delay: .14s }
+.stagger > *:nth-child(4) { animation-delay: .20s }
+.stagger > *:nth-child(5) { animation-delay: .26s }
+.stagger > *:nth-child(6) { animation-delay: .32s }
+.stagger > *:nth-child(7) { animation-delay: .38s }
+.stagger > *:nth-child(n+8) { animation-delay: .44s }
+@keyframes rise { from { opacity: 0; transform: translateY(9px) } }
+
+/* ---------- sheet furniture ---------- */
+.sheet .grab {
+  width: 38px; height: 4px; border-radius: 2px; background: var(--line-2);
+  margin: -8px auto 14px; flex: 0 0 auto;
+}
+@media (min-width: 620px) { .sheet .grab { display: none; } }
+.sheet .sheet-x {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  width: 36px; height: 36px; border-radius: var(--r-pill);
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--paper-2); border: 1px solid var(--line); color: var(--ink-3);
+  transition: color var(--dur-1), background var(--dur-1);
+}
+.sheet .sheet-x:hover { color: var(--ink); background: var(--line); }
+.sheet .sheet-x .ms { --ms-size: 19px; }
+.sheet { position: relative; }
+/* the sheet lifts off the scrim rather than sliding flatly up */
+@keyframes sheet-up-2 { from { transform: translateY(30px) scale(.985); opacity: 0 } }
+.scrim.leaving { animation: fade .18s ease-in reverse forwards; pointer-events: none; }
+.scrim.leaving .sheet { animation: sheet-up-2 .2s ease-in reverse forwards; }
+
+/* ---------- the coach mark ----------
+   A first-timer should never have to read a rules sheet to make their first
+   move. Kit.tour() spotlights the one thing to touch, says one sentence
+   about it, and gets out of the way. The cut-out is a giant box-shadow on a
+   transparent element, so it tracks any element on any layout for free. */
+#tour-layer {
+  position: fixed; inset: 0; z-index: 120;
+  pointer-events: auto; animation: fade var(--dur-2) ease-out;
+}
+#tour-layer .spot {
+  position: absolute; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(10, 9, 12, .58), 0 0 0 3px var(--accent);
+  transition: all var(--dur-3) var(--ease-spring);
+}
+#tour-layer .spot::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 14px;
+  border: 2px solid var(--accent); animation: spot-ping 1.9s ease-out infinite;
+}
+@keyframes spot-ping {
+  0%   { opacity: .9; transform: scale(1) }
+  70%  { opacity: 0;  transform: scale(1.09) }
+  100% { opacity: 0;  transform: scale(1.09) }
+}
+#tour-layer .bub {
+  position: absolute; max-width: 300px; width: calc(100% - 32px);
+  background: var(--paper); color: var(--ink);
+  border-radius: var(--r); padding: 14px 15px 13px;
+  box-shadow: var(--shadow-2);
+  animation: rise var(--dur-3) var(--ease-out) backwards .1s;
+}
+#tour-layer .bub p { margin: 0; font-size: 14.5px; line-height: 1.45; color: var(--ink-2); }
+#tour-layer .bub p b { color: var(--ink); font-weight: 700; }
+#tour-layer .bub .row {
+  display: flex; align-items: center; gap: 10px; margin-top: 11px;
+}
+#tour-layer .bub .dots { display: flex; gap: 5px; flex: 1; }
+#tour-layer .bub .dots i {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--line-2);
+  transition: background var(--dur-2), transform var(--dur-2);
+}
+#tour-layer .bub .dots i.on { background: var(--accent); transform: scale(1.25); }
+#tour-layer .bub .btn { padding: 8px 16px; font-size: 13.5px; }
+
+/* ---------- celebration ----------
+   Confetti is the cheapest possible "you did it", so it has to be earned:
+   Kit.burst() is only ever called on a genuinely good result, never on a
+   merely completed one. */
+#burst-layer { position: fixed; inset: 0; pointer-events: none; z-index: 130; overflow: hidden; }
+#burst-layer i {
+  position: absolute; display: block; width: 9px; height: 14px; border-radius: 2px;
+  will-change: transform, opacity;
+  animation: confetti var(--fall, 1.5s) cubic-bezier(.15,.6,.5,1) forwards;
+}
+@keyframes confetti {
+  0%   { opacity: 1; transform: translate3d(0,0,0) rotate(0) }
+  100% { opacity: 0; transform: translate3d(var(--dx,0), var(--dy,60vh), 0) rotate(var(--rot,540deg)) }
+}
+
+/* ---------- a value that counts up ---------- */
+.tick { font-variant-numeric: tabular-nums lining-nums; }
+.tick.bump { animation: bump .3s var(--ease-spring); }
+@keyframes bump { 40% { transform: scale(1.18) } }
+
+/* ---------- shared chip ---------- */
+.kchip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: var(--r-pill);
+  background: var(--paper-2); border: 1px solid var(--line); color: var(--ink-3);
+}
+.kchip .ms { --ms-size: 14px; --ms-fill: 1; }
+.kchip.good { background: var(--good-soft); border-color: transparent; color: var(--good); }
+.kchip.warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+.kchip.bad  { background: var(--bad-soft);  border-color: transparent; color: var(--bad); }
+.kchip.acc  { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  #burst-layer { display: none; }
 }
