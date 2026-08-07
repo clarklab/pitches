@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The lineup as a mark: one masthead rule over five games, in the same
+       five hues the cover paints its spectrum bar. -->
+  <rect width="32" height="32" rx="7" fill="#faf7f2"/>
+  <rect x="4" y="6.5" width="24" height="2" rx="1" fill="#17161a"/>
+  <rect x="4.0" y="13" width="3.84" height="13" rx="1.4" fill="#1c705a"/>
+  <rect x="9.04" y="13" width="3.84" height="13" rx="1.4" fill="#5b46c9"/>
+  <rect x="14.08" y="13" width="3.84" height="13" rx="1.4" fill="#b23b0b"/>
+  <rect x="19.12" y="13" width="3.84" height="13" rx="1.4" fill="#b02a5b"/>
+  <rect x="24.16" y="13" width="3.84" height="13" rx="1.4" fill="#0e6f9e"/>
+</svg>
