@@ -1454,7 +1454,7 @@
     '<li><b>You score your longest word.</b> Keep growing until nothing fits.</li>' +
     '</ul>' +
     '<p class="kb">Keyboard: type letters · <kbd>space</kbd> shuffle · ' +
-      '<kbd>Backspace</kbd> take back · <kbd>Enter</kbd> grow</p>';
+      '<kbd>Backspace</kbd> take back · <kbd>Esc</kbd> clear · <kbd>Enter</kbd> grow</p>';
 
   /* Kit.helpButton assembles exactly this sheet, but it takes no onOpen — so
      the dialog it builds has no accessible name and is announced as a bare
@@ -1498,6 +1498,17 @@
     // Same rule as the other two: a control owns ENTER/SPACE only while the
     // tray is empty. Tap a letter into your word and the board takes over.
     if ((e.key === 'Enter' || e.key === ' ') && !S.slot.length && Kit.ownsKey(e)) return;
+    /* ESCAPE clears the tray. Seed is the one game that spends SPACE on
+       shuffle, so it has no second activation key — which means a control you
+       have TABBED to while a half-built word sits in the tray answers to
+       neither ENTER (the board takes it) nor SPACE (shuffle takes it). Rather
+       than making SPACE conditional and unpredictable, there is now one
+       deterministic way out: clear the tray and the control answers again.
+       It is on the help sheet's key list. */
+    if (e.key === 'Escape') {
+      if (S.slot.length) { S.slot = []; renderTiles(); renderControls(); save(); Kit.haptic(6); }
+      e.preventDefault(); return;
+    }
     if (e.key === 'Enter') { submit(); e.preventDefault(); }
     else if (e.key === 'Backspace') { backspace(); e.preventDefault(); }
     else if (e.key === ' ') { shuffleRack(); e.preventDefault(); }

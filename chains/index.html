@@ -453,9 +453,12 @@
     box-shadow:none; color: var(--ink);
   }
   .node.entry .w { color: var(--ink); }
+  /* --ink-2, not --ink-3, for the same reason as .pin .lbl below: this sits on
+     the mint plate rather than on paper, where --ink-3 measures 4.43:1 light
+     and 4.37:1 dark — a hair under AA at 10.5px. */
   .node.entry.empty .w {
     font-family: var(--font-ui); font-size:10.5px; font-weight:800;
-    letter-spacing:.18em; color: var(--ink-3);
+    letter-spacing:.18em; color: var(--ink-2);
   }
   /* the join and the plate you type into are one object — the next lie. It
      arrives a beat after the last shot has settled, so the board reads as one
