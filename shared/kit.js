@@ -602,18 +602,29 @@
      button, so every ENTER after that re-opens the sheet instead of playing
      your word. In a loop. With no feedback.
 
-     :focus-visible is exactly the distinction that was missing. A control
-     focused by pointer does not match it; one reached by keyboard does. So a
-     keyboard user still gets ENTER on the control they tabbed to, and a
-     mouse user gets ENTER back for the game. */
+     The first attempt at this tested :focus-visible, on the theory that a
+     control focused by pointer does not match it. That is true at the instant
+     the sheet closes and false by the time it matters: :focus-visible is not
+     a record of how focus ARRIVED, it is a live judgement, and Chrome sets it
+     on whatever is focused the moment the keyboard is used. In these games
+     the player always types the word immediately before pressing ENTER — so
+     typing was itself the interaction that flipped the parked button back to
+     focus-visible, and the guard returned true at exactly the keystroke it
+     needed to return false. Worse for keyboard-only players, who reach the
+     button legitimately by Tab and then cannot play at all.
+
+     So this no longer guesses at modality. It answers only "is a control
+     under the cursor key", and the CALLER supplies the half the DOM cannot
+     know: whether the player has started typing a word. A control owns ENTER
+     only while the word buffer is empty. Once you have typed a letter, the
+     board owns your keystrokes until you have played or cleared them. */
   function ownsKey(e) {
     const t = e.target;
     if (!t || !t.closest) return false;
     const ctl = t.closest('button, a[href], summary, [role="button"], input, select, textarea');
     if (!ctl) return false;
     if (ctl.matches('input, select, textarea')) return true;
-    try { return ctl.matches(':focus-visible'); }
-    catch (err) { return true; }   // no :focus-visible support — keep the safe old behaviour
+    return !ctl.closest('#kbd');   // the on-screen keys are the board, not a control
   }
 
   /* Play once per browser, keyed by name. Used for the coach tour and the

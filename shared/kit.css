@@ -299,7 +299,38 @@ button { font: inherit; color: inherit; }
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .key:active { transform: scale(.94); background: var(--paper-2); box-shadow: none; }
-.key.wide { flex: 1.6 1 0; font-size: 12px; letter-spacing: .06em; }
+/* The primary action key carries a word, not a letter, and .key gives it
+   min-width: 0 — so at 1.6 flex and .06em tracking the label outgrew its own
+   pill and clipped: The Rule's PROBE at 375px (37/34) and 360px (37/32),
+   Chains' PLAY at 360px (39/37). 375 is an iPhone SE and a 13 mini; 360 is
+   the most common Android viewport there is. More of the row and less
+   tracking, rather than an ellipsis — a truncated verb on the button that
+   plays your word is not a thing to ship. */
+.key.wide {
+  flex: 1.9 1 0; font-size: 11.5px; letter-spacing: .03em;
+  /* The label is a word, and .key sets min-width: 0, so at narrow widths it
+     outgrew its own pill: PROBE clipped at 375 and 360, PLAY at 360 — and 360
+     is the most common Android viewport there is. Padding is the last thing
+     the pill can give back before the glyphs start being cut, and the label
+     stays on one line rather than being truncated: a chopped verb on the
+     button that plays your word is not a thing to ship. */
+  padding: 0 2px; white-space: nowrap;
+}
+/* Below the common phone floor the row cannot seat ten keys and two words at
+   full tracking, so the action keys take their share from the letters. */
+@media (max-width: 379px) { .key.wide { flex: 2.4 1 0; letter-spacing: .01em; } }
+/* Below 340 the row cannot seat ten keys and two words at all, so the space
+   comes out of the gaps and the pill padding rather than out of the type —
+   the 10px floor holds everywhere, including here. */
+@media (max-width: 359px) {
+  /* 3.4 rather than something smaller because the longest action label in the
+     suite is PROBE, and it has to fit un-truncated. The letter keys do not pay
+     for it: they are sized by the ten-key top row, not by this one, and stay
+     at 24px — the AA target-size floor. */
+  .key.wide { flex: 3.4 1 0; letter-spacing: 0; padding: 0 1px; }
+  .kbd-row { gap: 3px; }
+  .kbd { gap: 4px; }
+}
 .key.act { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .key.dim { opacity: .35; }
 /* Hide the on-screen keys only where a real one is certain to exist. Gating on

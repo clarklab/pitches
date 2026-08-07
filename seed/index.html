@@ -1228,7 +1228,13 @@
         ' letters. Shuffle them. Say them out loud. ' +
         (S.skips < MAXSK ? 'And you still have a skip.' : 'You are out of skips.') + '</p>'
       : '<h2>Nothing fits.</h2><p class="sub">No word uses all ' + S.rack.length +
-        ' of these letters. Spend a skip and this letter goes away.</p>';
+        ' of these letters. ' +
+        /* Offering a skip you do not have is worse than offering nothing: it
+           reads as the game not knowing its own state at the exact moment the
+           run is ending. The sibling branch above already gets this right. */
+        (S.skips < MAXSK
+          ? 'Spend a skip and this letter goes away.'
+          : 'You are out of skips, so this is where the run ends.') + '</p>';
     if (words) {
       html += '<button class="btn wide" id="hintbtn" aria-label="Give me the first letter" style="margin-bottom:8px">' +
         Kit.icon('tips_and_updates', { size: 19 }) + '<span>Give me the first letter</span></button>' +
@@ -1489,7 +1495,9 @@
        itself, so typing a word on a cold board and hitting ENTER is
        untouched. */
     var t = e.target;
-    if ((e.key === 'Enter' || e.key === ' ') && Kit.ownsKey(e)) return;
+    // Same rule as the other two: a control owns ENTER/SPACE only while the
+    // tray is empty. Tap a letter into your word and the board takes over.
+    if ((e.key === 'Enter' || e.key === ' ') && !S.slot.length && Kit.ownsKey(e)) return;
     if (e.key === 'Enter') { submit(); e.preventDefault(); }
     else if (e.key === 'Backspace') { backspace(); e.preventDefault(); }
     else if (e.key === ' ') { shuffleRack(); e.preventDefault(); }

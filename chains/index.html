@@ -2015,12 +2015,13 @@
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (document.querySelector('.scrim') || document.getElementById('tour-layer')) return;
     if (e.key === 'Enter') {
-      // Kit.ownsKey uses :focus-visible, so a control the player TABBED to
-      // keeps ENTER, while one merely left focused by a mouse click hands it
-      // back to the board — otherwise, on desktop where the on-screen keys
-      // are hidden and typing is the only input path, clicking this game's
-      // one big button silently eats every ENTER that follows.
-      if (t && t.closest && !t.closest('#kbd') && Kit.ownsKey(e)) return;
+      // A control owns ENTER only while the word buffer is EMPTY. Once the
+      // player has typed a letter, the board owns their keystrokes until they
+      // play or clear them — otherwise a button still holding focus (the
+      // caddie they backed out of, a Call it they peeked at) silently eats
+      // every ENTER, and on desktop, where the on-screen keys are hidden and
+      // typing is the only input path, the game is simply stuck.
+      if (!typed.length && Kit.ownsKey(e)) return;
       onKey('ENTER'); e.preventDefault();
     } else if (e.key === 'Backspace') { onKey('BACK'); e.preventDefault(); }
     else if (/^[a-zA-Z]$/.test(e.key)) { onKey(e.key.toUpperCase()); e.preventDefault(); }

@@ -388,7 +388,11 @@
    `flex:1.6 1 0` on a border-box, so the padding is part of the key's flex
    base size. Trimming it to 1px made the KEY 1.37px narrower (27.64 -> 26.27)
    and the label proportionally prouder — the opposite of the trade. */
-.key.wide{ font-size:10px; letter-spacing:.02em; font-weight:800; padding:0 2px; font-family:var(--font-ui); }
+/* PROBE is the longest action label in the suite. Only the weight, family and
+   floor belong to this game — flex, tracking and the narrow-width steps are
+   the kit's, and restating them here is what kept this key clipping at 360
+   after the kit had already been widened. */
+.key.wide{ font-size:10px; font-weight:800; font-family:var(--font-ui); }
 .deskhint{ display:none; }
 /* Gated exactly like .kbd in shared/kit.css, and for the same reason. Width
    alone is the wrong question: a tablet is over 620px and has no hardware
@@ -1024,12 +1028,13 @@ button.cand:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; 
     // not land in a slot nobody can see behind the scrim
     if (document.querySelector('.scrim, #tour-layer')) return;
     if (e.key === 'Enter') {
-      // Kit.ownsKey uses :focus-visible, so a control the player TABBED to
-      // keeps ENTER, while one merely left focused by a mouse click hands it
-      // back to the board — otherwise, on desktop where the on-screen keys
-      // are hidden and typing is the only input path, clicking this game's
-      // one big button silently eats every ENTER that follows.
-      if (t && t.closest && !t.closest('#kbd') && Kit.ownsKey(e)) return;
+      // A control owns ENTER only while the word buffer is EMPTY. Once the
+      // player has typed a letter, the board owns their keystrokes until they
+      // play or clear them — otherwise a button still holding focus (the
+      // caddie they backed out of, a Call it they peeked at) silently eats
+      // every ENTER, and on desktop, where the on-screen keys are hidden and
+      // typing is the only input path, the game is simply stuck.
+      if (!cur.length && Kit.ownsKey(e)) return;
       onKey('ENTER'); e.preventDefault();
     } else if (e.key === 'Backspace') { onKey('BACK'); e.preventDefault(); }
     else if (/^[a-zA-Z]$/.test(e.key)) { onKey(e.key.toUpperCase()); e.preventDefault(); }
