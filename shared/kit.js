@@ -592,6 +592,30 @@
       <button class="btn primary wide" data-close style="margin-top:18px">Got it</button>`);
   }
 
+  /* ---- who owns ENTER right now? ---------------------------------------
+     Three of these games take a typed word and mount a document-level key
+     handler for it. That handler must not steal ENTER from a control the
+     player has genuinely tabbed to — but "is the target a button" is the
+     wrong test, and it created a silent stuck state on desktop, where the
+     on-screen keys are hidden and typing is the ONLY input path: click the
+     caddie (or Call it), close the sheet, and focus is sitting on that
+     button, so every ENTER after that re-opens the sheet instead of playing
+     your word. In a loop. With no feedback.
+
+     :focus-visible is exactly the distinction that was missing. A control
+     focused by pointer does not match it; one reached by keyboard does. So a
+     keyboard user still gets ENTER on the control they tabbed to, and a
+     mouse user gets ENTER back for the game. */
+  function ownsKey(e) {
+    const t = e.target;
+    if (!t || !t.closest) return false;
+    const ctl = t.closest('button, a[href], summary, [role="button"], input, select, textarea');
+    if (!ctl) return false;
+    if (ctl.matches('input, select, textarea')) return true;
+    try { return ctl.matches(':focus-visible'); }
+    catch (err) { return true; }   // no :focus-visible support — keep the safe old behaviour
+  }
+
   /* Play once per browser, keyed by name. Used for the coach tour and the
      one-off nudges, so a returning player is never taught twice. */
   function once(name) {
@@ -624,6 +648,6 @@
     dayNumber, puzzleNo, advance, resetCursor, pinned, nextButton,
     pick, dateLabel, countdown, msToMidnight, rng,
     store, toast, sheet, share, keyboard, haptic, flash, esc, helpButton,
-    icon, themeToggle, currentTheme, count, burst, tour, once
+    icon, themeToggle, currentTheme, count, burst, tour, once, ownsKey
   };
 })(window);

@@ -237,9 +237,10 @@
      --ink-3 is tuned against --paper and --white; measured on these tinted
      panels it lands 4.87–4.97 in light — fine — but 4.08–4.34 in dark, because
      there the panel is a LIFT off --white rather than a wash into it, and the
-     8–9px labels in here ("BREAKS", the "?", the step counts) are the smallest
-     type on the page. One step to --ink-2 in dark puts all five back over 4.5
-     and leaves the light values, which were already right, untouched. */
+     labels in here ("BREAKS", the "?", the step counts) are the smallest type on
+     the page — 10px now, the suite floor, and still the smallest. One step to
+     --ink-2 in dark puts all five back over 4.5 and leaves the light values,
+     which were already right, untouched. */
   --ink-mini: var(--ink-3);
 }
 @media (prefers-color-scheme: dark) { .mini { --ink-mini: var(--ink-2); } }
@@ -249,15 +250,22 @@
 /* CHAINS — the vertical chain, laid on its side: two words played, the
    pin still behind a dashed link you have not covered yet. */
 .m-chain { padding: 0 8px; }
+/* The plates carry 5px of side padding rather than 7px, and they pay for the
+   joint label below them. That label went to the suite's 10px floor, and
+   "milkshake" is a nine-character word that cannot break: measured at 320, the
+   five children filled the miniature's 266px exactly, with the two link columns
+   already shrunk to 46.6px around a 40.7px word. Two pixels off each side of
+   three plates buys back 12px — more than the 8.9px the bigger word costs — the
+   same trade Chains made on its tee tag (7/8px to 6/7px) for the same floor. */
 .m-chain .pl {
   font-size: 11px; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
   background: var(--white); border: 1px solid color-mix(in srgb, var(--c) 25%, var(--line));
-  border-radius: 6px; padding: 5px 7px; box-shadow: var(--shadow-1);
+  border-radius: 6px; padding: 5px 5px; box-shadow: var(--shadow-1);
 }
 .m-chain .pin { display: inline-flex; align-items: center; gap: 4px; border-color: var(--c); color: var(--c); }
 .m-chain .pin .ms { --ms-size: 14px; --ms-fill: 1; }
 .m-chain .lnk { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 54px; flex: 0 1 54px; }
-.m-chain .lnk i { font-style: normal; font-size: 8px; font-weight: 700; color: var(--c); letter-spacing: .01em; }
+.m-chain .lnk i { font-style: normal; font-size: 10px; font-weight: 700; color: var(--c); letter-spacing: 0; }
 .m-chain .lnk b { width: 100%; border-top: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); }
 .m-chain .gap i { color: var(--ink-mini); }
 .m-chain .gap b { border-top-style: dashed; }
@@ -265,9 +273,12 @@
 /* THE RULE — three words obey, three break, and nothing about them says why */
 .m-rule { padding: 0 6px; }
 .m-rule .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+/* 10px, and .10em rather than .12em: the same trade the rest of the suite's
+   caps micro-labels make at this size — Chains' "TO PAR" went .16em to .10em on
+   the way to the floor — so the label grows in type and not in measure. */
 .m-rule .hd {
   display: flex; align-items: center; gap: 4px; margin-bottom: 1px;
-  font-size: 8.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-mini);
+  font-size: 10px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; color: var(--ink-mini);
 }
 .m-rule .ok .hd { color: var(--c); }
 .m-rule .hd .ms { --ms-size: 13px; --ms-wght: 700; }
@@ -281,7 +292,7 @@
 .m-grid .g4 { display: grid; grid-template-columns: repeat(4, 18px); gap: 3px; }
 .m-grid .g4 i {
   font-style: normal; height: 18px; display: grid; place-items: center;
-  font-size: 9.5px; font-weight: 700; border-radius: 4px; color: var(--ink-2);
+  font-size: 10px; font-weight: 700; line-height: 1; border-radius: 4px; color: var(--ink-2);
   background: var(--white); border: 1px solid var(--line);
 }
 .m-grid .g4 i.lit { background: var(--c); border-color: transparent; color: var(--white); }
@@ -292,7 +303,7 @@
 .m-seed .queue { display: flex; gap: 4px; }
 .m-seed .queue i {
   font-style: normal; width: 15px; height: 15px; display: grid; place-items: center;
-  font-size: 8.5px; font-weight: 700; border-radius: 4px; color: var(--ink-3);
+  font-size: 10px; font-weight: 700; line-height: 1; border-radius: 4px; color: var(--ink-3);
   background: var(--white); border: 1px solid var(--line);
 }
 .m-seed .queue i:first-child { background: var(--c); border-color: transparent; color: var(--white); }
@@ -306,7 +317,7 @@
   vertical-align: 3px; opacity: .45;
   border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
 }
-.m-seed .st b { font-size: 9px; font-weight: 700; color: var(--ink-mini); }
+.m-seed .st b { font-size: 10px; font-weight: 700; color: var(--ink-mini); }
 .m-seed .st.on i, .m-seed .st.on b { color: var(--c); }
 
 /* STOWAWAYS — prose, with one word straddling the gap between two others */
@@ -432,7 +443,7 @@
         <span class="lnk"><i>milkshake</i><b></b></span>
         <span class="pl">SHAKE</span>
         <span class="lnk gap"><i>?</i><b></b></span>
-        <span class="pl pin">TOWN<span class="ms">golf_course</span></span>
+        <span class="pl pin">TOWN<span class="ms" aria-hidden="true">golf_course</span></span>
       </div>
       <div class="body">
         <div class="head">
@@ -456,12 +467,12 @@
     <a class="card g-rule" href="rule/index.html" style="--i:1">
       <div class="mini m-rule" aria-hidden="true">
         <div class="col ok">
-          <span class="hd"><span class="ms">check</span>Follows</span>
+          <span class="hd"><span class="ms" aria-hidden="true">check</span>Follows</span>
           <i style="width:47px"></i><i style="width:37px"></i><i style="width:57px"></i>
         </div>
         <span class="vr"></span>
         <div class="col no">
-          <span class="hd"><span class="ms">close</span>Breaks</span>
+          <span class="hd"><span class="ms" aria-hidden="true">close</span>Breaks</span>
           <i style="width:37px"></i><i style="width:57px"></i><i style="width:47px"></i>
         </div>
       </div>
@@ -486,14 +497,14 @@
 
     <a class="card g-shunt" href="shunt/index.html" style="--i:2">
       <div class="mini m-grid" aria-hidden="true">
-        <span class="ms ar">chevron_left</span>
+        <span class="ms ar" aria-hidden="true">chevron_left</span>
         <div class="g4">
           <i>E</i><i>R</i><i>O</i><i>K</i>
           <i class="lit">M</i><i class="lit">I</i><i class="lit">N</i><i class="lit">T</i>
           <i>A</i><i>S</i><i>L</i><i>D</i>
           <i>P</i><i>U</i><i>C</i><i>H</i>
         </div>
-        <span class="ms ar">chevron_right</span>
+        <span class="ms ar" aria-hidden="true">chevron_right</span>
       </div>
       <div class="body">
         <div class="head">

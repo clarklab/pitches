@@ -2015,8 +2015,12 @@
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (document.querySelector('.scrim') || document.getElementById('tour-layer')) return;
     if (e.key === 'Enter') {
-      if (t && t.closest && !t.closest('#kbd') &&
-          t.closest('button, a[href], [role="button"]')) return;   // let it click
+      // Kit.ownsKey uses :focus-visible, so a control the player TABBED to
+      // keeps ENTER, while one merely left focused by a mouse click hands it
+      // back to the board — otherwise, on desktop where the on-screen keys
+      // are hidden and typing is the only input path, clicking this game's
+      // one big button silently eats every ENTER that follows.
+      if (t && t.closest && !t.closest('#kbd') && Kit.ownsKey(e)) return;
       onKey('ENTER'); e.preventDefault();
     } else if (e.key === 'Backspace') { onKey('BACK'); e.preventDefault(); }
     else if (/^[a-zA-Z]$/.test(e.key)) { onKey(e.key.toUpperCase()); e.preventDefault(); }

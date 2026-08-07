@@ -17,7 +17,7 @@
      ======================================================================== */
   :root {
     --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff;
-    --good:#2e7d4f; --warn:#a1700a; --bad:#a93a2a;
+    --good:#2a7449; --warn:#8a6508; --bad:#a93a2a;
     --stem:#dcbcca;                       /* the hairline the ladder hangs off */
     --plate:#fffbfc;                      /* tint at the top of a specimen card */
     --socket:#cdbcc3;                     /* an empty letter hole */
@@ -42,7 +42,7 @@
   }
   :root[data-theme="light"] {
     --accent:#b02a5b; --accent-soft:#f9dde7; --accent-ink:#fff;
-    --good:#2e7d4f; --warn:#a1700a; --bad:#a93a2a;
+    --good:#2a7449; --warn:#8a6508; --bad:#a93a2a;
     --stem:#dcbcca; --plate:#fffbfc; --socket:#cdbcc3;
     --wash:rgba(176,42,91,.055);
   }
@@ -80,9 +80,13 @@
     letter-spacing: .004em; text-transform: none; line-height: .94;
     margin: 0 0 4px; flex: none; color: var(--ink);
   }
+  /* 10px is the suite's floor for a micro-label — the same floor Chains holds —
+     and this line pays for the extra pixel out of its own tracking and the gap
+     either side of the rules (.18em/7px -> .13em/6px), so the lockup measures
+     what it did before and the flanking utilities keep their 96px. */
   .bar .puzz-no {
-    display: inline-flex; align-items: center; gap: 7px;
-    font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: .13em;
     font-variation-settings: 'wght' 620; color: var(--ink-3);
     text-transform: uppercase;
   }
@@ -105,17 +109,21 @@
     content: ''; position: absolute; inset: 3px; pointer-events: none;
     border: 1px solid var(--line); border-radius: calc(var(--r) - 3px); opacity: .6;
   }
+  /* Both halves of this header sit at the suite's 10px floor and buy the extra
+     half-pixel back out of tracking (.12em -> .10em on the label, .08em ->
+     .07em on the counter). The label still has ~35px of slack at 360 before
+     its ellipsis can engage, so the tagline survives the raise. */
   .qhead {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    font-size: 9.5px; font-weight: 800; letter-spacing: .12em;
+    font-size: 10px; font-weight: 800; letter-spacing: .10em;
     text-transform: uppercase; color: var(--accent); margin-bottom: 2px;
     white-space: nowrap;
   }
   .qhead .qlab { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .qhead .rem {
     display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
-    color: var(--ink-3); letter-spacing: .08em; font-family: var(--font-mono);
-    font-size: 9.5px; font-variation-settings: 'wght' 600;
+    color: var(--ink-3); letter-spacing: .07em; font-family: var(--font-mono);
+    font-size: 10px; font-variation-settings: 'wght' 600;
   }
   .qhead .rem .ms { --ms-size: 12px; --ms-wght: 600; }
 
@@ -576,7 +584,10 @@
   @keyframes pip { from { transform: scale(0); opacity: 0 } }
 
   .statrow { gap: 7px; }
-  .stat { padding: 9px 4px 8px; }
+  /* 3px of side padding, not 4: the longest label ("Best possible") is the one
+     thing in this row that has to stay on one line, and the extra 2px of well
+     is what the raise to the 10px floor is paid out of. */
+  .stat { padding: 9px 3px 8px; }
   /* Measurements on a plate are set in the technical face, not the display one —
      and Instrument Serif's 1 is a bare stem, so "11" read as "ll". These are the
      same numerals as the length column on the ladder, which is the point. */
@@ -586,11 +597,13 @@
     line-height: 1.16; margin-bottom: 1px;
     font-variant-numeric: tabular-nums lining-nums;
   }
-  .stat .l { font-size: 9.5px; letter-spacing: .09em; }
+  /* the kit's own 10px floor, restored; .09em -> .06em pays for the pixel so
+     "Best possible" measures what it did at 9.5px and still never wraps */
+  .stat .l { font-size: 10px; letter-spacing: .06em; }
   .stat.tone-good { background: var(--good-soft); border-color: transparent; color: var(--good); }
   .stat.tone-warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
   .stat.tone-bad  { background: var(--bad-soft);  border-color: transparent; color: var(--bad); }
-  /* No opacity here: at 9.5px on a tinted card, .72 dropped the amber label to
+  /* No opacity here: at this size on a tinted card, .72 dropped the amber label to
      2.4:1 and the green one to 2.7:1 in light mode — well under the untinted
      label's own footing. Hierarchy is carried by size and tracking instead. */
   .stat.tone-good .l, .stat.tone-warn .l, .stat.tone-bad .l { color: currentColor; }
@@ -1160,6 +1173,12 @@
     S.timeline.push('skip');
     Kit.haptic([5, 30, 5]);
     Kit.toast('Skipped ' + ch + ' · ' + (MAXSK - S.skips) + ' left');
+    /* Hand focus back to the board. A skip is one of only two you get, and a
+       keyboard player who activates this button stays parked on it — so their
+       next ENTER, which in this game means "play my word", would silently
+       spend the other one. Every other control here is idempotent; this is the
+       one that costs something, so it is the one that lets go. */
+    if ($('skip') === document.activeElement) $('skip').blur();
     nextLetter('skip');
   }
 
@@ -1470,8 +1489,7 @@
        itself, so typing a word on a cold board and hitting ENTER is
        untouched. */
     var t = e.target;
-    if ((e.key === 'Enter' || e.key === ' ') && t && t.closest &&
-        t.closest('button, a[href], summary, [role="button"]')) return;
+    if ((e.key === 'Enter' || e.key === ' ') && Kit.ownsKey(e)) return;
     if (e.key === 'Enter') { submit(); e.preventDefault(); }
     else if (e.key === 'Backspace') { backspace(); e.preventDefault(); }
     else if (e.key === ' ') { shuffleRack(); e.preventDefault(); }

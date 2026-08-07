@@ -126,10 +126,16 @@
     letter-spacing: .04em; text-transform: uppercase;
     margin: 0; line-height: 1.04; white-space: nowrap;
   }
+  /* 10px is the suite floor for micro-labels — no surface in the lineup sets
+     furniture smaller, so neither does this one. The half point is bought back
+     out of tracking rather than paid for in width: a mono cap costs 7.13px at
+     9.5px/.15em and 7.20px at 10px/.12em, so the nowrap dateline gains about
+     1% on a 100px string inside a middle column with 57px of slack before
+     either flank reaches the 44px its button needs. */
   .dateline {
     margin: 3px 0 0; display: flex; align-items: center; justify-content: center; gap: 5px;
-    font-family: var(--font-mono); font-size: 9.5px; font-weight: 500;
-    letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
     white-space: nowrap; line-height: 1;
   }
   .dateline .ms { --ms-size: 13px; --ms-fill: 1; color: var(--accent); }
@@ -156,7 +162,7 @@
   .kicker.solved .kick-c::after { color: var(--key); }
   .kick-l {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 9.5px; font-weight: 800; letter-spacing: .18em;
+    font-size: 10px; font-weight: 800; letter-spacing: .14em;
     text-transform: uppercase; color: var(--accent);
     transition: color var(--dur-3) var(--ease-out);
   }
@@ -174,10 +180,17 @@
      berth is the keystone and it is brass from the first glance, so the
      board itself says one of these is different before anyone reads a rule.
      NB the keystone modifier is `.ks`, not `.key` — kit.css already owns
-     `.key` for the on-screen keyboard and it would flex-grow the chip. */
+     `.key` for the on-screen keyboard and it would flex-grow the chip.
+
+     The line-height here is the price of the 10px floor, not decoration: this
+     row is 14px tall because the crate glyph is 14px, and a `normal` line box
+     fitted inside that at 9.5px but is 14.5px at 10px and would take over —
+     half a pixel the berths, the passage and the autofit all inherit. Pinned
+     to 1, the icon keeps setting the height and nothing below this rule
+     moves. The dateline is pinned for the same reason. */
   .man-head {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    font-size: 9.5px; font-weight: 800; letter-spacing: .15em;
+    font-size: 10px; font-weight: 800; letter-spacing: .12em; line-height: 1;
     text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px;
   }
   .man-head .l { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); }
@@ -674,7 +687,7 @@
     align-items: center; margin: 0 0 14px;
   }
   .gotaway .gl {
-    font-size: 9.5px; font-weight: 800; letter-spacing: .16em;
+    font-size: 10px; font-weight: 800; letter-spacing: .13em;
     text-transform: uppercase; color: var(--ink-3); width: 100%; text-align: center;
     margin-bottom: 1px;
   }
