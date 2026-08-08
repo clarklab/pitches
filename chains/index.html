@@ -283,6 +283,19 @@
   .caddie[disabled] { opacity:.42; cursor:default; box-shadow:none; }
   .caddie.spent .ms { --ms-fill:1; color:var(--warn-hi); }
   .caddie.signed .ms { --ms-fill:1; color:var(--accent-hi); }
+  /* the caddie and the flag share a flank: two ways out of trouble, side by
+     side, so "stuck" always has somewhere to tap */
+  .helpers { display:flex; align-items:center; gap:7px; flex:0 0 auto; }
+  .caddie.iconly { padding:0; width:44px; justify-content:center; gap:0; }
+  /* display:flex on .caddie out-specifies the UA's [hidden] rule — restate it,
+     or the flag stays on screen after the round is signed */
+  .caddie[hidden] { display:none; }
+  /* at 320px the tally, a labelled caddie and the flag cannot all fit; the
+     caddie folds to its glyph before anything starts clipping */
+  @media (max-width: 374px) {
+    #caddieBtn { padding:0; min-width:44px; justify-content:center; gap:0; }
+    #caddieBtn #caddieLbl { display:none; }
+  }
 
   /* ==================================================================
      THE COURSE — one spine runs the whole way down, solid where you have
@@ -572,6 +585,8 @@
     color:var(--ink-2); line-height:1;
     transition: color .35s var(--ease-out);
   }
+  /* the rangefinder reading changed — noticed once, not blinked on repaints */
+  .pin .lbl.said { animation: rise-in .34s var(--ease-out) both; }
   .pin .word {
     font-family:var(--font-brand); font-variation-settings:'opsz' 44,'wght' 700;
     font-size:23px; line-height:1.05; letter-spacing:.02em; text-transform:uppercase;
@@ -957,10 +972,16 @@
           <span class="warnl" id="strokeW"></span>
         </span>
       </div>
-      <button class="caddie" id="caddieBtn" type="button">
-        <span class="ms" id="caddieIcon" aria-hidden="true">front_hand</span>
-        <span id="caddieLbl">Caddie</span>
-      </button>
+      <span class="helpers" id="helpers">
+        <button class="caddie" id="caddieBtn" type="button">
+          <span class="ms" id="caddieIcon" aria-hidden="true">front_hand</span>
+          <span id="caddieLbl">Caddie</span>
+        </button>
+        <button class="caddie iconly" id="flagBtn" type="button"
+                aria-label="Take a drop or pick up" title="Take a drop or pick up">
+          <span class="ms" aria-hidden="true">flag</span>
+        </button>
+      </span>
     </div>
   </div>
 
@@ -1143,6 +1164,8 @@
   let lastPips  = -1;      // holes scored at last paint
   let lastWarn  = '';      // last tension line said
   let lastLevel = null;    // 0 fine · 1 warn · 2 alarm, at the last paint
+  let lastPinCap = null;   // last rangefinder reading painted on the pin
+  let drift     = false;   // the last stroke moved AWAY from the pin
   let scrollHome = null;   // the timer that makes sure the course got there
 
   const hole = () => HOLES[S.hole];
@@ -1221,6 +1244,8 @@
       cad.disabled = S.caddie;
       cad.className = 'caddie' + (S.caddie ? ' spent' : '');
     }
+    /* a signed round has nothing left to surrender */
+    el('flagBtn').hidden = !!S.done;
 
     /* holeAnim is set for exactly as long as the ball is rolling: the pin
        must not have already turned green when it gets there. */
@@ -1228,7 +1253,19 @@
     pinEl.classList.toggle('done', holed);
     el('toPin').classList.toggle('holed', holed);
     appEl.classList.toggle('done', !!S.done);
-    el('pinLbl').textContent = holed ? 'Holed out' : 'The pin';
+    /* THE RANGEFINDER. The pin always reads the true distance, so a player
+       knows after every stroke whether they walked toward the hole or away
+       from it — recovery stops being a guess. It reveals nothing par hasn't
+       already said (par = best + 1 is printed on the card). */
+    let pinCap = holed ? 'Holed out' : 'The pin';
+    if (!holed && !S.done && head() !== h.target.toLowerCase()) {
+      const need = distTo(head(), h.target.toLowerCase());
+      pinCap = need === Infinity ? 'The pin · no way home'
+             : `The pin · ${need} link${need === 1 ? '' : 's'} out`;
+    }
+    el('pinLbl').textContent = pinCap;
+    if (lastPinCap !== null && pinCap !== lastPinCap && !holed) Kit.flash(el('pinLbl'), 'said');
+    lastPinCap = pinCap;
   }
 
   function renderScore() {
@@ -1242,8 +1279,10 @@
     el('strokeL').textContent = `${S.strokes === 1 ? 'stroke' : 'strokes'} · par ${h.par}`;
     let tail = '';
     if (!S.done) {
-      if (left === 1) tail = 'Last swing';
+      if (need === Infinity) tail = 'No way home — take a drop';
+      else if (left === 1) tail = 'Last swing';
       else if (need === left) tail = 'Needs a perfect line';
+      else if (drift) tail = 'Further from the pin';
       else if (left === 2) tail = 'Two swings left';
     }
     const w = el('strokeW');
@@ -1252,9 +1291,9 @@
     if (tail && tail !== lastWarn) Kit.flash(w, 'said');
     lastWarn = tail;
     const bar = el('lie');
-    const alarm = !S.done && (left <= 1 || need === left);
+    const alarm = !S.done && (left <= 1 || need === left || need === Infinity);
     bar.classList.toggle('alarm', alarm);
-    bar.classList.toggle('warn', !S.done && left === 2 && need !== left);
+    bar.classList.toggle('warn', !S.done && !alarm && left === 2);
     /* the lie getting worse is news, and news arrives — once, on the change,
        never on a repaint and never on the first load of a resumed hole */
     const level = alarm ? 2 : bar.classList.contains('warn') ? 1 : 0;
@@ -1381,10 +1420,15 @@
     const e = el('entry');
     if (e) Kit.flash(e, how === 'lip' ? 'lip' : 'duff');
     el('live').textContent = msg;
-    if (++misses === 3 && !S.caddie && !S.done) {
+    /* nothing linking is exactly when a player decides the dictionary is the
+       enemy — point at the caddie first, and at the flag once she's spent
+       (or once they've bounced long enough that she clearly wasn't enough) */
+    if ((++misses === 3 || misses === 6) && !S.done) {
+      const m = misses;
       setTimeout(() => {
-        if (S.done || S.caddie || document.querySelector('.scrim')) return;
-        Kit.toast('Stuck? The caddie is one tap away', 2600);
+        if (S.done || document.querySelector('.scrim')) return;
+        if (m === 3 && !S.caddie) Kit.toast('Stuck? The caddie is one tap away', 2600);
+        else Kit.toast('Nothing linking? The flag can drop you back or pick up', 2800);
       }, 2400);
     }
   }
@@ -1411,6 +1455,10 @@
 
   function commit(w) {
     busy = true;
+    /* measured against where you stood, before the stroke is on the card —
+       this is what feeds the "Further from the pin" line */
+    const t = hole().target.toLowerCase();
+    drift = distTo(w, t) > distTo(head(), t);
     typed = '';
     S.chain.push(w);
     S.strokes++;
@@ -1514,7 +1562,7 @@
 
   /* After every stroke: holed out, out of swings, or mathematically dead.
      A player is never left flailing at a position the pin can't be reached
-     from — the hole ends there, and it ends loudly. */
+     from — the hole ends there, or it offers the way back. */
   function settle() {
     const h = hole(), t = h.target.toLowerCase();
     if (head() === t) { holeOut(() => finishHole(false)); return true; }
@@ -1526,10 +1574,109 @@
     const wait = beat(760);
     const dead = (why, n) => { closeLie(); setTimeout(() => finishHole(true, why, n), wait); return true; };
     if (left <= 0)        return dead('swings');
-    if (need === Infinity) return dead('nowhere');
+    if (need === Infinity) {
+      /* A cul-de-sac is no longer an instant funeral. If walking back one
+         word leaves a live line, the player chooses: take the drop or pick
+         up. (Only strandings can ever be rescued this way — a position that
+         is merely too far stays too far after a drop, because one link can
+         only change the distance by one while the penalty eats a swing.) */
+      if (canDrop()) {
+        setTimeout(() => {
+          if (S.done || document.querySelector('.scrim')) return;
+          troubleSheet();
+        }, wait);
+        return false;
+      }
+      return dead('nowhere');
+    }
     if (need > left)       return dead('short', need);
     return false;
   }
+
+  /* ---------- trouble: the drop and the pick-up ------------------------
+     Golf's own escape hatches. A drop is one penalty stroke to stand back
+     on the previous word — never a bargain, but always a way to keep
+     playing when the word you're on has you beat. Picking up is allowed at
+     any time, not just when the swings run out: par + 4 and walk. */
+  function canDrop() {
+    if (S.chain.length < 2) return false;
+    const t = hole().target.toLowerCase();
+    const back = distTo(S.chain[S.chain.length - 2], t);
+    return back <= maxStrokes() - S.strokes - 1;   // still alive after the penalty
+  }
+
+  function doDrop() {
+    const prev = S.chain[S.chain.length - 2];
+    S.chain.pop();
+    S.strokes++;                                   // the penalty stroke
+    if (S.caddieAt >= S.chain.length) S.caddieAt = -1;
+    typed = '';
+    drift = false;
+    misses = 0;
+    save.set(S);
+    Kit.haptic(BUZZ.lip);
+    Kit.toast(`Back on ${prev.toUpperCase()} — one penalty stroke`, 2600);
+    el('live').textContent =
+      `Drop taken. Back on ${prev}, stroke ${S.strokes} of ${maxStrokes()}.`;
+    render(false);
+    if (!settle()) busy = false;
+  }
+
+  function troubleSheet() {
+    const h = hole(), t = h.target.toLowerCase();
+    const left = maxStrokes() - S.strokes;
+    const need = distTo(head(), t);
+    const prev = S.chain.length > 1 ? S.chain[S.chain.length - 2] : null;
+    const drop = canDrop();
+    const stranded = need === Infinity;
+    const title = stranded ? 'Stranded' : 'In trouble?';
+    const status = stranded
+      ? `There is no line from <b>${Kit.esc(head().toUpperCase())}</b> back to
+         <b>${Kit.esc(h.target)}</b> — not in one more link, not in a hundred.
+         But you can go back the way you came.`
+      : `<b>${Kit.esc(head().toUpperCase())}</b> is ${need} link${need === 1 ? '' : 's'} from
+         <b>${Kit.esc(h.target)}</b>, with ${left} swing${left === 1 ? '' : 's'} in hand.`;
+    const dropRow = drop
+      ? `<b>Take a drop</b> — one penalty stroke, back to <b>${Kit.esc(prev.toUpperCase())}</b>`
+      : !prev ? `<b>No drop here</b> — you are still on the tee`
+      : `<b>A drop can't save this one</b> — not enough swings left from <b>${Kit.esc(prev.toUpperCase())}</b>`;
+    Kit.sheet(`
+      <div class="stagger">
+        <h2>${title}</h2>
+        <p class="sub">${status}</p>
+        <div class="cadcost">
+          <span class="row">${Kit.icon('undo', { size: 18 })}<span>${dropRow}</span></span>
+          <span class="row">${Kit.icon('flag', { size: 18 })}<span><b>Pick up</b> — take the
+            ${h.par + 4} and walk to the next tee</span></span>
+        </div>
+        ${drop ? `<button class="btn primary wide" id="dropGo" style="margin-top:18px">
+          ${Kit.icon('undo', { size: 19 })}Take a drop</button>` : ''}
+        <button class="btn ${drop ? 'tonal' : 'primary'} wide" id="pickGo"
+                style="margin-top:${drop ? 8 : 18}px">
+          ${Kit.icon('flag', { size: 19 })}Pick up the ball</button>
+        <button class="btn ghost wide" data-close style="margin-top:8px">${
+          stranded ? 'Look at the board' : 'Keep playing'}</button>
+      </div>
+    `, { onOpen(root, close) {
+      root.setAttribute('aria-label', `${title} — take a drop or pick up`);
+      const d = root.querySelector('#dropGo');
+      if (d) d.addEventListener('click', () => { close(); doDrop(); });
+      root.querySelector('#pickGo').addEventListener('click', () => {
+        close();
+        Kit.haptic(BUZZ.lip);
+        busy = true;
+        closeLie();
+        el('live').textContent = 'Picked up.';
+        setTimeout(() => finishHole(true, 'quit'), beat(300));
+      });
+    }});
+  }
+
+  el('flagBtn').addEventListener('click', () => {
+    Kit.haptic(BUZZ.tap);
+    if (S.done || busy) return;
+    troubleSheet();
+  });
 
   /* ---------- caddie --------------------------------------------------- */
   el('caddieBtn').addEventListener('click', () => {
@@ -1538,8 +1685,11 @@
     if (S.caddie || busy) return;
     const h = hole();
     const t = h.target.toLowerCase();
-    if (distTo(head(), t) >= maxStrokes() - S.strokes) {
-      Kit.toast('No time for a caddie — you need every swing', 2400);
+    const needNow = distTo(head(), t);
+    if (needNow >= maxStrokes() - S.strokes) {
+      Kit.toast(needNow === Infinity
+        ? "Even the caddie can't get home from here — try the flag"
+        : 'No time for a caddie — you need every swing', 2400);
       Kit.haptic(BUZZ.lip);
       return;
     }
@@ -1631,6 +1781,10 @@
         body = `<p class="sub">${need} more links to the pin and only ${maxStrokes() - S.strokes}
                 swing${maxStrokes() - S.strokes === 1 ? '' : 's'} left. You can't get there from
                 <b>${Kit.esc(head().toUpperCase())}</b>. Pick up: ${h.par + 4}.</p>`;
+      } else if (why === 'quit') {
+        title = 'Picked up';
+        body = `<p class="sub">You called it from <b>${Kit.esc(head().toUpperCase())}</b> and
+                walked in — sometimes the hole wins. Take the ${h.par + 4} and a fresh tee.</p>`;
       } else {
         title = 'Picked up';
         body = `<p class="sub">Out of swings, still short of <b>${Kit.esc(h.target)}</b>.
@@ -1648,7 +1802,8 @@
           <span class="cap">${pickedUp ? 'no return · scored ' + (h.par + 4) : 'to par on hole ' + (S.hole + 1)}</span>
         </div>
         <div class="lineout">
-          <span class="cap">${Kit.icon('polyline')}${pickedUp ? 'your line ran out at' : 'your line'}</span>
+          <span class="cap">${Kit.icon('polyline')}${
+            pickedUp ? (why === 'quit' ? 'you picked up at' : 'your line ran out at') : 'your line'}</span>
           <b>${lineHTML(S.chain)}${pickedUp ? ' …' : ''}</b>
         </div>
         ${missedHTML(pickedUp) || foundHTML(pickedUp)}
@@ -1672,6 +1827,7 @@
         typed = '';
         busy = false;
         misses = 0;
+        drift = false;
         save.set(S);
         render(false);
       });
@@ -1925,15 +2081,18 @@
     </div>
     <p class="demolbl">Air to sill in <b>four strokes</b></p>
     <ul class="rules">
-      <li><b>No undo.</b> A word that doesn't link bounces. A word that links is played,
-          and you carry on from there.</li>
+      <li><b>No free undo.</b> A word that doesn't link bounces. A word that links is
+          played, and you carry on from there — or take a drop: one penalty stroke
+          to step back a word.</li>
       <li><b>Par</b> is one over the tightest line there is, so a perfect route is a
           birdie — an eagle on the long hole.</li>
       <li>Three holes, then you sign the card.</li>
     </ul>
     <div class="fineprint">
-      <b>Out of swings</b> short of the pin? Pick up for par + 4.
-      <b>One caddie a round</b> names a word that keeps you alive, for a stroke.
+      <b>The pin reads the distance</b> — after every stroke you know how many
+      links home you are. <b>One caddie a round</b> names a word that keeps you
+      alive, for a stroke. <b>In trouble?</b> The flag takes a drop — one
+      penalty stroke, back one word — or picks up for par + 4, any time.
     </div>
     <div class="keymap">
       <span><b>Type</b> a word</span><span><b>Enter</b> plays it</span><span><b>Backspace</b> edits</span>
@@ -1991,8 +2150,8 @@
     Kit.tour([
       { sel: '#pin', place: 'above',
         text: `Three holes of golf. This one ends at <b>${Kit.esc(hole().target)}</b> — the pin.` },
-      { sel: '#caddieBtn', place: 'below',
-        text: 'Stuck later? The caddie names one word for you, once a round, for a stroke.' },
+      { sel: '#helpers', place: 'below',
+        text: 'Stuck later? The caddie names a word, once a round, for a stroke — and the flag can drop you back a word or pick up.' },
       /* the last mark is tight on the join and the plate under it, because
          those two already carry the rule: HEAD · ? , and somewhere to type */
       { sel: '#teeup', place: 'below', pad: 6,
