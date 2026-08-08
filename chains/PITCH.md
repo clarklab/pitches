@@ -8,10 +8,14 @@ walk between them one compound word at a time. FIRE → HOUSE, because
 the pin.
 
 Par is one stroke more than the tightest line anyone has found, so **the perfect
-route is a birdie**, and there is more than one perfect route. There is no undo:
-a word that doesn't link just bounces off, but a word that *does* link is
-played, and you carry on from wherever it dropped you. Run out of swings and you
-pick up for par + 4 and walk to the next tee with that on your card.
+route is a birdie**, and there is more than one perfect route. There is no free
+undo: a word that doesn't link just bounces off, but a word that *does* link is
+played, and you carry on from wherever it dropped you — unless you **take a
+drop**, golf's own escape hatch: one penalty stroke to stand back on the word
+you came from. The pin reads the true distance after every stroke, so you always
+know whether that last word walked toward the hole or away from it. Run out of
+swings — or **pick up** whenever a hole has you beat, which you may do at any
+time — and you walk to the next tee with par + 4 on your card.
 
 You finish with a golf scorecard. Everyone already knows how to read one.
 
@@ -45,8 +49,9 @@ Four strokes on a par 6. **Eagle.**
 Now look at what else was on the table. From that same tee you could have
 played FIRE → HOUSE → CALL → BOX → CAR (*firehouse, house call, call box,
 boxcar*) for the same four strokes. Or you could have opened with FIRE →
-WORKS — *fireworks*, a lovely word, an instant cul-de-sac, and the round is
-effectively over on stroke one. There are **thirteen** four-stroke lines
+WORKS — *fireworks*, a lovely word, an instant cul-de-sac, and now the eagle is
+gone: the drop that walks you back out of it costs a stroke you will feel all
+hole. There are **thirteen** four-stroke lines
 through this hole and eighty-nine more that come home in five, and no two
 players in a group chat will take the same one.
 
@@ -55,21 +60,37 @@ must have **at least two distinct optimal routes** (or it's a riddle with one
 answer, not a golf hole) and **no more than forty** (or reaching the pin feels
 like luck rather than a line you chose).
 
-**The no-undo rule is where the game gets its teeth.** Typing QUARTZ from FIRE
+**No free undo is where the game gets its teeth.** Typing QUARTZ from FIRE
 does nothing — it bounces with a shake and costs you nothing at all. But typing
 WOOD works (*firewood*), and now you have spent a stroke to stand somewhere
 that is still **four** links from CAR, when HOUSE would have left you three.
 WOOD's onward links are WORK, LAND, PECKER, SHED, PILE, CHIP, CUT, BLOCK,
 BURNER, WIND, SMOKE — a fine set of words, none of them pointing at a car. You
 did not make a mistake. You made *a choice*, and it was worse than the one
-sitting next to it.
+sitting next to it — and the pin says so at once: it read `3 links out` before
+you swung and it reads `4 links out` now. You can play on from WOOD, or take a
+drop — one penalty stroke to walk back to FIRE — which is never a bargain, but
+it is always a way to keep playing when the word you are standing on has you
+beat.
 
-**The three ways a hole ends.** You hole out. You run out of swings (par + 3
-and you're done — pick up for par + 4). Or you strand yourself: play a word with
-no onward links at all, and the game tells you immediately rather than letting
-you flail. STAR·GAZER is a legal link and a complete cul-de-sac. That sheet is
-titled **Stranded**, and it is the single most painful screen in the game,
-which is exactly what it's for.
+**The rangefinder keeps the trouble legible.** The pin plate always shows the
+true remaining distance, recomputed after every stroke. It reveals nothing par
+hasn't already told you (par = best + 1 is printed on the card), but it turns
+"am I still alive?" from a private anxiety into a number on the board — which
+is what makes the drop and the pick-up *decisions* rather than guesses.
+
+**The ways a hole ends.** You hole out. You run out of swings (par + 3 and
+you're done — pick up for par + 4). You pick up early — allowed at any time,
+from the flag beside the caddie, because a player who is out of ideas must
+never be out of options. Or you strand yourself: play a word with no onward
+links at all — STAR·GAZER is a legal link and a complete cul-de-sac — and the
+game tells you immediately rather than letting you flail. That sheet is titled
+**Stranded**, and it still stings, but it is no longer a wall: if walking back
+one word leaves a live line, it offers the drop right there, and the choice —
+salvage a bogey or take the X — is yours. (Only strandings can be rescued this
+way; a lie that is merely too far from the pin stays too far after a drop,
+because one link only changes the distance by one while the penalty eats a
+swing.)
 
 **One caddie per round — not per hole.** She names one word that keeps you
 alive, and she costs you a stroke. You get one. Spending her on hole 1 because

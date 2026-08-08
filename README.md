@@ -9,7 +9,7 @@ most of which is inlined typography.
 
 | | | |
 |---|---|---|
-| [**Chains**](chains/) | Compound-word golf | Three holes, a par, no undo. Every word must form a compound with the last. |
+| [**Chains**](chains/) | Compound-word golf | Three holes, a par, no free undo. Every word must form a compound with the last. |
 | [**The Rule**](rule/) | Deduction | Six words: three obey a hidden law, three break it. Six probes. One call. |
 | [**Shunt**](shunt/) | Sliding grid | Push rows and columns of a 4×4 tray until all four rows spell words. |
 | [**Seed**](seed/) | Anagram planning | A letter arrives each turn from a queue everyone can see coming. Use them all. |
